@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test'
 
-test.describe('Home Page', () => {
+test.describe('Home UserClient', () => {
   test('should load without client-side errors', async ({ page }) => {
     const errors: string[] = []
 

@@ -1,21 +1,37 @@
-import {app, BrowserWindow} from 'electron';
-import path from 'path';
+// apps/next/main.ts
+import { app, BrowserWindow } from 'electron'
+import path from 'path'
+import { fileURLToPath } from 'url'
 
-function createWindow() {
+// Necessary for ESM modules in Electron
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+// const __dirname = path.dirname(fileURLToPath(import.meta.url))
+
+const createWindow = () => {
   const win = new BrowserWindow({
     width: 1200,
     height: 800,
     webPreferences: {
       nodeIntegration: true,
+      contextIsolation: false,
+      webSecurity: false, // Useful for connecting to your local Node server IP
+      // Todo: remove websecurty false and use proper CORS headers in your Node server for production
     },
-  });
+  })
 
-  // In dev, point to the Next.js dev server
-  const startUrl = process.env.NODE_ENV === 'development'
-    ? 'http://localhost:3000'
-    : `file://${path.join(__dirname, '../out/index.html')}`;
+  if (app.isPackaged) {
+    // In production, load the local HTML file
+    win.loadFile(path.join(__dirname, 'out', 'index.html'))
+  } else {
+    // In development, load from localhost
+    win.loadURL('http://localhost:3000')
+  }
 
-  win.loadURL(startUrl);
 }
 
-app.whenReady().then(createWindow);
+app.whenReady().then(createWindow)
+
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') app.quit()
+})

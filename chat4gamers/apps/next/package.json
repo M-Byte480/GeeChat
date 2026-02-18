@@ -1,8 +1,11 @@
 {
   "name": "next-app",
   "version": "0.1.0",
+  "description": "Voice Chat App for Gamers",
+  "author": "M-Byte480 @ GitHub",
   "private": true,
-  "main": "main.ts",
+  "main": "index.js",
+  "type": "module",
   "scripts": {
     "dev": "next dev",
     "build": "cd ../.. && yarn build && cd apps/next && next build",
@@ -10,7 +13,27 @@
     "serve": "NODE_ENV=production next start --port 8151",
     "lint": "biome check .",
     "test": "vitest",
-    "electron": "cross-env NODE_ENV=development electron -r ts-node/register ."
+    "electron": "cross-env NODE_ENV=development electron .",
+    "package": "yarn build && npx electron-builder build --win --dir",
+    "package:installer": "yarn build && npx electron-builder build --win"
+  },
+  "build": {
+    "appId": "com.yourname.geechat",
+    "productName": "GeeChat",
+    "directories": {
+      "output": "dist-electron"
+    },
+    "files": [
+      "main.ts",
+      "out/**/*",
+      "package.json",
+      "tsconfig.json",
+      "index.js"
+    ],
+    "win": {
+      "target": "nsis"
+    },
+    "asar": true
   },
   "dependencies": {
     "@tamagui/config": "^2.0.0-rc.0",
@@ -30,7 +53,7 @@
     "@tamagui/next-plugin": "^2.0.0-rc.0",
     "@types/node": "^20.14.1",
     "cross-env": "^10.1.0",
-    "electron": "^40.4.1",
+    "electron": "40.4.1",
     "electron-builder": "26.7.0",
     "next-compose-plugins": "^2.2.1",
     "next-transpile-modules": "^10.0.1",
