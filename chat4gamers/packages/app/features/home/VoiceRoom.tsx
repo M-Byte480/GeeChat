@@ -20,7 +20,7 @@ export const VoiceRoom = () => {
   const joinRoom = async () => {
     try {
       // 1. Get the token from your private Node server
-      const resp = await fetch('http://127.0.0.1:4000/get-voice-token?room=my-room')
+      const resp = await fetch('https://milan.ie:4000/get-voice-token?room=my-room')
       const { token } = await resp.json()
 
       // 2. Connect to the LiveKit instance
@@ -31,7 +31,7 @@ export const VoiceRoom = () => {
       })
 
       // packages/app/features/home/VoiceRoom.tsx
-      await newRoom.connect('ws://127.0.0.1:7880', token)
+      await newRoom.connect('ws://milan.ie:7880', token)
       // await newRoom.connect('ws://localhost:7800', token)
 
       // FIX: Changed enableAudio() to setMicrophoneEnabled(true)
