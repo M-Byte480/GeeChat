@@ -31,8 +31,8 @@ const createWindow = () => {
   }
 
 }
-app.commandLine.appendSwitch('ignore-certificate-errors') // dev
-app.commandLine.appendSwitch('allow-insecure-localhost', 'true') // dev
+// app.commandLine.appendSwitch('ignore-certificate-errors') // dev
+// app.commandLine.appendSwitch('allow-insecure-localhost', 'true') // dev
 app.whenReady().then(createWindow)
 
 app.on('window-all-closed', () => {
