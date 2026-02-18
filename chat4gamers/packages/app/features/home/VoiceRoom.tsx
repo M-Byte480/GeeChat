@@ -31,7 +31,7 @@ export const VoiceRoom = () => {
       })
 
       // packages/app/features/home/VoiceRoom.tsx
-      await newRoom.connect('ws://REDACTED_USERNAME.ie:7880', token)
+      await newRoom.connect('wss://REDACTED_USERNAME.ie:7880', token)
       // await newRoom.connect('ws://localhost:7800', token)
 
       // FIX: Changed enableAudio() to setMicrophoneEnabled(true)
