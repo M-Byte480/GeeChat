@@ -1,0 +1,24 @@
+name: Remote Deploy
+
+on:
+  push:
+    branches:
+      - jarvis-hosting
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: SSH and Update
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.REMOTE_HOST }}
+          username: ${{ secrets.REMOTE_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /home/gchat
+            git fetch origin jarvis-hosting
+            git reset --hard origin/jarvis-hosting
+            yarn install
+            yarn build
+            pm2 restart all
