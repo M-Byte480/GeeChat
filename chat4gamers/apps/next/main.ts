@@ -20,6 +20,8 @@ const createWindow = () => {
     },
   })
 
+  win.webContents.openDevTools() // dev
+
   if (app.isPackaged) {
     // In production, load the local HTML file
     win.loadFile(path.join(__dirname, 'out', 'index.html'))
@@ -29,7 +31,8 @@ const createWindow = () => {
   }
 
 }
-
+app.commandLine.appendSwitch('ignore-certificate-errors') // dev
+app.commandLine.appendSwitch('allow-insecure-localhost', 'true') // dev
 app.whenReady().then(createWindow)
 
 app.on('window-all-closed', () => {
