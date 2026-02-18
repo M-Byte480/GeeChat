@@ -42,12 +42,19 @@ app.get('/get-voice-token', async (c) => {
 
   at.addGrant({ roomJoin: true, room: roomName, canPublish: true, canSubscribe: true, roomAdmin: true })
 
-  return c.json({ token: await at.toJwt() })
+  const token = await at.toJwt();
+  console.log(`Generated token for room: ${roomName} with key: ${apiKey}`);
+  return c.json({ token });
 })
 
 const port = Number(process.env.PORT) || 4000;
 const hostname = '0.0.0.0';
 console.log(`Server is running on http://${hostname}:${port}`)
+
+app.use('*', cors({
+  origin: '*', // For testing, allow everything
+  allowMethods: ['GET', 'POST', 'OPTIONS'],
+}))
 
 serve({
   fetch: app.fetch,

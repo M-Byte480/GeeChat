@@ -20,7 +20,7 @@ export const VoiceRoom = () => {
   const joinRoom = async () => {
     try {
       // 1. Get the token from your private Node server
-      const resp = await fetch('https://REDACTED_USERNAME.ie/get-voice-token?room=my-room')
+      const resp = await fetch('https://REDACTED_USERNAME.ie/get-voice-token?room=main-room')
       const { token } = await resp.json()
 
       // 2. Connect to the LiveKit instance
