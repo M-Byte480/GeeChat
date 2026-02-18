@@ -3,7 +3,7 @@ name: Remote Deploy
 on:
   push:
     branches:
-      - jarvis-hosting
+      - jarvis-deploy
 
 jobs:
   deploy:
@@ -17,8 +17,8 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             cd /home/gchat/GeeGeeChat/chat4gamers/apps/server
-            git fetch origin jarvis-hosting
-            git reset --hard origin/jarvis-hosting
+            git fetch origin jarvis-deploy
+            git reset --hard origin/jarvis-deploy
             yarn install
             yarn build
-            pm2 restart all
+            sudo systemctl restart geechat-backend
