@@ -8,8 +8,10 @@ const app = new Hono()
 
 // Middlewares
 app.use('*', logger()) // Log requests to console
-app.use('*', cors())   // Allow your Electron app to talk to this API
-
+app.use('*', cors({
+  origin: '*', // For testing, allow everything
+  allowMethods: ['GET', 'POST', 'OPTIONS'],
+}))
 // Your "Server" Data Routes
 app.get('/', (c) => {
   return c.json({
@@ -51,10 +53,7 @@ const port = Number(process.env.PORT) || 4000;
 const hostname = '0.0.0.0';
 console.log(`Server is running on http://${hostname}:${port}`)
 
-app.use('*', cors({
-  origin: '*', // For testing, allow everything
-  allowMethods: ['GET', 'POST', 'OPTIONS'],
-}))
+
 
 serve({
   fetch: app.fetch,

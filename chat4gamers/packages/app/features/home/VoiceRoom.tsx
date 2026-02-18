@@ -36,7 +36,6 @@ export const VoiceRoom = () => {
 
       // FIX: Changed enableAudio() to setMicrophoneEnabled(true)
       await newRoom.localParticipant.setMicrophoneEnabled(true)
-      setIsJoined(true)
 
       setRoom(newRoom)
       setIsJoined(true)
