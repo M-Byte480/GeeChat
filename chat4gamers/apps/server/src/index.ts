@@ -33,8 +33,8 @@ app.get('/get-voice-token', async (c) => {
   const participantName = 'user-' + Math.floor(Math.random() * 1000)
 
   // These would ideally come from your .env file
-  const apiKey = process.env.LIVEKIT_API_KEY || 'devkey';
-  const apiSecret = process.env.LIVEKIT_API_SECRET || 'secret';
+  const apiKey = 'milan_test_key' // process.env.LIVEKIT_API_KEY || 'devkey';
+  const apiSecret = 'milan_test_secret_123' // process.env.LIVEKIT_API_SECRET || 'secret';
 
   const at = new AccessToken(apiKey, apiSecret, {
     identity: participantName,
@@ -46,10 +46,11 @@ app.get('/get-voice-token', async (c) => {
 })
 
 const port = Number(process.env.PORT) || 4000;
-console.log(`Server is running on http://localhost:${port}`)
+const hostname = '0.0.0.0';
+console.log(`Server is running on http://${hostname}:${port}`)
 
 serve({
   fetch: app.fetch,
   port,
-  hostname: '0.0.0.0'
+  hostname: hostname
 })
