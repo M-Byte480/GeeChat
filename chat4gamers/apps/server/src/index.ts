@@ -29,7 +29,7 @@ app.get('/data', (c) => {
 })
 
 app.get('/get-voice-token', async (c) => {
-  const roomName = c.req.query('room') || 'main-room'
+  const roomName = 'main-room' // c.req.query('room') || 'main-room'
   const participantName = 'user-' + Math.floor(Math.random() * 1000)
 
   // These would ideally come from your .env file
@@ -40,7 +40,7 @@ app.get('/get-voice-token', async (c) => {
     identity: participantName,
   })
 
-  at.addGrant({ roomJoin: true, room: roomName, canPublish: true, canSubscribe: true })
+  at.addGrant({ roomJoin: true, room: roomName, canPublish: true, canSubscribe: true, roomAdmin: true })
 
   return c.json({ token: await at.toJwt() })
 })
