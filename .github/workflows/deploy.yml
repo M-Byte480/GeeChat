@@ -16,7 +16,7 @@ jobs:
           username: ${{ secrets.REMOTE_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            cd /home/gchat
+            cd /home/gchat/GeeGeeChat/chat4gamers/apps/server
             git fetch origin jarvis-hosting
             git reset --hard origin/jarvis-hosting
             yarn install
