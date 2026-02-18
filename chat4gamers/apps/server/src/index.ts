@@ -33,8 +33,8 @@ app.get('/get-voice-token', async (c) => {
   const participantName = 'user-' + Math.floor(Math.random() * 1000)
 
   // These would ideally come from your .env file
-  const apiKey = 'devkey'
-  const apiSecret = 'secret'
+  const apiKey = process.env.LIVEKIT_API_KEY || 'devkey';
+  const apiSecret = process.env.LIVEKIT_API_SECRET || 'secret';
 
   const at = new AccessToken(apiKey, apiSecret, {
     identity: participantName,
@@ -45,7 +45,7 @@ app.get('/get-voice-token', async (c) => {
   return c.json({ token: await at.toJwt() })
 })
 
-const port = 4000
+const port = Number(process.env.PORT) || 4000;
 console.log(`Server is running on http://localhost:${port}`)
 
 serve({
