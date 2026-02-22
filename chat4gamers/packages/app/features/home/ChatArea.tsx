@@ -1,11 +1,12 @@
 import { YStack, Input, Spacer, Paragraph } from '@my/ui'
 import {useState} from "react";
+import {SERVER_IP} from "app/constants/config";
 
 export const ChatArea = () => {
 
   const [loadedMessages, setLoadedMessages] = useState<{ id: number; text: string; timestamp: Date }[]>([]);
 
-  const socket = new WebSocket('ws://89.167.67.187:4000/ws');
+  const socket = new WebSocket(`ws://${SERVER_IP}:4000/ws`);
 
 
   socket.onmessage = (event) => {
