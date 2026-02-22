@@ -46,7 +46,7 @@
 
 import {useEffect, useState} from 'react'
 import { Button, YStack, Text, XStack } from '@my/ui'
-import { Room, Track } from 'livekit-client'
+import {Room, RoomEvent, Track} from 'livekit-client'
 import { Mic, MicOff, PhoneOff, TestTube } from 'lucide-react'
 import { LiveKitRoom, RoomAudioRenderer, ControlBar } from '@livekit/components-react';
 import {API_BASE, LIVEKIT_WS} from "app/constants/config";
@@ -129,11 +129,38 @@ export const VoiceRoom = () => {
       const newRoom = new Room({ adaptiveStream: true });
 
       // 2. Connect using the dynamic token
-      await newRoom.connect(LIVEKIT_WS, token);
+
+      newRoom.on(RoomEvent.TrackSubscribed, (track, publication, participant) => {
+        if (track.kind === Track.Kind.Audio) {
+          const element = track.attach(); // This starts the audio
+        }
+      });
+      await newRoom.connect(LIVEKIT_WS, token, {
+        autoSubscribe: true,
+      });
+
+      newRoom.remoteParticipants.forEach((participant) => {
+        participant.trackPublications.forEach((publication) => {
+          // If the track is already subscribed (autoSubscribe did its job)
+          if (publication.track && publication.kind === Track.Kind.Audio) {
+            publication.track.attach();
+            console.log(`Attached existing audio for: ${participant.identity}`);
+          }
+        });
+      });
+
       await newRoom.localParticipant.setMicrophoneEnabled(true);
 
       setRoom(newRoom);
       setIsJoined(true);
+
+      // newRoom.remoteParticipants.forEach((participant) => {
+      //   participant.trackPublications.forEach((publication) => {
+      //     if (publication.track && publication.kind === Track.Kind.Audio) {
+      //       publication.track.attach();
+      //     }
+      //   });
+      // });
     } catch (error) {
       console.error(`Failed to join ${targetRoom}:`, error);
     }
