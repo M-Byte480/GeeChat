@@ -3,15 +3,21 @@ import { Hono } from 'hono'
 import { logger } from 'hono/logger'
 import { cors } from 'hono/cors'
 import { AccessToken } from 'livekit-server-sdk'
-import { upgradeWebSocket } from "hono/cloudflare-workers"; // Need to figure out what this clourdflare worker is?
+import { createNodeWebSocket } from '@hono/node-ws' // <-- CHANGE TO THIS
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import Database from 'better-sqlite3-multiple-ciphers';
 import authRoutes from './routes/auth.js';
 import chatRoutes from './routes/chat.js';
-
+import { trimTrailingSlash } from 'hono/trailing-slash'
+import {messages} from "./db/schema.js";
 const sqlite = new Database('chat.db');
 const db = drizzle(sqlite);
+import { eq, desc } from 'drizzle-orm';
+
 const app = new Hono()
+const { injectWebSocket, upgradeWebSocket } = createNodeWebSocket({ app }) // <-- ADD THIS
+const clients = new Set<any>();
+app.use('*', trimTrailingSlash())
 
 // Middlewares
 app.use('*', logger()) // Log requests to console
@@ -39,12 +45,38 @@ app.get('/data', (c) => {
 
 app.get('/ws', upgradeWebSocket((c) => {
   return {
-    onMessage(event, ws) {
-      console.log(`Message from client: ${event.data}`)
+    onOpen(event, ws) {
+      clients.add(ws);
     },
-    onClose: () => console.log('Connection closed'),
+    async onMessage(event, ws) { // 1. Make this async
+      try {
+        const data = JSON.parse(event.data.toString());
+
+        // 2. SAVE TO DATABASE
+        // Note: Match these keys to your schema.ts
+        await db.insert(messages).values({
+          roomId: data.channelId || 'main-room', // Use the channel sent by client
+          content: data.text,
+          senderId: 'system', // For now, until you have auth working
+          timestamp: new Date(),
+        });
+
+        // 3. BROADCAST to everyone else
+        clients.forEach((client) => {
+          if (client !== ws && client.readyState === 1) {
+            client.send(JSON.stringify(data));
+          }
+        });
+      } catch (err) {
+        console.error("Failed to save/broadcast message:", err);
+      }
+    },
+    onClose(event, ws) {
+      clients.delete(ws);
+    },
   }
 }))
+
 
 app.get('/get-voice-token', async (c) => {
   const roomName = c.req.query('room') || 'main-room';
@@ -75,18 +107,48 @@ app.post('/messages', async (c) => {
   const body = await c.req.json();
 
   // // 1. Save to SQLite
-  // const insertedMessage = await db.insert(messages).values({
-  //   roomId: body.roomId,
-  //   senderId: body.userId,
-  //   content: body.content,
-  //   timestamp: new Date(),
-  // }).returning();
+  const insertedMessage = await db.insert(messages).values({
+    roomId: body.roomId,
+    senderId: body.userId,
+    content: body.content,
+    timestamp: new Date(),
+  }).returning();
 
   // 2. Broadcast to all connected WebSocket clients
   // (Assuming you have a list of active WS connections)
   // broadcastToRoom(body.roomId, insertedMessage[0]);
 
-  // return c.json(insertedMessage[0]);
+  return c.json(insertedMessage[0]);
+});
+
+app.get('/chat-history', async (c) => {
+  try {
+    const channel = c.req.query('channel');
+
+    if (!channel) {
+      return c.json({ error: "Channel query parameter is required" }, 400);
+    }
+
+    console.log(`Fetching history for channel: ${channel}`);
+  // Logic: SELECT * FROM messages ORDER BY timestamp DESC LIMIT 50
+  // For now, let's return a placeholder
+  // const history = [
+    // { id: '1', text: 'Welcome to the past!', timestamp: new Date() },
+    // In real life: await db.select().from(messages).limit(50).orderBy(desc(messages.timestamp))
+  // ];
+
+  const history = await db.select()
+    .from(messages)
+    .where(eq(messages.roomId, channel))
+    .orderBy(desc(messages.timestamp))
+    .limit(50);
+
+  return c.json(history.reverse()); // Reverse so they are in chronological order
+
+} catch (error) {
+  console.error("Database error:", error);
+  return c.json({ error: "Failed to fetch history" }, 500);
+}
 });
 
 app.route('/auth', authRoutes); // This makes routes like /auth/register
@@ -98,8 +160,10 @@ console.log(`Server is running on http://${hostname}:${port}`)
 
 
 
-serve({
+const server = serve({
   fetch: app.fetch,
-  port,
-  hostname: hostname
+  port: 4000,
+  hostname: '0.0.0.0'
 })
+
+injectWebSocket(server)

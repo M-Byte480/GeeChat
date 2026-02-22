@@ -122,17 +122,15 @@ export const VoiceRoom = () => {
 
   const joinRoom = async (targetRoom: string = 'main-room') => {
     try {
-      // 1. Send the room name to your Hono backend
       const resp = await fetch(`${API_BASE}/get-voice-token?room=${targetRoom}`);
       const { token } = await resp.json();
 
       const newRoom = new Room({ adaptiveStream: true });
 
-      // 2. Connect using the dynamic token
 
       newRoom.on(RoomEvent.TrackSubscribed, (track, publication, participant) => {
         if (track.kind === Track.Kind.Audio) {
-          const element = track.attach(); // This starts the audio
+          const element = track.attach();
         }
       });
       await newRoom.connect(LIVEKIT_WS, token, {
@@ -154,13 +152,6 @@ export const VoiceRoom = () => {
       setRoom(newRoom);
       setIsJoined(true);
 
-      // newRoom.remoteParticipants.forEach((participant) => {
-      //   participant.trackPublications.forEach((publication) => {
-      //     if (publication.track && publication.kind === Track.Kind.Audio) {
-      //       publication.track.attach();
-      //     }
-      //   });
-      // });
     } catch (error) {
       console.error(`Failed to join ${targetRoom}:`, error);
     }
