@@ -120,7 +120,7 @@ export const VoiceRoom = () => {
   //   }
   // }
 
-  const joinRoom = async (targetRoom: string = 'main-room') => {
+  const joinRoom = async (targetRoom: string = 'hideout') => {
     try {
       const resp = await fetch(`${API_BASE}/get-voice-token?room=${targetRoom}`);
       const { token } = await resp.json();
