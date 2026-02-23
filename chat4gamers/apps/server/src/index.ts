@@ -67,7 +67,7 @@ app.get('/ws', upgradeWebSocket((c) => {
 
 
 app.get('/get-voice-token', async (c) => {
-  const roomName = c.req.query('room') || 'main-room';
+  const roomName = c.req.query('room') || 'hideout';
   const participantName = 'user-' + Math.floor(Math.random() * 1000);
 
   // These would ideally come from your .env file
