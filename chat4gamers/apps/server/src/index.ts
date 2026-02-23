@@ -4,17 +4,13 @@ import { logger } from 'hono/logger'
 import { cors } from 'hono/cors'
 import { AccessToken } from 'livekit-server-sdk'
 import { createNodeWebSocket } from '@hono/node-ws' // <-- CHANGE TO THIS
-import { drizzle } from 'drizzle-orm/better-sqlite3';
-import Database from 'better-sqlite3-multiple-ciphers';
 import authRoutes from './routes/auth.js';
 import chatRoutes from './routes/chat.js';
 import { trimTrailingSlash } from 'hono/trailing-slash'
 import {messages} from "./db/schema.js";
+import { db } from './db/index.js'; // Import the shared instance
 
 import { eq, desc } from 'drizzle-orm';
-
-const sqlite = new Database('./data/chat.db');
-const db = drizzle(sqlite);
 
 
 const app = new Hono()
