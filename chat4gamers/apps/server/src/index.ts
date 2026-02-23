@@ -72,7 +72,7 @@ app.get('/get-voice-token', async (c) => {
 
   // These would ideally come from your .env file
   const apiKey = 'REDACTED_LIVEKIT_KEY' // process.env.LIVEKIT_API_KEY || 'devkey';
-  const apiSecret = 'REDACTED_LIVEKIT_SECRET' // process.env.LIVEKIT_API_SECRET || 'secret';
+  const apiSecret = 'REDACTED_TOKEN_SECRET' // process.env.LIVEKIT_API_SECRET || 'secret';
 
   const at = new AccessToken(apiKey, apiSecret, {
     identity: participantName,

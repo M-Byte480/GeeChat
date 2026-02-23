@@ -22,7 +22,7 @@ services:
       - "4000:4000"
     environment:
       - LIVEKIT_API_KEY=REDACTED_LIVEKIT_KEY
-      - LIVEKIT_API_SECRET=REDACTED_LIVEKIT_SECRET
+      - LIVEKIT_API_SECRET=REDACTED_TOKEN_SECRET
     volumes:
       - ./data:/app/data
 
