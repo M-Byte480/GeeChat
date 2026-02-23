@@ -6,6 +6,6 @@ rtc:
   port_range_start: 50000
   port_range_end: 60000
   use_external_ip: true
-  node_ip: "REDACTED_IP"
+  node_ip: "REDACTED_DOMAIN"
 keys:
   REDACTED_LIVEKIT_KEY: REDACTED_LIVEKIT_SECRET
