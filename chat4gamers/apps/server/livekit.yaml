@@ -6,6 +6,6 @@ rtc:
   port_range_start: 50000
   port_range_end: 60000
   use_external_ip: true
-  node_ip: "167.235.156.63"
+  node_ip: "chat.milan.ie"
 keys:
   milan_test_key: milan_test_secret_123
