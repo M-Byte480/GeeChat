@@ -6,7 +6,7 @@ import * as schema from './schema.js'; // Note the .js for TS2834 compatibility
 
 // This line opens (or creates) the chat.db file.
 // { verbose: console.log } is optional but great for seeing the SQL in your terminal.
-const sqlite = new Database('../data/chat.db');
+const sqlite = new Database('./data/chat.db'); // Match the Docker volume path
 
 // CRUCIAL: You must set the key BEFORE any other queries run
 // sqlite.pragma(`key = 'YOUR_SECRET_ENCRYPTION_KEY'`);
