@@ -5,6 +5,6 @@ export default defineConfig({
   out: './drizze',
   dialect: 'sqlite',
   dbCredentials: {
-    url: 'chat.db',
+    url: './data/chat.db',
   },
 });
