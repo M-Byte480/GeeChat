@@ -72,7 +72,7 @@ app.get('/get-voice-token', async (c) => {
 
   // These would ideally come from your .env file
   const apiKey = 'milan_test_key' // process.env.LIVEKIT_API_KEY || 'devkey';
-  const apiSecret = 'milan_test_secret_123' // process.env.LIVEKIT_API_SECRET || 'secret';
+  const apiSecret = 'milan_super_secret_key_32_characters_long_12345' // process.env.LIVEKIT_API_SECRET || 'secret';
 
   const at = new AccessToken(apiKey, apiSecret, {
     identity: participantName,
