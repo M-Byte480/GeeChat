@@ -8,48 +8,83 @@ export const ChatArea = () => {
   const socketRef = useRef<WebSocket | null>(null);
   const channels = useRef<Array<{ id: string; text: string }>>([]);
   const channelId = 'test';
+  const [typingUser, setTypingUser] = useState<string | null>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   useEffect(() => {
     fetch(`http://${SERVER_IP}:4000/chat-history?channel=${channelId}`)
       .then(res => res.json())
       .then(data => setMessages(data));
 
-    // Connect once on mount
     const ws = new WebSocket(`ws://${SERVER_IP}:4000/ws`);
     socketRef.current = ws;
 
-    ws.onopen = () => {
-      // Tell the server which channel we are looking at
-      ws.send(JSON.stringify({ type: 'JOIN_CHANNEL', channelId }));
-    };
-
     ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      if (data.channelId === channelId) { // Only show if it's for this channel
-        setMessages((prev) => [...prev, data]);
+      const msg = JSON.parse(event.data);
+
+      // Handle Typing
+      if (msg.type === 'TYPING' && msg.channelId === channelId) {
+        setTypingUser(msg.username);
+        setTimeout(() => setTypingUser(null), 3000);
+      }
+
+      // Handle New Messages (Broadcasted from the POST route)
+      if (msg.type === 'NEW_MESSAGE' && msg.channelId === channelId) {
+        setMessages((prev) => {
+          // Prevention: If we already have this message (from optimistic update), skip
+          if (prev.find(m => m.id === msg.id)) return prev;
+          return [...prev, { id: msg.id, text: msg.content }];
+        });
       }
     };
 
-    // Cleanup on unmount
     return () => ws.close();
   }, [channelId]);
 
-  const sendMessage = () => {
-    console.log("Socket State:", socketRef.current?.readyState);
-    console.log("Input Text:", inputText);
-    console.log(socketRef.current?.readyState === WebSocket.OPEN)
+  const sendMessage = async () => {
+    if (!inputText.trim()) return;
 
-    if (inputText.trim() && socketRef.current?.readyState === WebSocket.OPEN) {
-      const msgPayload = {
-        id: Date.now().toString(),
-        text: inputText,
-      };
+    // 1. Optimistic Update (Show it immediately)
+    const tempId = Date.now().toString();
+    setMessages((prev) => [...prev, { id: tempId, text: inputText }]);
+    const currentText = inputText;
+    setInputText("");
 
-      // Send to server
-      socketRef.current.send(JSON.stringify(msgPayload));
+    // 2. Send via REST (The "Command")
+    try {
+      await fetch(`http://${SERVER_IP}:4000/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          roomId: channelId,
+          content: currentText,
+          userId: 'REDACTED_USERNAME_dev' // Replace with real ID later
+        })
+      });
+    } catch (err) {
+      console.error("Failed to send:", err);
+      // Optional: Remove the message or show error if fetch fails
+    }
+  };
 
-      // Optimistic update (show it on your screen immediately)
-      setMessages((prev) => [...prev, msgPayload]);
-      setInputText("");
+  const handleInputChange = (text: string) => {
+    setInputText(text);
+
+    if (socketRef.current?.readyState === WebSocket.OPEN) {
+
+      if (!typingTimeoutRef.current) {
+        socketRef.current.send(JSON.stringify({
+          type: 'TYPING',
+          username: 'Milan', // Replace with your actual user state
+          channelId: channelId
+        }));
+      }
+
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+
+      typingTimeoutRef.current = setTimeout(() => {
+        typingTimeoutRef.current = null;
+      }, 2000); // 2 seconds delay
     }
   };
 
@@ -70,6 +105,11 @@ export const ChatArea = () => {
             </YStack>
           ))}
         </YStack>
+        {typingUser && (
+          <Paragraph size="$1" color="$gray10">
+            {typingUser} is typing...
+          </Paragraph>
+        )}
       </ScrollView>
 
       <YStack gap="$2">
@@ -77,7 +117,7 @@ export const ChatArea = () => {
           placeholder="Type a message..."
           size="$4"
           value={inputText}
-          onChangeText={setInputText}
+          onChangeText={handleInputChange}
           onSubmitEditing={sendMessage} // Hits 'Enter' to send
         />
       </YStack>

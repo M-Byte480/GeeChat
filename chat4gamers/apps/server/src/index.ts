@@ -49,26 +49,15 @@ app.get('/ws', upgradeWebSocket((c) => {
       clients.add(ws);
     },
     async onMessage(event, ws) { // 1. Make this async
-      try {
-        const data = JSON.parse(event.data.toString());
+      const data = JSON.parse(event.data.toString());
 
-        // 2. SAVE TO DATABASE
-        // Note: Match these keys to your schema.ts
-        await db.insert(messages).values({
-          roomId: data.channelId || 'main-room', // Use the channel sent by client
-          content: data.text,
-          senderId: 'system', // For now, until you have auth working
-          timestamp: new Date(),
-        });
-
-        // 3. BROADCAST to everyone else
+      if (data.type === 'TYPING') {
+        // Broadcast "User X is typing" to everyone else
         clients.forEach((client) => {
           if (client !== ws && client.readyState === 1) {
             client.send(JSON.stringify(data));
           }
         });
-      } catch (err) {
-        console.error("Failed to save/broadcast message:", err);
       }
     },
     onClose(event, ws) {
@@ -106,19 +95,31 @@ app.get('/get-voice-token', async (c) => {
 app.post('/messages', async (c) => {
   const body = await c.req.json();
 
-  // // 1. Save to SQLite
-  const insertedMessage = await db.insert(messages).values({
-    roomId: body.roomId,
-    senderId: body.userId,
-    content: body.content,
-    timestamp: new Date(),
-  }).returning();
+  try {
+    const [newMessage] = await db.insert(messages).values({
+      roomId: body.roomId,
+      senderId: body.userId,
+      content: body.content,
+      timestamp: new Date(),
+    }).returning();
 
-  // 2. Broadcast to all connected WebSocket clients
-  // (Assuming you have a list of active WS connections)
-  // broadcastToRoom(body.roomId, insertedMessage[0]);
+    // BROADCAST to everyone
+    const payload = JSON.stringify({
+      type: 'NEW_MESSAGE',
+      channelId: body.roomId, // Ensure this is sent so frontend can filter
+      ...newMessage           // Spread the DB result (id, content, etc)
+    });
 
-  return c.json(insertedMessage[0]);
+    clients.forEach((client) => {
+      if (client.readyState === 1) {
+        client.send(payload);
+      }
+    });
+
+    return c.json(newMessage);
+  } catch (err) {
+    return c.json({ error: "Failed to save" }, 500);
+  }
 });
 
 app.get('/chat-history', async (c) => {
