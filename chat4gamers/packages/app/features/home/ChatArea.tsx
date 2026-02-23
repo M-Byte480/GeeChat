@@ -2,8 +2,16 @@ import { YStack, Input, Spacer, Paragraph, ScrollView } from '@my/ui'
 import { useState, useEffect, useRef } from "react";
 import { SERVER_IP } from "app/constants/config";
 
+export type Message = {
+  content: string;
+  id  : number;
+  roomId : string;
+  senderId : string;
+  timestamp : string;
+}
+
 export const ChatArea = () => {
-  const [messages, setMessages] = useState<{ id: string; text: string }[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState("");
   const socketRef = useRef<WebSocket | null>(null);
   const channels = useRef<Array<{ id: string; text: string }>>([]);
@@ -34,18 +42,20 @@ export const ChatArea = () => {
     ws.onmessage = (event) => {
       const msg = JSON.parse(event.data);
 
-      // Handle Typing
-      if (msg.type === 'TYPING' && msg.channelId === channelId) {
-        setTypingUser(msg.username);
-        setTimeout(() => setTypingUser(null), 3000);
-      }
-
-      // Handle New Messages (Broadcasted from the POST route)
       if (msg.type === 'NEW_MESSAGE' && msg.channelId === channelId) {
         setMessages((prev) => {
-          // Prevention: If we already have this message (from optimistic update), skip
-          if (prev.find(m => m.id === msg.id)) return prev;
-          return [...prev, { id: msg.id, text: msg.content }];
+          // Logic: If we already have a message with this content sent very recently,
+          // or if the ID matches exactly, don't add it again.
+          const isDuplicate = prev.some(m =>
+            m.id === msg.id || (m.id.toString().length > 10 && m.content === msg.content)
+          );
+
+          if (isDuplicate) {
+            // Optional: Replace the temp "string" ID message with the real "number" ID message
+            return prev.map(m => (m.content === msg.content && m.id.toString().length > 10) ? msg : m);
+          }
+
+          return [...prev, msg];
         });
       }
     };
@@ -56,13 +66,21 @@ export const ChatArea = () => {
   const sendMessage = async () => {
     if (!inputText.trim()) return;
 
-    // 1. Optimistic Update (Show it immediately)
-    const tempId = Date.now().toString();
-    setMessages((prev) => [...prev, { id: tempId, text: inputText }]);
     const currentText = inputText;
+    const tempId = Date.now(); // Use a number to stay consistent with type
+
+    // Optimistic Update using correct keys
+    const optimisticMsg: Message = {
+      id: tempId,
+      content: currentText,
+      roomId: channelId,
+      senderId: 'REDACTED_USERNAME_dev',
+      timestamp: new Date().toISOString()
+    };
+
+    setMessages((prev) => [...prev, optimisticMsg]);
     setInputText("");
 
-    // 2. Send via REST (The "Command")
     try {
       await fetch(`https://${SERVER_IP}/messages`, {
         method: 'POST',
@@ -70,12 +88,13 @@ export const ChatArea = () => {
         body: JSON.stringify({
           roomId: channelId,
           content: currentText,
-          userId: 'REDACTED_USERNAME_dev' // Replace with real ID later
+          userId: 'REDACTED_USERNAME_dev'
         })
       });
     } catch (err) {
       console.error("Failed to send:", err);
-      // Optional: Remove the message or show error if fetch fails
+      // Rollback: Remove the optimistic message if it failed
+      setMessages((prev) => prev.filter(m => m.id !== tempId));
     }
   };
 
@@ -113,7 +132,7 @@ export const ChatArea = () => {
               alignSelf="flex-start"
               maxWidth="80%"
             >
-              <Paragraph>{msg.text}</Paragraph>
+              <Paragraph>{msg.content}</Paragraph>
             </YStack>
           ))}
         </YStack>
