@@ -1,0 +1,22 @@
+services:
+  livekit:
+    image: livekit/livekit-server
+    container_name: livekit-server
+    restart: always
+    network_mode: "host"
+    volumes:
+      - ./livekit.yaml:/livekit.yaml
+    command: --config /livekit.yaml
+
+  hono-backend:
+    build:
+      context: ./GeeGeeChat/chat4gamers/apps/server
+    container_name: hono-backend
+    restart: always
+    ports:
+      - "4000:4000"
+    environment:
+      - LIVEKIT_API_KEY=milan_test_key
+      - LIVEKIT_API_SECRET=milan_test_secret_123
+    volumes:
+      - ./data:/app/data
