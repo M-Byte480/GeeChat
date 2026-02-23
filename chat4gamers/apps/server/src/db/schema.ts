@@ -12,7 +12,7 @@ export const users = sqliteTable('users', {
 export const messages = sqliteTable('messages', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   roomId: text('room_id').notNull(), // e.g., 'main-room'
-  senderId: text('sender_id').references(() => users.id),
+  senderId: text('sender_id'),//.references(() => users.id),
   content: text('content').notNull(),
   timestamp: integer('timestamp', { mode: 'timestamp' }).notNull(),
 });

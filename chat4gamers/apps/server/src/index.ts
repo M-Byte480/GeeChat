@@ -10,9 +10,12 @@ import authRoutes from './routes/auth.js';
 import chatRoutes from './routes/chat.js';
 import { trimTrailingSlash } from 'hono/trailing-slash'
 import {messages} from "./db/schema.js";
-const sqlite = new Database('chat.db');
-const db = drizzle(sqlite);
+
 import { eq, desc } from 'drizzle-orm';
+
+const sqlite = new Database('./data/chat.db');
+const db = drizzle(sqlite);
+
 
 const app = new Hono()
 const { injectWebSocket, upgradeWebSocket } = createNodeWebSocket({ app }) // <-- ADD THIS
