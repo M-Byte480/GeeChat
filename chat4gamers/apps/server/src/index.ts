@@ -94,6 +94,7 @@ app.get('/get-voice-token', async (c) => {
 
 app.post('/messages', async (c) => {
   const body = await c.req.json();
+  console.log("Request Body:", body); // See what's actually arriving
 
   try {
     const [newMessage] = await db.insert(messages).values({
@@ -117,9 +118,10 @@ app.post('/messages', async (c) => {
     });
 
     return c.json(newMessage);
-  } catch (err) {
-    return c.json({ error: "Failed to save" }, 500);
-  }
+  } catch (err: any) {
+    console.error("CRITICAL ERROR IN POST /MESSAGES:");
+    console.error(err.stack || err); // This is what we need!
+    return c.json({ error: err.message, stack: err.stack }, 500);  }
 });
 
 app.get('/chat-history', async (c) => {

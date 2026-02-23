@@ -12,11 +12,23 @@ export const ChatArea = () => {
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    fetch(`http://${SERVER_IP}:4000/chat-history?channel=${channelId}`)
-      .then(res => res.json())
-      .then(data => setMessages(data));
+    fetch(`https://${SERVER_IP}/chat-history?channel=${channelId}`)
+      .then(res => {
+        if (!res.ok) throw new Error("Server error");
+        return res.json();
+      })
+      .then(data => {
+        // Ensure data is actually an array before setting
+        if (Array.isArray(data)) {
+          setMessages(data);
+        }
+      })
+      .catch(err => {
+        console.error("Fetch failed:", err);
+        setMessages([]); // Fallback to empty array to prevent .map() crash
+      });
 
-    const ws = new WebSocket(`ws://${SERVER_IP}:4000/ws`);
+    const ws = new WebSocket(`wss://${SERVER_IP}/ws`);
     socketRef.current = ws;
 
     ws.onmessage = (event) => {
@@ -52,7 +64,7 @@ export const ChatArea = () => {
 
     // 2. Send via REST (The "Command")
     try {
-      await fetch(`http://${SERVER_IP}:4000/messages`, {
+      await fetch(`https://${SERVER_IP}/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
