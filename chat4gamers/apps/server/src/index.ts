@@ -74,9 +74,12 @@ app.get('/get-voice-token', async (c) => {
   const apiKey = 'REDACTED_LIVEKIT_KEY' // process.env.LIVEKIT_API_KEY || 'devkey';
   const apiSecret = 'REDACTED_TOKEN_SECRET' // process.env.LIVEKIT_API_SECRET || 'secret';
 
-  const at = new AccessToken(apiKey, apiSecret, {
+  // const at = new AccessToken(apiKey, apiSecret, {
+  //   identity: participantName,
+  // });
+  const at = new AccessToken('REDACTED_LIVEKIT_KEY', 'REDACTED_TOKEN_SECRET', {
     identity: participantName,
-  })
+  });
 
   at.addGrant({
     roomJoin: true,
