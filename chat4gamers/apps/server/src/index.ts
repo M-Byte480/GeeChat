@@ -74,9 +74,12 @@ app.get('/get-voice-token', async (c) => {
   const apiKey = 'milan_test_key' // process.env.LIVEKIT_API_KEY || 'devkey';
   const apiSecret = 'milan_super_secret_key_32_characters_long_12345' // process.env.LIVEKIT_API_SECRET || 'secret';
 
-  const at = new AccessToken(apiKey, apiSecret, {
+  // const at = new AccessToken(apiKey, apiSecret, {
+  //   identity: participantName,
+  // });
+  const at = new AccessToken('milan_test_key', 'milan_super_secret_key_32_characters_long_12345', {
     identity: participantName,
-  })
+  });
 
   at.addGrant({
     roomJoin: true,
