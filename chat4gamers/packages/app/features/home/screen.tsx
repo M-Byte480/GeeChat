@@ -12,7 +12,7 @@ export function HomeScreen() {
   return (
     <XStack flex={1} height="100vh" bg="$background">
       {/* THIN EXPANDABLE PANE: Example of a second pane */}
-      <YStack width={60} bg="$color2" borderRightWidth={1} borderColor="$borderColor">
+      <YStack width={60} bg="$color2" borderRightWidth={1} borderColor="$borderColor" $max-md={{display:'none'}}>
         <Button icon={Menu} chromeless size="$4" />
       </YStack>
 
@@ -24,7 +24,7 @@ export function HomeScreen() {
       {/* 3. MAIN CONTENT */}
       <YStack flex={1}>
         {/* MOBILE HEADER: Only shows on small screens */}
-        <XStack p="$4" $sm={{ display: 'none' }} borderBottomWidth={1} borderColor="$borderColor" width={"100%"} justify="center">
+        <XStack p="$4" $sm={{ display: 'none' }} borderBottomWidth={1} borderColor="$borderColor" width={"100%"} jc="center">
           <Button icon={Menu} onPress={() => setShowMobileMenu(true)} />
         </XStack>
 
@@ -38,7 +38,6 @@ export function HomeScreen() {
           </Sheet.Frame>
           <Sheet.Overlay />
         </Sheet>
-
 
     </XStack>
   )
