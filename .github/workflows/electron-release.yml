@@ -11,6 +11,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Proceed to Electron App Directory
+        run: cd chat4gamers/apps/next
+
       - name: Install Node
         uses: actions/setup-node@v4
         with:
