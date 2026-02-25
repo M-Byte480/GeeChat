@@ -43,6 +43,7 @@ jobs:
           # 2. Extract version for Git
           NEW_VERSION=$(node -p "require('./package.json').version")
           echo "Bumping to $NEW_VERSION"
+          echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
           
           # 3. Configure Git
           git config user.name "GitHub Actions"
@@ -74,4 +75,4 @@ jobs:
         run: |
           gh workflow run electron-release.yml --ref v$NEW_VERSION
         env:
-          GITHUB_TOKEN: ${{ secrets.ORCHESTRATOR_TAG_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.MY_PAT_TOKEN }}
