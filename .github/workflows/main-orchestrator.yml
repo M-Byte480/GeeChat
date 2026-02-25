@@ -43,6 +43,7 @@ jobs:
           tag-prefix: 'v'
           # This pushes the changed package.json back to main
           skip-tag: 'false'
+          commit-message: 'chore(release): bump version to {{version}} [skip ci]'
 
 
       # 3. ONLY Sync jarvis-deploy if the server folder changed
