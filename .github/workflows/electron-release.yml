@@ -1,41 +1,7 @@
 name: electron-release.yml
 on:
   push:
-    tags:
-      - 'v*' # 监听以 v 开头的版本标签，例如 v1.0.0
+#    tags:
+#      - 'v*' # 监听以 v 开头的版本标签，例如 v1.0.0
 
 jobs:
-  build-and-upload:
-    runs-on: windows-latest # Use Windows to build the .exe
-    defaults:
-      run:
-        working-directory: chat4gamers/apps/next
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Install Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: 'yarn'
-          cache-dependency-path: chat4gamers/yarn.lock
-
-      - name: Install Dependencies
-        run: yarn install
-
-      - name: Build Electron App
-        run: yarn package # This runs your: electron-builder --publish always
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload to NixOS via SCP
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.REMOTE_HOST }}
-          username: ${{ secrets.REMOTE_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          # Upload only the update files to your Caddy directory
-          source: "apps/next/dist-electron/latest.yml,apps/next/dist-electron/*.exe,apps/next/dist-electron/*.blockmap"
-          target: "/var/www/updates/"
-          strip_components: 3 # Removes 'apps/next/dist-electron' from the path on server
