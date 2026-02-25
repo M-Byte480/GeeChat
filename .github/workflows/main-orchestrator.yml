@@ -74,4 +74,4 @@ jobs:
         run: |
           gh workflow run electron-release.yml --ref v$NEW_VERSION
         env:
-          GITHUB_TOKEN: ${{ secrets.MY_PAT_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.ORCHESTRATOR_TAG_TOKEN }}
