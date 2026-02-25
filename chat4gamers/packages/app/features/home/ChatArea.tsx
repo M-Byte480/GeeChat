@@ -1,4 +1,4 @@
-import { YStack, Input, Spacer, Paragraph, ScrollView } from '@my/ui'
+import { XStack, YStack, Input, Paragraph, ScrollView, Image, Text } from '@my/ui'
 import { useState, useEffect, useRef } from "react";
 import { SERVER_IP } from "app/constants/config";
 
@@ -124,16 +124,18 @@ export const ChatArea = () => {
       <ScrollView flex={1} mb="$4">
         <YStack gap="$2">
           {messages.map((msg) => (
-            <YStack
-              key={msg.id}
-              p="$3"
-              bg="$color3"
-              borderRadius="$4"
-              alignSelf="flex-start"
-              maxWidth="80%"
-            >
-              <Paragraph>{msg.content}</Paragraph>
-            </YStack>
+            <XStack key={msg.id} gap="$3" alignItems="flex-start">
+              <Image src="favicon.ico" width={40} height={40} borderRadius="$10" />
+              <YStack flex={1} gap="$1">
+                <XStack gap="$2" alignItems="center">
+                  <Text fontWeight="bold" fontSize="$3">{msg.senderId}</Text>
+                  <Text fontSize="$1" color="$gray10">
+                    {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </Text>
+                </XStack>
+                <Paragraph fontSize="$3">{msg.content}</Paragraph>
+              </YStack>
+            </XStack>
           ))}
         </YStack>
         {typingUser && (
