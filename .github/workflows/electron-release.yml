@@ -3,23 +3,23 @@ on:
   push:
     tags:
       - 'v*' # 监听以 v 开头的版本标签，例如 v1.0.0
-      - 'main'
 
 jobs:
   build-and-upload:
     runs-on: windows-latest # Use Windows to build the .exe
+    defaults:
+      run:
+        working-directory: chat4gamers/apps/next
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Proceed to Electron App Directory
-        run: cd chat4gamers/apps/next
 
       - name: Install Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: 'yarn'
+          cache-dependency-path: chat4gamers/yarn.lock
 
       - name: Install Dependencies
         run: yarn install
