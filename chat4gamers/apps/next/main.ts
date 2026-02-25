@@ -2,6 +2,8 @@
 import { app, BrowserWindow } from 'electron'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import electronUpdater from 'electron-updater';
+const { autoUpdater } = electronUpdater;
 
 // Necessary for ESM modules in Electron
 const __filename = fileURLToPath(import.meta.url)
@@ -29,11 +31,34 @@ const createWindow = () => {
     // In development, load from localhost
     win.loadURL('http://localhost:3000')
   }
-
 }
+const authHeader = Buffer.from('gclient:encryptedSecret_2026_jarv1s').toString('base64');
+
+autoUpdater.requestHeaders = {
+  "Authorization": `Basic ${authHeader}`
+};
+
+autoUpdater.on('update-available', () => {
+  console.log('Update available. Downloading...')
+})
+
+autoUpdater.on('update-downloaded', () => {
+  autoUpdater.quitAndInstall()
+})
+
+
 // app.commandLine.appendSwitch('ignore-certificate-errors') // dev
 // app.commandLine.appendSwitch('allow-insecure-localhost', 'true') // dev
-app.whenReady().then(createWindow)
+app.whenReady().then(() => {
+  createWindow();
+  console.log("App is packages: ", app.isPackaged);
+
+  if (app.isPackaged) {
+    console.log("Looking for updates...")
+    autoUpdater.checkForUpdatesAndNotify().then(r => console.log(r));
+    autoUpdater.logger = console;
+  }
+})
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit()
