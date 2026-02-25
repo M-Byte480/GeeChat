@@ -10,7 +10,6 @@
     "build": "tsc",
     "updateDatabase": "npx drizzle-kit push --config=drizzle.config.ts",
     "db:push": "drizzle-kit push"
-
   },
   "keywords": [],
   "author": "",
