@@ -1,6 +1,6 @@
 {
   "name": "next-app",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "Voice Chat App for Gamers",
   "author": "M-Byte480 @ GitHub",
   "private": true,
@@ -14,7 +14,8 @@
     "lint": "biome check .",
     "test": "vitest",
     "electron": "cross-env NODE_ENV=development electron .",
-    "package": "yarn build && npx electron-builder build --win --dir",
+    "package": "yarn build && npx electron-builder build --win --publish always",
+    "package:debug": "yarn build && npx electron-builder build --win --dir",
     "package:installer": "yarn build && npx electron-builder build --win"
   },
   "build": {
@@ -31,7 +32,11 @@
       "index.js"
     ],
     "win": {
-      "target": "nsis"
+      "target": "nsis",
+      "publish": {
+        "provider": "generic",
+        "url": "https://REDACTED_DOMAIN/updates/"
+      }
     },
     "asar": true
   },
@@ -39,6 +44,7 @@
     "@tamagui/config": "^2.0.0-rc.0",
     "@tamagui/next-theme": "^2.0.0-rc.0",
     "app": "0.0.0",
+    "electron-updater": "^6.8.3",
     "next": "16.1.1",
     "raf": "^3.4.1",
     "react": "19.0.0",
