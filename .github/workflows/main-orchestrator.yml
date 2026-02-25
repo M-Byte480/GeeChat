@@ -32,31 +32,30 @@ jobs:
 
 
       - name: Manual Yarn Version Bump
+        id: version_bump
         run: |
           cd chat4gamers/apps/next
           
-          # Force a version change
+          # 1. Bump the file (This handles the Yarn patches correctly)
           yarn version patch
           
-          # Grab the actual version from the file to use in Git
+          # 2. Extract version for Git
           NEW_VERSION=$(node -p "require('./package.json').version")
+          echo "Bumping to $NEW_VERSION"
           
+          # 3. Configure Git
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
+          
+          # 4. Commit the change back to main
           git add package.json
+          git commit -m "chore(release): bump version to $NEW_VERSION [skip ci]" || echo "No changes"
           
-          # If nothing changed, this commit will fail. 
-          # We use || true to keep the script running if there's nothing to commit.
-          git commit -m "chore(release): bump version to $NEW_VERSION [skip ci]" || echo "No changes to commit"
-          
-          # Force the tag to move to the current commit
+          # 5. Create the tag locally
           git tag -f v$NEW_VERSION
           
-          # Push with PAT to trigger the next workflow
+          # 6. Push using the PAT URL to trigger the next pipeline
           git push https://x-access-token:${{ secrets.MY_PAT_TOKEN }}@github.com/${{ github.repository }}.git main --tags --force
-
-        env:
-          GITHUB_TOKEN: ${{ secrets.MY_PAT_TOKEN }}
 
 
       # 3. ONLY Sync jarvis-deploy if the server folder changed
@@ -69,11 +68,3 @@ jobs:
           git checkout jarvis-deploy
           git merge main --ff-only
           git push origin jarvis-deploy
-
-      - name: Bump version and push tag
-        id: tag_version
-        uses: anothrNick/github-tag-action@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.MY_PAT_TOKEN }}
-          WITH_V: true
-          DEFAULT_BUMP: patch
