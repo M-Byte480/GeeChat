@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - main
+    paths-ignore:
+      - 'chat4gamers/apps/next/package.json'
+
 jobs:
   analyze-and-sync:
     runs-on: ubuntu-latest
