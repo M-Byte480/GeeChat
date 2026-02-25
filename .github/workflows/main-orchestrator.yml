@@ -27,13 +27,18 @@ jobs:
               - 'apps/server/**'
               - 'package.json' # Optional: sync if root deps change
 
-      # 2. Bump Version & Tag (Always happens on push to main)
-      - name: Bump version and push tag
-        uses: anothrNick/github-tag-action@v1
+      # 1. Bump package.json, Commit, and Tag
+      - name: Automated Version Bump
+        id: version_bump
+        uses: phips28/gh-action-bump-version@master
         env:
           GITHUB_TOKEN: ${{ secrets.MY_PAT_TOKEN }}
-          WITH_V: true
-          DEFAULT_BUMP: patch
+        with:
+          # This ensures it looks at commit messages (#major, #minor)
+          default: patch
+          tag-prefix: 'v'
+          # This pushes the changed package.json back to main
+          skip-tag: 'false'
 
       # 3. ONLY Sync jarvis-deploy if the server folder changed
       - name: Sync jarvis-deploy
