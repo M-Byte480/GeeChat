@@ -91,6 +91,8 @@ export const ChatArea = () => {
           userId: 'REDACTED_USERNAME_dev'
         })
       });
+      console.log("Sending message:", { roomId: channelId, content: currentText, userId: 'REDACTED_USERNAME_dev' });
+
     } catch (err) {
       console.error("Failed to send:", err);
       // Rollback: Remove the optimistic message if it failed
