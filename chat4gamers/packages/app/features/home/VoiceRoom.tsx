@@ -201,30 +201,32 @@ export const VoiceRoom = () => {
         </Text>
       </XStack>
 
-      <XStack gap="$2" mt="$3">
+      <XStack gap="$2" $sm={{ gap: '$4' }} mt="$3" flexWrap="wrap" alignItems="center">
         {!isJoined ? (
           <Button theme="green" onPress={() => joinRoom('hideout')} icon={Mic}>
             Join Room
           </Button>
         ) : (
           <>
-            {/* Mute/Unmute Toggle */}
-            <Button
-              theme={isMicEnabled ? 'blue' : 'red'}
-              onPress={toggleMic}
-              icon={isMicEnabled ? Mic : MicOff}
-              circular
-            />
+            {/* Mute/Unmute + Mic Test side by side */}
+            <XStack gap="$2" alignItems="center">
+              <Button
+                theme={isMicEnabled ? 'blue' : 'red'}
+                onPress={toggleMic}
+                icon={isMicEnabled ? Mic : MicOff}
+                circular
+              />
 
-            {/* Mic Test Toggle */}
-            <Button
-              chromeless={!testMic}
-              theme={testMic ? 'yellow' : 'gray'}
-              onPress={onMicTest}
-              icon={TestTube}
-            >
-              {testMic ? "Hearing Self" : "Test Mic"}
-            </Button>
+              {/* Mic Test Toggle */}
+              <Button
+                chromeless={!testMic}
+                theme={testMic ? 'yellow' : 'gray'}
+                onPress={onMicTest}
+                icon={TestTube}
+              >
+                {testMic ? "Hearing Self" : "Test Mic"}
+              </Button>
+            </XStack>
 
             {/* Leave Button */}
             <Button
