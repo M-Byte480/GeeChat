@@ -33,12 +33,14 @@ jobs:
         uses: phips28/gh-action-bump-version@master
         env:
           GITHUB_TOKEN: ${{ secrets.MY_PAT_TOKEN }}
+          PACKAGEJSON_DIR: 'chat4gamers/apps/next'
         with:
           # This ensures it looks at commit messages (#major, #minor)
           default: patch
           tag-prefix: 'v'
           # This pushes the changed package.json back to main
           skip-tag: 'false'
+
 
       # 3. ONLY Sync jarvis-deploy if the server folder changed
       - name: Sync jarvis-deploy
