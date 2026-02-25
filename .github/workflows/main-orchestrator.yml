@@ -20,6 +20,7 @@ jobs:
         with:
           fetch-depth: 0
           token: ${{ secrets.MY_PAT_TOKEN }}
+          persist-credentials: false
 
       # 1. Detect which folders changed
       - uses: dorny/paths-filter@v3
