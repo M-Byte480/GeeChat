@@ -71,14 +71,9 @@ jobs:
           git merge main --ff-only
           git push origin jarvis-deploy
 
-#      - name: Trigger Electron Release Manual
-#        run: |
-#          gh workflow run electron-release.yml --ref v$NEW_VERSION
-#        env:
-#          GH_TOKEN: ${{ secrets.MY_PAT_TOKEN }}
-
   build-and-upload:
-    runs-on: windows-latest # Use Windows to build the .exe
+    needs: analyze-and-sync
+    runs-on: windows-latest
     defaults:
       run:
         working-directory: chat4gamers/apps/next
