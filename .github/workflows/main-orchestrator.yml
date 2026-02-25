@@ -1,0 +1,46 @@
+name: Main Orchestrator
+
+on:
+  push:
+    branches:
+      - main
+jobs:
+  analyze-and-sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      server_changed: ${{ steps.filter.outputs.server }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # 1. Detect which folders changed
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            server:
+              - 'apps/server/**'
+              - 'package.json' # Optional: sync if root deps change
+
+      # 2. Bump Version & Tag (Always happens on push to main)
+      - name: Bump version and push tag
+        uses: anothrNick/github-tag-action@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          WITH_V: true
+          DEFAULT_BUMP: patch
+
+      # 3. ONLY Sync jarvis-deploy if the server folder changed
+      - name: Sync jarvis-deploy
+        if: steps.filter.outputs.server == 'true'
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          git fetch origin
+          git checkout jarvis-deploy
+          git merge main --ff-only
+          git push origin jarvis-deploy
