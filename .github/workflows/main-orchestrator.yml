@@ -108,6 +108,16 @@ jobs:
     needs: build-windows
     runs-on: ubuntu-latest
     steps:
+      - name: SSH and Update
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.REMOTE_HOST }}
+          username: ${{ secrets.REMOTE_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /var/www/updates
+            rm -f latest.yml *.exe *.blockmap
+
       - name: Download Artifacts
         uses: actions/download-artifact@v4
         with:
@@ -124,5 +134,5 @@ jobs:
           source: "dist-electron/latest.yml,dist-electron/*.exe,dist-electron/*.blockmap"
           target: "/var/www/updates/"
           strip_components: 1
-          overwrite: true # Force overwrite existing files
-          rm: true        # Clean the target folder before uploading (optional but safer)
+          overwrite: true
+          rm: false
