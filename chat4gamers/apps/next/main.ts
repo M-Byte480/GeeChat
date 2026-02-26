@@ -1,13 +1,13 @@
 // apps/next/main.ts
 import { app, BrowserWindow } from 'electron'
-import path from 'path'
-import { fileURLToPath } from 'url'
+const path = require('path');
+// import { fileURLToPath } from 'url'
 import electronUpdater from 'electron-updater';
 const { autoUpdater } = electronUpdater;
 
 // Necessary for ESM modules in Electron
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
+// const __filename = fileURLToPath(import.meta.url)
+// const __dirname = path.dirname(__filename)
 // const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 const createWindow = () => {
@@ -22,7 +22,6 @@ const createWindow = () => {
     },
   })
 
-  win.webContents.openDevTools() // dev
 
   if (app.isPackaged) {
     // In production, load the local HTML file
@@ -30,6 +29,10 @@ const createWindow = () => {
   } else {
     // In development, load from localhost
     win.loadURL('http://localhost:3000')
+  }
+
+  if (!app.isPackaged) {
+    win.webContents.openDevTools() // dev
   }
 }
 const authHeader = Buffer.from('gclient:encryptedSecret_2026_jarv1s').toString('base64');

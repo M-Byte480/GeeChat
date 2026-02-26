@@ -18,6 +18,10 @@ export const ChatArea = () => {
   const channelId = 'test';
   const [typingUser, setTypingUser] = useState<string | null>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const scrollToBottom = () => {
+    scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
 
   useEffect(() => {
     fetch(`https://${SERVER_IP}/chat-history?channel=${channelId}`)
@@ -54,6 +58,8 @@ export const ChatArea = () => {
             // Optional: Replace the temp "string" ID message with the real "number" ID message
             return prev.map(m => (m.content === msg.content && m.id.toString().length > 10) ? msg : m);
           }
+
+          scrollToBottom();
 
           return [...prev, msg];
         });
@@ -156,6 +162,7 @@ export const ChatArea = () => {
           onSubmitEditing={sendMessage} // Hits 'Enter' to send
         />
       </YStack>
+      <div ref={scrollRef} />
     </YStack>
   );
 }

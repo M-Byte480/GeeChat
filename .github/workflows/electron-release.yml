@@ -1,7 +1,0 @@
-name: electron-release.yml
-on:
-  push:
-#    tags:
-#      - 'v*' # 监听以 v 开头的版本标签，例如 v1.0.0
-
-jobs:
