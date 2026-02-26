@@ -71,7 +71,7 @@ jobs:
           git merge main --ff-only
           git push origin jarvis-deploy
 
-  build-and-upload:
+  build-windows:
     needs: analyze-and-sync
     runs-on: windows-latest
     defaults:
@@ -95,6 +95,24 @@ jobs:
         run: yarn package # This runs your: electron-builder --publish always
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_SKIP_SIGNING: true
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: electron-builds
+          path: chat4gamers/apps/next/dist-electron/
+          retention-days: 1
+
+  upload-to-server:
+    needs: build-windows
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: electron-builds
+          path: ./dist-electron
 
       - name: Upload to NixOS via SCP
         uses: appleboy/scp-action@v0.1.7
@@ -102,7 +120,7 @@ jobs:
           host: ${{ secrets.REMOTE_HOST }}
           username: ${{ secrets.REMOTE_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          # Upload only the update files to your Caddy directory
-          source: "apps/next/dist-electron/latest.yml,apps/next/dist-electron/*.exe,apps/next/dist-electron/*.blockmap"
+          # Files are now in the root of the runner's ./dist-electron folder
+          source: "dist-electron/latest.yml,dist-electron/*.exe,dist-electron/*.blockmap"
           target: "/var/www/updates/"
-          strip_components: 3 # Removes 'apps/next/dist-electron' from the path on server
+          strip_components: 1
