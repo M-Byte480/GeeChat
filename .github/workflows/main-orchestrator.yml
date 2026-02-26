@@ -124,3 +124,5 @@ jobs:
           source: "dist-electron/latest.yml,dist-electron/*.exe,dist-electron/*.blockmap"
           target: "/var/www/updates/"
           strip_components: 1
+          overwrite: true # Force overwrite existing files
+          rm: true        # Clean the target folder before uploading (optional but safer)
