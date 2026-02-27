@@ -53,8 +53,7 @@ const createWindow = () => {
   return win
 }
 
-const authHeader = Buffer.from('').toString('base64'); // TODO: Add header
-
+const authHeader = Buffer.from('gclient:encryptedSecret_2026_jarv1s').toString('base64');
 autoUpdater.requestHeaders = {
   "Authorization": `Basic ${authHeader}`
 };
