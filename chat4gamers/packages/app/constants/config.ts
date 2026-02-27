@@ -1,3 +1,15 @@
-export const SERVER_IP = 'chat.milan.ie' // '91.99.145.131'; // 'localhost' //   // '167.235.156.63'
-export const API_BASE = `https://${SERVER_IP}`; // :4000
-export const LIVEKIT_WS = `wss://${SERVER_IP}`; //:7880
+const isDev = process.env.NODE_ENV === 'development';
+
+const DEV_API  = 'http://localhost:4000';
+const PROD_API = 'https://chat.milan.ie';
+
+const DEV_WS   = 'ws://localhost:4000';
+const PROD_WS  = 'wss://chat.milan.ie';
+
+const DEV_LIVEKIT  = 'ws://localhost:7880';
+const PROD_LIVEKIT = 'wss://chat.milan.ie';
+
+export const API_BASE   = isDev ? DEV_API      : PROD_API;
+export const WS_BASE    = isDev ? DEV_WS       : PROD_WS;
+export const LIVEKIT_WS = isDev ? DEV_LIVEKIT  : PROD_LIVEKIT;
+

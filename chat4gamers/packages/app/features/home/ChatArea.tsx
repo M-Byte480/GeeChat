@@ -1,42 +1,93 @@
-import { XStack, YStack, Input, Paragraph, ScrollView, Image, Text } from '@my/ui'
-import { useState, useEffect, useRef } from "react";
-import { SERVER_IP } from "app/constants/config";
+import { XStack, YStack, Input, Paragraph, ScrollView, Image, Text, Button } from '@my/ui'
+import { Send, X } from '@tamagui/lucide-icons'
+import { useState, useEffect, useRef, useCallback } from "react";
+import { API_BASE, WS_BASE } from "app/constants/config";
 
 export type Message = {
   content: string;
-  id  : number;
-  roomId : string;
-  senderId : string;
-  timestamp : string;
+  id: number;
+  roomId: string;
+  senderId: string;
+  timestamp: string;
 }
 
-export const ChatArea = () => {
+type Props = {
+  nickname: string;
+  channelId: string;
+}
+
+export const ChatArea = ({ nickname, channelId }: Props) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState("");
-  const socketRef = useRef<WebSocket | null>(null);
-  const channels = useRef<Array<{ id: string; text: string }>>([]);
-  const channelId = 'test';
   const [typingUser, setTypingUser] = useState<string | null>(null);
-  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [errorBanner, setErrorBanner] = useState<string | null>(null);
+  const errorTimerRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Refs — declared before any effects that use them
+  const socketRef = useRef<WebSocket | null>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const scrollViewRef = useRef<any>(null);
+  const isAtBottomRef = useRef(true);
+  const initialLoadRef = useRef(true);
+
+  const showError = useCallback((msg: string) => {
+    setErrorBanner(msg);
+    if (errorTimerRef.current) clearTimeout(errorTimerRef.current);
+    errorTimerRef.current = setTimeout(() => setErrorBanner(null), 5000);
+  }, []);
+
+  // Reset state when switching channels
   useEffect(() => {
-    fetch(`https://${SERVER_IP}/chat-history?channel=${channelId}`)
+    setMessages([]);
+    initialLoadRef.current = true;
+  }, [channelId]);
+
+  // ── Scroll helpers ────────────────────────────────────────────────
+  const scrollToBottom = useCallback((animated = true) => {
+    requestAnimationFrame(() => {
+      scrollViewRef.current?.scrollToEnd({ animated });
+    });
+  }, []);
+
+  const handleScroll = useCallback((event: any) => {
+    const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
+    isAtBottomRef.current =
+      layoutMeasurement.height + contentOffset.y >= contentSize.height - 80;
+  }, []);
+
+  // Scroll on new messages — instant on first load, smart on subsequent
+  useEffect(() => {
+    if (messages.length === 0) return;
+
+    if (initialLoadRef.current) {
+      initialLoadRef.current = false;
+      scrollToBottom(false);
+      return;
+    }
+
+    const latest = messages[messages.length - 1];
+    const isOwn = latest?.senderId === nickname;
+    if (isAtBottomRef.current || isOwn) {
+      scrollToBottom(true);
+    }
+  }, [messages, nickname, scrollToBottom]);
+
+  // ── WebSocket + history ───────────────────────────────────────────
+  useEffect(() => {
+    fetch(`${API_BASE}/chat-history?channel=${channelId}`)
       .then(res => {
         if (!res.ok) throw new Error("Server error");
         return res.json();
       })
       .then(data => {
-        // Ensure data is actually an array before setting
-        if (Array.isArray(data)) {
-          setMessages(data);
-        }
+        if (Array.isArray(data)) setMessages(data);
       })
-      .catch(err => {
-        console.error("Fetch failed:", err);
-        setMessages([]); // Fallback to empty array to prevent .map() crash
+      .catch(() => {
+        showError("Could not load message history. Is the server running?");
+        setMessages([]);
       });
 
-    const ws = new WebSocket(`wss://${SERVER_IP}/ws`);
+    const ws = new WebSocket(`${WS_BASE}/ws`);
     socketRef.current = ws;
 
     ws.onmessage = (event) => {
@@ -44,86 +95,104 @@ export const ChatArea = () => {
 
       if (msg.type === 'NEW_MESSAGE' && msg.channelId === channelId) {
         setMessages((prev) => {
-          // Logic: If we already have a message with this content sent very recently,
-          // or if the ID matches exactly, don't add it again.
           const isDuplicate = prev.some(m =>
             m.id === msg.id || (m.id.toString().length > 10 && m.content === msg.content)
           );
-
           if (isDuplicate) {
-            // Optional: Replace the temp "string" ID message with the real "number" ID message
-            return prev.map(m => (m.content === msg.content && m.id.toString().length > 10) ? msg : m);
+            return prev.map(m =>
+              (m.content === msg.content && m.id.toString().length > 10) ? msg : m
+            );
           }
-
           return [...prev, msg];
         });
       }
+
+      if (msg.type === 'TYPING' && msg.username !== nickname) {
+        setTypingUser(msg.username);
+        setTimeout(() => setTypingUser(null), 2500);
+      }
     };
 
-    return () => ws.close();
-  }, [channelId]);
+    ws.onerror = () => showError("Connection lost. Reconnect by switching channels.");
 
+    return () => ws.close();
+  }, [channelId, nickname, showError]);
+
+  // ── Send ──────────────────────────────────────────────────────────
   const sendMessage = async () => {
     if (!inputText.trim()) return;
 
     const currentText = inputText;
-    const tempId = Date.now(); // Use a number to stay consistent with type
+    const tempId = Date.now();
 
-    // Optimistic Update using correct keys
-    const optimisticMsg: Message = {
+    setMessages(prev => [...prev, {
       id: tempId,
       content: currentText,
       roomId: channelId,
-      senderId: 'milan_dev',
-      timestamp: new Date().toISOString()
-    };
-
-    setMessages((prev) => [...prev, optimisticMsg]);
+      senderId: nickname,
+      timestamp: new Date().toISOString(),
+    }]);
     setInputText("");
 
     try {
-      await fetch(`https://${SERVER_IP}/messages`, {
+      await fetch(`${API_BASE}/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          roomId: channelId,
-          content: currentText,
-          userId: 'milan_dev'
-        })
+        body: JSON.stringify({ roomId: channelId, content: currentText, userId: nickname }),
       });
-      console.log("Sending message:", { roomId: channelId, content: currentText, userId: 'milan_dev' });
-
-    } catch (err) {
-      console.error("Failed to send:", err);
-      // Rollback: Remove the optimistic message if it failed
-      setMessages((prev) => prev.filter(m => m.id !== tempId));
+    } catch {
+      showError("Failed to send message. Check your connection.");
+      setMessages(prev => prev.filter(m => m.id !== tempId));
     }
   };
 
   const handleInputChange = (text: string) => {
     setInputText(text);
 
-    if (socketRef.current?.readyState === WebSocket.OPEN) {
-
+    const ws = socketRef.current;
+    if (ws?.readyState === WebSocket.OPEN) {
       if (!typingTimeoutRef.current) {
-        socketRef.current.send(JSON.stringify({
-          type: 'TYPING',
-          username: 'Milan', // Replace with your actual user state
-          channelId: channelId
-        }));
+        ws.send(JSON.stringify({ type: 'TYPING', username: nickname, channelId }));
       }
-
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-
       typingTimeoutRef.current = setTimeout(() => {
         typingTimeoutRef.current = null;
-      }, 2000); // 2 seconds delay
+      }, 2000);
     }
   };
 
+  // ── Render ────────────────────────────────────────────────────────
   return (
     <YStack flex={1} p="$4" bg="$background" height="100%">
-      <ScrollView flex={1} mb="$4">
+      {errorBanner && (
+        <XStack
+          bg="$red9"
+          px="$4"
+          py="$2"
+          mb="$3"
+          borderRadius="$3"
+          alignItems="center"
+          gap="$3"
+          animation="quick"
+          enterStyle={{ opacity: 0, y: -8 }}
+        >
+          <Text color="white" flex={1} fontSize="$3">{errorBanner}</Text>
+          <Button
+            size="$2"
+            chromeless
+            icon={X}
+            color="white"
+            onPress={() => setErrorBanner(null)}
+          />
+        </XStack>
+      )}
+      <ScrollView
+        ref={scrollViewRef}
+        flex={1}
+        mb="$4"
+        onScroll={handleScroll}
+        scrollEventThrottle={100}
+      >
         <YStack gap="$2">
           {messages.map((msg) => (
             <XStack key={msg.id} gap="$3" alignItems="flex-start">
@@ -141,21 +210,29 @@ export const ChatArea = () => {
           ))}
         </YStack>
         {typingUser && (
-          <Paragraph size="$1" color="$gray10">
+          <Paragraph size="$1" color="$gray10" mt="$2">
             {typingUser} is typing...
           </Paragraph>
         )}
       </ScrollView>
 
-      <YStack gap="$2">
+      <XStack gap="$2" alignItems="center">
         <Input
+          flex={1}
           placeholder="Type a message..."
           size="$4"
           value={inputText}
           onChangeText={handleInputChange}
-          onSubmitEditing={sendMessage} // Hits 'Enter' to send
+          onSubmitEditing={sendMessage}
         />
-      </YStack>
+        <Button
+          size="$4"
+          icon={Send}
+          onPress={sendMessage}
+          disabled={!inputText.trim()}
+          theme="active"
+        />
+      </XStack>
     </YStack>
   );
 }

@@ -68,16 +68,14 @@ app.get('/ws', upgradeWebSocket((c) => {
 
 app.get('/get-voice-token', async (c) => {
   const roomName = c.req.query('room') || 'hideout';
-  const participantName = 'user-' + Math.floor(Math.random() * 1000);
+  const participantName = c.req.query('identity') || 'user-' + Math.floor(Math.random() * 1000);
 
   // These would ideally come from your .env file
   const apiKey = 'milan_test_key' // process.env.LIVEKIT_API_KEY || 'devkey';
   const apiSecret = 'milan_super_secret_key_32_characters_long_12345' // process.env.LIVEKIT_API_SECRET || 'secret';
 
-  // const at = new AccessToken(apiKey, apiSecret, {
-  //   identity: participantName,
-  // });
-  const at = new AccessToken('milan_test_key', 'milan_super_secret_key_32_characters_long_12345', {
+
+  const at = new AccessToken(apiKey, apiSecret, {
     identity: participantName,
   });
 
