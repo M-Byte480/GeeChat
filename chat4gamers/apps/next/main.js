@@ -1,14 +1,11 @@
-// apps/next/main.ts
 import { app, BrowserWindow } from 'electron'
-const path = require('path');
-// import { fileURLToPath } from 'url'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import electronUpdater from 'electron-updater';
 const { autoUpdater } = electronUpdater;
 
-// Necessary for ESM modules in Electron
-// const __filename = fileURLToPath(import.meta.url)
-// const __dirname = path.dirname(__filename)
-// const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 
 const createWindow = () => {
   const win = new BrowserWindow({
@@ -35,7 +32,7 @@ const createWindow = () => {
     win.webContents.openDevTools() // dev
   }
 }
-const authHeader = Buffer.from('gclient:encryptedSecret_2026_jarv1s').toString('base64');
+const authHeader = Buffer.from('').toString('base64');
 
 autoUpdater.requestHeaders = {
   "Authorization": `Basic ${authHeader}`

@@ -1,54 +1,7 @@
-// import { useState } from 'react'
-// import { Button, YStack, Text, XStack } from '@my/ui'
-// import { Mic, MicOff, PhoneOff } from 'lucide-react'
-// import { LiveKitRoom, RoomAudioRenderer, ControlBar, useTrackToggle } from '@livekit/components-react'
-// import { Track } from 'livekit-client'
-//
-// export const VoiceRoom = () => {
-//   const [token, setToken] = useState<string | null>(null)
-//
-//   const handleJoin = async () => {
-//     const resp = await fetch('http://89.167.67.187:4000/get-voice-token?room=main-room')
-//     const { token } = await resp.json()
-//     setToken(token)
-//   }
-//
-//   if (!token) {
-//     return (
-//       <Button theme="green" onPress={handleJoin} icon={Mic}>Join Room</Button>
-//     )
-//   }
-//
-//   return (
-//     <LiveKitRoom
-//       serverUrl="ws://89.167.67.187:7880"
-//       token={token}
-//       connect={true}
-//       audio={true}
-//       onDisconnected={() => setToken(null)}
-//     >
-//       <YStack p="$4" backgroundColor="$gray2">
-//         <XStack justifyContent="space-between">
-//           <Text fontWeight="bold" color="$green10">• Connected</Text>
-//         </XStack>
-//
-//         <XStack gap="$2" mt="$3">
-//           {/* This component automatically plays your friends' voices */}
-//           <RoomAudioRenderer />
-//
-//           {/* Default LiveKit buttons for Mute/Leave */}
-//           <ControlBar variation="minimal" />
-//         </XStack>
-//       </YStack>
-//     </LiveKitRoom>
-//   )
-// }
-
 import {useEffect, useState} from 'react'
 import { Button, YStack, Text, XStack } from '@my/ui'
 import {Room, RoomEvent, Track} from 'livekit-client'
 import { Mic, MicOff, PhoneOff, TestTube } from 'lucide-react'
-import { LiveKitRoom, RoomAudioRenderer, ControlBar } from '@livekit/components-react';
 import {API_BASE, LIVEKIT_WS} from "app/constants/config";
 
 export const VoiceRoom = () => {
@@ -57,13 +10,6 @@ export const VoiceRoom = () => {
   const [isMicEnabled, setIsMicEnabled] = useState(true)
   const [testMic, setTestMic] = useState(false)
   const [micAudioElement, setMicAudioElement] = useState<HTMLAudioElement | null>(null)
-
-  // useEffect(() => {
-  //   // Disconnect when the component unmounts (or app closes)
-  //   return () => {
-  //     room?.disconnect()
-  //   }
-  // }, [room])
 
   useEffect(() => {
     if (!room) return
@@ -92,33 +38,6 @@ export const VoiceRoom = () => {
       }
     })
   }, [room])
-
-  // const joinRoom = async () => {
-  //   try {
-  //     // 1. Get the token from your private Node server
-  //     const resp = await fetch('http://89.167.67.187:4000/get-voice-token?room=main-room')
-  //     const { token } = await resp.json()
-  //
-  //     // 2. Connect to the LiveKit instance
-  //     const newRoom = new Room({
-  //       adaptiveStream: true,
-  //       // Removed the broken audioPreset line.
-  //       // LiveKit handles audio optimization automatically.
-  //     })
-  //
-  //     // packages/app/features/home/VoiceRoom.tsx
-  //     await newRoom.connect('ws://89.167.67.187:7880', token)
-  //     // await newRoom.connect('ws://localhost:7800', token)
-  //
-  //     // FIX: Changed enableAudio() to setMicrophoneEnabled(true)
-  //     await newRoom.localParticipant.setMicrophoneEnabled(true)
-  //
-  //     setRoom(newRoom)
-  //     setIsJoined(true)
-  //   } catch (error) {
-  //     console.error('Failed to join voice room:', error)
-  //   }
-  // }
 
   const joinRoom = async (targetRoom: string = 'hideout') => {
     try {
