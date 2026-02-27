@@ -67,6 +67,7 @@ autoUpdater.on('update-downloaded', () => {
 })
 
 app.whenReady().then(() => {
+  app.setAppUserModelId('ie.milan.geechat')
   Menu.setApplicationMenu(null)
 
   const splash = createSplash()
