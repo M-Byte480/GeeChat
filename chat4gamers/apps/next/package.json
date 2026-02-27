@@ -19,7 +19,7 @@
     "package:installer": "yarn build && npx electron-builder build --win"
   },
   "build": {
-    "appId": "com.yourname.geechat",
+    "appId": "ie.REDACTED_USERNAME.geechat",
     "productName": "GeeChat",
     "directories": {
       "output": "dist-electron"
@@ -38,6 +38,13 @@
         "provider": "generic",
         "url": "https://REDACTED_DOMAIN/updates/"
       }
+    },
+    "nsis": {
+      "oneClick": true,
+      "createDesktopShortcut": "always",
+      "createStartMenuShortcut": true,
+      "shortcutName": "GeeChat",
+      "runAfterFinish": true
     },
     "asar": true
   },
