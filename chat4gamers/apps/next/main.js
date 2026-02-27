@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Menu } from 'electron'
+import { app, BrowserWindow, Menu, ipcMain } from 'electron'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import electronUpdater from 'electron-updater';
@@ -53,6 +53,8 @@ const createWindow = () => {
   return win
 }
 
+let mainWindow = null
+
 const authHeader = Buffer.from('gclient:encryptedSecret_2026_jarv1s').toString('base64');
 autoUpdater.requestHeaders = {
   "Authorization": `Basic ${authHeader}`
@@ -62,8 +64,19 @@ autoUpdater.on('update-available', () => {
   console.log('Update available. Downloading...')
 })
 
+autoUpdater.on('download-progress', (progress) => {
+  mainWindow?.webContents.send('update-progress', Math.round(progress.percent))
+})
+
 autoUpdater.on('update-downloaded', () => {
-  autoUpdater.quitAndInstall()
+  mainWindow?.webContents.send('update-ready')
+})
+
+// User clicked "Restart & Update" — destroy windows first to release file locks,
+// then hand off to the installer so it can replace the old build cleanly
+ipcMain.on('install-update', () => {
+  BrowserWindow.getAllWindows().forEach(w => w.destroy())
+  autoUpdater.quitAndInstall(true, true)
 })
 
 app.whenReady().then(() => {
@@ -72,6 +85,7 @@ app.whenReady().then(() => {
 
   const splash = createSplash()
   const win = createWindow()
+  mainWindow = win
 
   const splashStart = Date.now()
   win.once('ready-to-show', () => {

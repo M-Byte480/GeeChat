@@ -6,6 +6,7 @@ import { useState, useCallback } from 'react'
 import { Sidebar } from './Sidebar'
 import { ChatArea } from './ChatArea'
 import { NicknameGate } from './NicknameGate'
+import { UpdateBanner } from './UpdateBanner'
 import { Channel, CHANNELS } from './types'
 
 export function HomeScreen() {
@@ -43,7 +44,8 @@ export function HomeScreen() {
   return (
     <NicknameGate>
       {(nickname) => (
-        <YStack height="100vh" bg="$background">
+        <YStack height="100vh" bg="$background" position="relative">
+          <UpdateBanner />
           {/* Thin drag region for Electron window dragging */}
           <XStack
             height={28}
