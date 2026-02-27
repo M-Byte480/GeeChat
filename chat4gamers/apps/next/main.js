@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from 'electron'
+import { app, BrowserWindow, Menu } from 'electron'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import electronUpdater from 'electron-updater';
@@ -7,32 +7,53 @@ const { autoUpdater } = electronUpdater;
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
+const createSplash = () => {
+  const splash = new BrowserWindow({
+    width: 420,
+    height: 260,
+    frame: false,
+    alwaysOnTop: true,
+    resizable: false,
+    center: true,
+    webPreferences: { nodeIntegration: false },
+  })
+  splash.loadFile(path.join(__dirname, 'splash.html'))
+  return splash
+}
+
 const createWindow = () => {
   const win = new BrowserWindow({
     width: 1200,
     height: 800,
+    show: false, // revealed after splash
+    icon: path.join(__dirname, 'build', 'icon.ico'),
+    titleBarStyle: 'hidden',
+    titleBarOverlay: {
+      color: 'rgba(0, 0, 0, 0)',
+      symbolColor: '#888888',
+      height: 28,
+    },
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
-      webSecurity: false, // Useful for connecting to your local Node server IP
-      // Todo: remove websecurty false and use proper CORS headers in your Node server for production
+      webSecurity: false,
     },
   })
 
-
   if (app.isPackaged) {
-    // In production, load the local HTML file
     win.loadFile(path.join(__dirname, 'out', 'index.html'))
   } else {
-    // In development, load from localhost
     win.loadURL('http://localhost:3000')
   }
 
   if (!app.isPackaged) {
-    win.webContents.openDevTools() // dev
+    win.webContents.openDevTools()
   }
+
+  return win
 }
-const authHeader = Buffer.from('').toString('base64');
+
+const authHeader = Buffer.from('').toString('base64'); // TODO: Add header
 
 autoUpdater.requestHeaders = {
   "Authorization": `Basic ${authHeader}`
@@ -46,17 +67,28 @@ autoUpdater.on('update-downloaded', () => {
   autoUpdater.quitAndInstall()
 })
 
-
-// app.commandLine.appendSwitch('ignore-certificate-errors') // dev
-// app.commandLine.appendSwitch('allow-insecure-localhost', 'true') // dev
 app.whenReady().then(() => {
-  createWindow();
-  console.log("App is packages: ", app.isPackaged);
+  Menu.setApplicationMenu(null)
+
+  const splash = createSplash()
+  const win = createWindow()
+
+  const splashStart = Date.now()
+  win.once('ready-to-show', () => {
+    const elapsed = Date.now() - splashStart
+    const remaining = Math.max(0, 3000 - elapsed)
+    setTimeout(() => {
+      splash.destroy()
+      win.show()
+    }, remaining)
+  })
+
+  console.log("App is packaged:", app.isPackaged)
 
   if (app.isPackaged) {
     console.log("Looking for updates...")
-    autoUpdater.checkForUpdatesAndNotify().then(r => console.log(r));
-    autoUpdater.logger = console;
+    autoUpdater.checkForUpdatesAndNotify().then(r => console.log(r))
+    autoUpdater.logger = console
   }
 })
 

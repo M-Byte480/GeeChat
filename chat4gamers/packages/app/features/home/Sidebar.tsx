@@ -1,13 +1,53 @@
-import { YStack, Button, Text } from '@my/ui'
-import {VoiceRoom} from "app/features/home/VoiceRoom";
+'use client'
 
-export const Sidebar = ({ width = 200 }: { width?: number | string }) => (
+import { YStack } from '@my/ui'
+import { VoiceRoom } from './VoiceRoom'
+import { ChannelList } from './ChannelList'
+import type { Channel } from './types'
+
+type Props = {
+  width?: number | string
+  channels: Channel[]
+  activeChannel: Channel
+  nickname: string
+  voiceParticipants: Record<string, string[]>
+  connectedVoiceChannelId: string | null
+  onChannelSelect: (channel: Channel) => void
+  onParticipantsChange: (channelId: string, participants: string[]) => void
+  onVoiceDisconnect: () => void
+}
+
+export const Sidebar = ({
+  width = 200,
+  channels,
+  activeChannel,
+  nickname,
+  voiceParticipants,
+  connectedVoiceChannelId,
+  onChannelSelect,
+  onParticipantsChange,
+  onVoiceDisconnect,
+}: Props) => (
   // @ts-ignore
-  <YStack flex={1} width={width} bg="$backgroundHover" borderRightWidth={1} borderColor="$borderColor" p="$4" gap="$4">
-    <Text fontWeight="bold">Menu</Text>
-    <Button size="$3">Direct Messages</Button>
-    <Button size="$3">Channels</Button>
-    <VoiceRoom />
-    
+  <YStack flex={1} width={width} bg="$backgroundHover" borderRightWidth={1} borderColor="$borderColor" overflow="hidden">
+    {/* Scrollable channel list */}
+    <YStack flex={1} p="$3" overflow="hidden">
+      <ChannelList
+        channels={channels}
+        activeChannelId={activeChannel.id}
+        onSelect={onChannelSelect}
+        voiceParticipants={voiceParticipants}
+      />
+    </YStack>
+
+    {/* Voice controls — persist as long as connected, regardless of active channel */}
+    {connectedVoiceChannelId && (
+      <VoiceRoom
+        channelId={connectedVoiceChannelId}
+        nickname={nickname}
+        onParticipantsChange={onParticipantsChange}
+        onDisconnect={onVoiceDisconnect}
+      />
+    )}
   </YStack>
 )
