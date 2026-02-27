@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { NextTamaguiProvider } from 'app/provider/NextTamaguiProvider'
+import './globals.css'
 
 export const metadata: Metadata = {
   title: 'Tamagui • App Router',
