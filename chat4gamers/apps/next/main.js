@@ -108,7 +108,7 @@ app.whenReady().then(() => {
   const splashStart = Date.now()
   win.once('ready-to-show', () => {
     const elapsed = Date.now() - splashStart
-    const remaining = Math.max(0, 3000 - elapsed)
+    const remaining = Math.max(0, 1_500 - elapsed)
     setTimeout(() => {
       splash.destroy()
       win.show()
