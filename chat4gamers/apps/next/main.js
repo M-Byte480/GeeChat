@@ -141,11 +141,17 @@ ipcMain.handle('open-external', (_, url) => {
   }
 })
 
-// User clicked "Restart & Update" — destroy windows first to release file locks,
-// then hand off to the installer so it can replace the old build cleanly
+// User clicked "Restart & Update":
+// 1. Remove window-all-closed listener so destroying windows doesn't trigger app.quit()
+//    in parallel with quitAndInstall (they'd race, leaving file locks open for NSIS).
+// 2. setImmediate defers quitAndInstall to the next event-loop tick so all window
+//    destruction callbacks finish before we hand off to the installer.
+// 3. isSilent=false lets NSIS show a "close the app" prompt as a fallback if any
+//    file handle is still open, instead of failing silently with exit code 2.
 ipcMain.on('install-update', () => {
+  app.removeAllListeners('window-all-closed')
   BrowserWindow.getAllWindows().forEach(w => w.destroy())
-  autoUpdater.quitAndInstall(true, true)
+  setImmediate(() => autoUpdater.quitAndInstall(false, true))
 })
 
 app.whenReady().then(() => {
