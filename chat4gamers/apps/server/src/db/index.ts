@@ -37,10 +37,16 @@ sqlite.exec(`
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     room_id TEXT NOT NULL,
     sender_id TEXT,
+    sender_name TEXT NOT NULL DEFAULT '',
     content TEXT NOT NULL,
-    timestamp INTEGER NOT NULL
+    timestamp INTEGER NOT NULL,
+    signature TEXT NOT NULL DEFAULT ''
   );
 `);
+
+// Migrate existing databases that predate the senderName / signature columns
+try { sqlite.exec(`ALTER TABLE messages ADD COLUMN sender_name TEXT NOT NULL DEFAULT ''`) } catch {}
+try { sqlite.exec(`ALTER TABLE messages ADD COLUMN signature TEXT NOT NULL DEFAULT ''`) } catch {}
 
 // Seed default channels if the table is empty
 const channelCount = (sqlite.prepare('SELECT COUNT(*) as cnt FROM channels').get() as any).cnt;

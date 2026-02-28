@@ -9,8 +9,34 @@ import chatRoutes from './routes/chat.js';
 import { trimTrailingSlash } from 'hono/trailing-slash'
 import { messages, channels as channelsTable } from "./db/schema.js";
 import { db } from './db/index.js'; // Import the shared instance
+import { createPublicKey, verify as cryptoVerify } from 'node:crypto';
 
 import { eq, desc } from 'drizzle-orm';
+
+// ── Ed25519 SPKI DER prefix (12 bytes) ───────────────────────────────────────
+// SEQUENCE { SEQUENCE { OID 1.3.101.112 } BIT STRING { 0x00 + 32 bytes key } }
+const ED25519_SPKI_PREFIX = Buffer.from('302a300506032b6570032100', 'hex');
+
+function base64urlToBuffer(str: string): Buffer {
+  const padded = str
+    .replace(/-/g, '+')
+    .replace(/_/g, '/')
+    .padEnd(str.length + (4 - (str.length % 4)) % 4, '=');
+  return Buffer.from(padded, 'base64');
+}
+
+function verifyEd25519(publicKeyB64url: string, message: Buffer, signatureB64url: string): boolean {
+  try {
+    const keyBytes = base64urlToBuffer(publicKeyB64url);
+    if (keyBytes.length !== 32) return false;
+    const spkiDer = Buffer.concat([ED25519_SPKI_PREFIX, keyBytes]);
+    const publicKey = createPublicKey({ key: spkiDer, format: 'der', type: 'spki' });
+    const sigBuf = base64urlToBuffer(signatureB64url);
+    return cryptoVerify(null, message, publicKey, sigBuf);
+  } catch {
+    return false;
+  }
+}
 
 // Strip HTML/script tags and cap message length — no external deps needed
 const sanitize = (text: string): string =>
@@ -97,37 +123,53 @@ app.get('/get-voice-token', async (c) => {
 
 app.post('/messages', async (c) => {
   const body = await c.req.json();
-  console.log("Request Body:", body); // See what's actually arriving
 
   try {
+    const { roomId, userId, senderName, signature, timestamp } = body;
     const content = sanitize(body.content ?? '');
     if (!content) return c.json({ error: 'Empty message' }, 400);
+    if (!userId || !senderName || !signature || !timestamp) {
+      return c.json({ error: 'Missing required fields' }, 400);
+    }
+
+    // Anti-replay: timestamp must be within ±5 minutes
+    const ts = new Date(timestamp).getTime();
+    if (isNaN(ts) || Math.abs(Date.now() - ts) > 5 * 60 * 1000) {
+      return c.json({ error: 'Timestamp out of range' }, 400);
+    }
+
+    // Verify Ed25519 signature
+    const payload = Buffer.from(`${roomId}:${timestamp}:${content}`, 'utf8');
+    if (!verifyEd25519(userId, payload, signature)) {
+      return c.json({ error: 'Invalid signature' }, 401);
+    }
 
     const [newMessage] = await db.insert(messages).values({
-      roomId: body.roomId,
-      senderId: body.userId,
+      roomId,
+      senderId: userId,
+      senderName: senderName.trim().slice(0, 64),
       content,
       timestamp: new Date(),
+      signature,
     }).returning();
 
-    // BROADCAST to everyone
-    const payload = JSON.stringify({
+    // Broadcast to everyone
+    const broadcast = JSON.stringify({
       type: 'NEW_MESSAGE',
-      channelId: body.roomId, // Ensure this is sent so frontend can filter
-      ...newMessage           // Spread the DB result (id, content, etc)
+      channelId: roomId,
+      ...newMessage,
     });
 
     clients.forEach((client) => {
-      if (client.readyState === 1) {
-        client.send(payload);
-      }
+      if (client.readyState === 1) client.send(broadcast);
     });
 
     return c.json(newMessage);
   } catch (err: any) {
     console.error("CRITICAL ERROR IN POST /MESSAGES:");
-    console.error(err.stack || err); // This is what we need!
-    return c.json({ error: err.message, stack: err.stack }, 500);  }
+    console.error(err.stack || err);
+    return c.json({ error: err.message, stack: err.stack }, 500);
+  }
 });
 
 app.get('/chat-history', async (c) => {

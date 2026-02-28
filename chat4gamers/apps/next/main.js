@@ -1,5 +1,6 @@
-import { app, BrowserWindow, Menu, ipcMain, shell } from 'electron'
+import { app, BrowserWindow, Menu, ipcMain, shell, dialog, safeStorage } from 'electron'
 import path from 'node:path'
+import fs from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import electronUpdater from 'electron-updater';
 const { autoUpdater } = electronUpdater;
@@ -74,6 +75,64 @@ autoUpdater.on('update-downloaded', () => {
 })
 
 ipcMain.handle('get-version', () => app.getVersion())
+
+// Deferred so app.getPath('userData') is only called after app.whenReady()
+const getSafeStorePath = () => path.join(app.getPath('userData'), 'identity.enc')
+
+ipcMain.handle('save-identity-file', async (_, jsonContent) => {
+  const { filePath, canceled } = await dialog.showSaveDialog({
+    title: 'Save Identity File',
+    defaultPath: path.join(app.getPath('downloads'), 'geechat-identity.geechat-identity'),
+    filters: [{ name: 'GeeChat Identity', extensions: ['geechat-identity'] }],
+  })
+  if (canceled || !filePath) return { ok: false }
+  fs.writeFileSync(filePath, jsonContent, 'utf8')
+  return { ok: true }
+})
+
+ipcMain.handle('load-identity-file', async () => {
+  const { filePaths, canceled } = await dialog.showOpenDialog({
+    title: 'Open Identity File',
+    filters: [{ name: 'GeeChat Identity', extensions: ['geechat-identity', 'json'] }],
+    properties: ['openFile'],
+  })
+  if (canceled || filePaths.length === 0) return null
+  return fs.readFileSync(filePaths[0], 'utf8')
+})
+
+ipcMain.handle('select-pfp', async () => {
+  const { filePaths, canceled } = await dialog.showOpenDialog({
+    title: 'Select Profile Picture',
+    filters: [{ name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'gif', 'webp'] }],
+    properties: ['openFile'],
+  })
+  if (canceled || filePaths.length === 0) return null
+  const buf = fs.readFileSync(filePaths[0])
+  const ext = path.extname(filePaths[0]).slice(1).toLowerCase()
+  const mime = ext === 'jpg' ? 'image/jpeg' : `image/${ext}`
+  return `data:${mime};base64,${buf.toString('base64')}`
+})
+
+ipcMain.handle('safestore-set', (_, plaintext) => {
+  if (!safeStorage.isEncryptionAvailable()) {
+    throw new Error('safeStorage encryption unavailable on this system')
+  }
+  const encrypted = safeStorage.encryptString(plaintext)
+  fs.writeFileSync(getSafeStorePath(), encrypted)
+})
+
+ipcMain.handle('safestore-get', () => {
+  const p = getSafeStorePath()
+  if (!fs.existsSync(p)) return null
+  if (!safeStorage.isEncryptionAvailable()) return null
+  const encrypted = fs.readFileSync(p)
+  return safeStorage.decryptString(encrypted)
+})
+
+ipcMain.handle('safestore-clear', () => {
+  const p = getSafeStorePath()
+  if (fs.existsSync(p)) fs.unlinkSync(p)
+})
 
 // Open URLs in the default system browser — never inside the Electron window
 ipcMain.handle('open-external', (_, url) => {

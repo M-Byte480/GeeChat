@@ -2,6 +2,8 @@ import { XStack, YStack, Input, Paragraph, ScrollView, Image, Text, Button, Shee
 import { Send, X, ExternalLink } from '@tamagui/lucide-icons'
 import { useState, useEffect, useRef, useCallback } from "react";
 import { API_BASE, WS_BASE } from "app/constants/config";
+import { signMessage } from './identity/crypto';
+import type { Identity } from './identity/types';
 
 // ── URL / media helpers ────────────────────────────────────────────────────
 // Capturing group so split() keeps the matched URLs in the parts array
@@ -18,7 +20,11 @@ function openExternal(url: string) {
   }
 }
 
-function MessageContent({ content, onLinkPress }: { content: string; onLinkPress: (url: string) => void }) {
+function MessageContent({ content, onLinkPress, onImagePress }: {
+  content: string
+  onLinkPress: (url: string) => void
+  onImagePress: (url: string) => void
+}) {
   const parts = content.split(URL_PATTERN);
   const mediaUrls = parts.filter(p => (p.startsWith('http://') || p.startsWith('https://')) && (IMAGE_EXT.test(p) || VIDEO_EXT.test(p)));
 
@@ -58,8 +64,8 @@ function MessageContent({ content, onLinkPress }: { content: string; onLinkPress
           <Img
             key={i}
             src={`${API_BASE}/proxy-image?url=${encodeURIComponent(url)}`}
-            style={{ maxWidth: '100%', maxHeight: 300, borderRadius: 8, marginTop: 4, objectFit: 'contain', cursor: 'pointer' }}
-            onClick={() => onLinkPress(url)}
+            style={{ maxWidth: '100%', maxHeight: 300, borderRadius: 8, marginTop: 4, objectFit: 'contain', cursor: 'zoom-in' }}
+            onClick={() => onImagePress(url)}
           />
         )
       )}
@@ -72,20 +78,22 @@ export type Message = {
   id: number;
   roomId: string;
   senderId: string;
+  senderName: string;
   timestamp: string;
 }
 
 type Props = {
-  nickname: string;
+  identity: Identity;
   channelId: string;
 }
 
-export const ChatArea = ({ nickname, channelId }: Props) => {
+export const ChatArea = ({ identity, channelId }: Props) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState("");
   const [typingUser, setTypingUser] = useState<string | null>(null);
   const [errorBanner, setErrorBanner] = useState<string | null>(null);
   const [pendingUrl, setPendingUrl] = useState<string | null>(null);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const errorTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Refs — declared before any effects that use them
@@ -131,11 +139,11 @@ export const ChatArea = ({ nickname, channelId }: Props) => {
     }
 
     const latest = messages[messages.length - 1];
-    const isOwn = latest?.senderId === nickname;
+    const isOwn = latest?.senderId === identity.publicKey;
     if (isAtBottomRef.current || isOwn) {
       scrollToBottom(true);
     }
-  }, [messages, nickname, scrollToBottom]);
+  }, [messages, identity.publicKey, scrollToBottom]);
 
   // ── WebSocket + history ───────────────────────────────────────────
   useEffect(() => {
@@ -172,7 +180,7 @@ export const ChatArea = ({ nickname, channelId }: Props) => {
         });
       }
 
-      if (msg.type === 'TYPING' && msg.username !== nickname) {
+      if (msg.type === 'TYPING' && msg.username !== identity.username) {
         setTypingUser(msg.username);
         setTimeout(() => setTypingUser(null), 2500);
       }
@@ -181,29 +189,39 @@ export const ChatArea = ({ nickname, channelId }: Props) => {
     ws.onerror = () => showError("Connection lost. Reconnect by switching channels.");
 
     return () => ws.close();
-  }, [channelId, nickname, showError]);
+  }, [channelId, identity.username, showError]);
 
   // ── Send ──────────────────────────────────────────────────────────
   const sendMessage = async () => {
     if (!inputText.trim()) return;
 
     const currentText = inputText;
+    const timestamp = new Date().toISOString();
     const tempId = Date.now();
 
     setMessages(prev => [...prev, {
       id: tempId,
       content: currentText,
       roomId: channelId,
-      senderId: nickname,
-      timestamp: new Date().toISOString(),
+      senderId: identity.publicKey,
+      senderName: identity.username,
+      timestamp,
     }]);
     setInputText("");
 
     try {
+      const signature = await signMessage(identity.privateKeyBytes, currentText, channelId, timestamp);
       await fetch(`${API_BASE}/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ roomId: channelId, content: currentText, userId: nickname }),
+        body: JSON.stringify({
+          roomId: channelId,
+          content: currentText,
+          userId: identity.publicKey,
+          senderName: identity.username,
+          signature,
+          timestamp,
+        }),
       });
     } catch {
       showError("Failed to send message. Check your connection.");
@@ -217,7 +235,7 @@ export const ChatArea = ({ nickname, channelId }: Props) => {
     const ws = socketRef.current;
     if (ws?.readyState === WebSocket.OPEN) {
       if (!typingTimeoutRef.current) {
-        ws.send(JSON.stringify({ type: 'TYPING', username: nickname, channelId }));
+        ws.send(JSON.stringify({ type: 'TYPING', username: identity.username, channelId }));
       }
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
       typingTimeoutRef.current = setTimeout(() => {
@@ -264,12 +282,12 @@ export const ChatArea = ({ nickname, channelId }: Props) => {
               <Image src="favicon.ico" width={40} height={40} borderRadius="$10" />
               <YStack flex={1} gap="$1">
                 <XStack gap="$2" alignItems="center">
-                  <Text fontWeight="bold" fontSize="$3">{msg.senderId}</Text>
+                  <Text fontWeight="bold" fontSize="$3">{msg.senderName || msg.senderId}</Text>
                   <Text fontSize="$1" color="$gray10">
                     {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </Text>
                 </XStack>
-                <MessageContent content={msg.content} onLinkPress={setPendingUrl} />
+                <MessageContent content={msg.content} onLinkPress={setPendingUrl} onImagePress={setLightboxUrl} />
               </YStack>
             </XStack>
           ))}
@@ -298,6 +316,28 @@ export const ChatArea = ({ nickname, channelId }: Props) => {
           theme="active"
         />
       </XStack>
+
+      {/* ── Image lightbox ── */}
+      <Sheet open={!!lightboxUrl} onOpenChange={(open) => { if (!open) setLightboxUrl(null) }} modal dismissOnSnapToBottom snapPoints={[92]}>
+        <Sheet.Frame padding={0}>
+          <XStack px="$3" pt="$3" justifyContent="flex-end">
+            <Button size="$2" chromeless icon={X} onPress={() => setLightboxUrl(null)} />
+          </XStack>
+          <ScrollView>
+            <YStack p="$3" alignItems="center">
+              {/* @ts-ignore — native img in web/Electron */}
+              {lightboxUrl && (
+                <img
+                  src={`${API_BASE}/proxy-image?url=${encodeURIComponent(lightboxUrl)}`}
+                  style={{ width: '100%', objectFit: 'contain', borderRadius: 8, cursor: 'zoom-out' }}
+                  onClick={() => setLightboxUrl(null)}
+                />
+              )}
+            </YStack>
+          </ScrollView>
+        </Sheet.Frame>
+        <Sheet.Overlay />
+      </Sheet>
 
       {/* ── External link confirmation ── */}
       <Sheet open={!!pendingUrl} onOpenChange={(open) => { if (!open) setPendingUrl(null) }} modal dismissOnSnapToBottom snapPoints={[32]}>

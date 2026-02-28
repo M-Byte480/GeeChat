@@ -6,7 +6,8 @@ import { useState, useCallback, useEffect } from 'react'
 import { WS_BASE, API_BASE } from 'app/constants/config'
 import { Sidebar } from './Sidebar'
 import { ChatArea } from './ChatArea'
-import { NicknameGate } from './NicknameGate'
+import { IdentityGate } from './identity'
+import type { Identity } from './identity'
 import { UpdateBanner } from './UpdateBanner'
 import { Channel, ChannelType, CHANNELS } from './types'
 
@@ -16,12 +17,12 @@ export function HomeScreen() {
   const [voiceParticipants, setVoiceParticipants] = useState<Record<string, string[]>>({})
   const [connectedVoiceChannelId, setConnectedVoiceChannelId] = useState<string | null>(null)
   const [channels, setChannels] = useState<Channel[]>(CHANNELS)
-  const [showNicknameDialog, setShowNicknameDialog] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
+  const [showEditUsername, setShowEditUsername] = useState(false)
+  const [usernameInput, setUsernameInput] = useState('')
   const [showCreateChannel, setShowCreateChannel] = useState(false)
   const [createChannelType, setCreateChannelType] = useState<ChannelType>('text')
   const [newChannelName, setNewChannelName] = useState('')
-  const [nicknameInput, setNicknameInput] = useState('')
   const [appVersion, setAppVersion] = useState('')
 
   const handleParticipantsChange = useCallback((channelId: string, participants: string[]) => {
@@ -104,8 +105,8 @@ export function HomeScreen() {
   }
 
   return (
-    <NicknameGate>
-      {(nickname, changeNickname) => (
+    <IdentityGate>
+      {(identity: Identity, changeUsername) => (
         <YStack height="100vh" bg="$background" position="relative">
           <UpdateBanner />
           {/* Thin drag region for Electron window dragging */}
@@ -120,15 +121,22 @@ export function HomeScreen() {
             style={{ WebkitAppRegion: 'drag', userSelect: 'none' }}
           >
             {/* Interactive zone — must opt out of drag so clicks work */}
-            <XStack gap="$1" alignItems="center" // @ts-ignore
+            <XStack gap="$2" alignItems="center" // @ts-ignore
               style={{ WebkitAppRegion: 'no-drag' }}>
               <Button
                 size="$1"
                 chromeless
-                onPress={() => { setNicknameInput(nickname); setShowNicknameDialog(true) }}
+                onPress={() => { setUsernameInput(identity.username); setShowEditUsername(true) }}
               >
-                <XStack gap="$1" alignItems="center">
-                  <Text fontSize="$2" color="$color11" fontWeight="600">{nickname}</Text>
+                <XStack gap="$2" alignItems="center">
+                  {identity.pfp && (
+                    // @ts-ignore — native img in web/Electron
+                    <img
+                      src={identity.pfp}
+                      style={{ width: 20, height: 20, borderRadius: '50%', objectFit: 'cover' }}
+                    />
+                  )}
+                  <Text fontSize="$2" color="$color11" fontWeight="600">{identity.username}</Text>
                   <Pencil size={10} color="$color10" />
                 </XStack>
               </Button>
@@ -148,7 +156,7 @@ export function HomeScreen() {
 
           {/* DESKTOP SIDEBAR */}
           <YStack $max-lg={{ display: 'none' }}>
-            <Sidebar width={250} nickname={nickname} {...sidebarProps} />
+            <Sidebar width={250} nickname={identity.username} {...sidebarProps} />
           </YStack>
 
           {/* MAIN CONTENT */}
@@ -159,7 +167,7 @@ export function HomeScreen() {
             </XStack>
 
             {activeChannel.type === 'text' ? (
-              <ChatArea nickname={nickname} channelId={activeChannel.id} />
+              <ChatArea identity={identity} channelId={activeChannel.id} />
             ) : (
               <VoiceChannelView
                 channelId={activeChannel.id}
@@ -173,7 +181,7 @@ export function HomeScreen() {
             <Sheet.Frame p="$4">
               <Sidebar
                 width="100%"
-                nickname={nickname}
+                nickname={identity.username}
                 {...sidebarProps}
                 onChannelSelect={(ch) => {
                   handleChannelSelect(ch)
@@ -185,30 +193,30 @@ export function HomeScreen() {
           </Sheet>
         </XStack>
 
-          {/* ── Nickname change dialog ── */}
-          <Sheet open={showNicknameDialog} onOpenChange={setShowNicknameDialog} modal dismissOnSnapToBottom snapPoints={[35]}>
+          {/* ── Edit username dialog ── */}
+          <Sheet open={showEditUsername} onOpenChange={setShowEditUsername} modal dismissOnSnapToBottom snapPoints={[35]}>
             <Sheet.Frame p="$5" gap="$4">
-              <Text fontWeight="700" fontSize="$6">Change nickname</Text>
+              <Text fontWeight="700" fontSize="$6">Change username</Text>
               <Input
-                value={nicknameInput}
-                onChangeText={setNicknameInput}
-                placeholder="New nickname..."
+                value={usernameInput}
+                onChangeText={setUsernameInput}
+                placeholder="New username..."
                 size="$4"
                 autoFocus
                 autoCapitalize="none"
                 autoCorrect={false}
                 onSubmitEditing={() => {
-                  const t = nicknameInput.trim()
-                  if (t) { changeNickname(t); setShowNicknameDialog(false) }
+                  const t = usernameInput.trim()
+                  if (t) { changeUsername(t); setShowEditUsername(false) }
                 }}
               />
               <Button
                 theme="active"
                 size="$4"
-                disabled={!nicknameInput.trim()}
+                disabled={!usernameInput.trim()}
                 onPress={() => {
-                  const t = nicknameInput.trim()
-                  if (t) { changeNickname(t); setShowNicknameDialog(false) }
+                  const t = usernameInput.trim()
+                  if (t) { changeUsername(t); setShowEditUsername(false) }
                 }}
               >
                 Save
@@ -246,7 +254,7 @@ export function HomeScreen() {
           </Sheet>
 
           {/* ── Settings dialog ── */}
-          <Sheet open={showSettings} onOpenChange={setShowSettings} modal dismissOnSnapToBottom snapPoints={[30]}>
+          <Sheet open={showSettings} onOpenChange={setShowSettings} modal dismissOnSnapToBottom snapPoints={[35]}>
             <Sheet.Frame p="$5" gap="$4">
               <Text fontWeight="700" fontSize="$6">Settings</Text>
               <YStack gap="$3">
@@ -255,8 +263,14 @@ export function HomeScreen() {
                   <Text fontWeight="600">{appVersion || '—'}</Text>
                 </XStack>
                 <XStack jc="space-between" ai="center">
-                  <Paragraph color="$color10">Nickname</Paragraph>
-                  <Text fontWeight="600">{nickname}</Text>
+                  <Paragraph color="$color10">Username</Paragraph>
+                  <Text fontWeight="600">{identity.username}</Text>
+                </XStack>
+                <XStack jc="space-between" ai="center">
+                  <Paragraph color="$color10">Public Key</Paragraph>
+                  <Text fontWeight="600" fontSize="$2" color="$color10">
+                    {identity.publicKey.slice(0, 16)}…
+                  </Text>
                 </XStack>
               </YStack>
             </Sheet.Frame>
@@ -265,7 +279,7 @@ export function HomeScreen() {
 
         </YStack>
       )}
-    </NicknameGate>
+    </IdentityGate>
   )
 }
 
