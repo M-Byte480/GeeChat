@@ -1,0 +1,25 @@
+graph TD
+    Start[Launch App] --> Check{Identity Exists?}
+    Check -- Yes --> Dashboard[Main Chat UI]
+    Check -- No --> Welcome[Welcome Screen]
+
+    Welcome --> New[Create New Profile]
+    Welcome --> Existing[Import Identity File]
+
+    subgraph "New User Process"
+        New --> Profile[Enter Username + Upload PFP]
+        Profile --> Security[Enter Passphrase]
+        Security --> Crypto[Generate Ed25519 Keypair]
+        Crypto --> Export[Save .identity file to Disk]
+    end
+
+    subgraph "Existing User Process"
+        Existing --> Select[Select .identity file]
+        Select --> Decrypt[Enter Passphrase]
+        Decrypt --> Verify[Check Signature]
+    end
+
+    Export --> Dashboard
+    Verify --> Dashboard
+    Dashboard --> Connect[Join server/Load Existing server data]
+    Connect --> Chat[Start Chatting]
