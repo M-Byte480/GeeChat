@@ -3,7 +3,7 @@
 import { YStack } from '@my/ui'
 import { VoiceRoom } from './VoiceRoom'
 import { ChannelList } from './ChannelList'
-import type { Channel } from './types'
+import type { Channel, ChannelType } from './types'
 
 type Props = {
   width?: number | string
@@ -15,6 +15,7 @@ type Props = {
   onChannelSelect: (channel: Channel) => void
   onParticipantsChange: (channelId: string, participants: string[]) => void
   onVoiceDisconnect: () => void
+  onCreateChannel: (type: ChannelType) => void
 }
 
 export const Sidebar = ({
@@ -27,6 +28,7 @@ export const Sidebar = ({
   onChannelSelect,
   onParticipantsChange,
   onVoiceDisconnect,
+  onCreateChannel,
 }: Props) => (
   // @ts-ignore
   <YStack flex={1} width={width} bg="$backgroundHover" borderRightWidth={1} borderColor="$borderColor" overflow="hidden">
@@ -37,6 +39,7 @@ export const Sidebar = ({
         activeChannelId={activeChannel.id}
         onSelect={onChannelSelect}
         voiceParticipants={voiceParticipants}
+        onCreateChannel={onCreateChannel}
       />
     </YStack>
 

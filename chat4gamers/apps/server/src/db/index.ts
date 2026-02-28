@@ -27,6 +27,12 @@ sqlite.exec(`
     avatar_url TEXT
   );
 
+  CREATE TABLE IF NOT EXISTS channels (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    type TEXT NOT NULL CHECK(type IN ('text', 'voice'))
+  );
+
   CREATE TABLE IF NOT EXISTS messages (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     room_id TEXT NOT NULL,
@@ -35,5 +41,17 @@ sqlite.exec(`
     timestamp INTEGER NOT NULL
   );
 `);
+
+// Seed default channels if the table is empty
+const channelCount = (sqlite.prepare('SELECT COUNT(*) as cnt FROM channels').get() as any).cnt;
+if (channelCount === 0) {
+  sqlite.exec(`
+    INSERT INTO channels (id, name, type) VALUES
+      ('general',   'general',   'text'),
+      ('off-topic', 'off-topic', 'text'),
+      ('hideout',   'hideout',   'voice'),
+      ('gaming',    'gaming',    'voice');
+  `);
+}
 
 export const db = drizzle(sqlite, { schema });

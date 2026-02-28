@@ -7,15 +7,19 @@ import { createNodeWebSocket } from '@hono/node-ws' // <-- CHANGE TO THIS
 import authRoutes from './routes/auth.js';
 import chatRoutes from './routes/chat.js';
 import { trimTrailingSlash } from 'hono/trailing-slash'
-import {messages} from "./db/schema.js";
+import { messages, channels as channelsTable } from "./db/schema.js";
 import { db } from './db/index.js'; // Import the shared instance
 
 import { eq, desc } from 'drizzle-orm';
 
+// Strip HTML/script tags and cap message length — no external deps needed
+const sanitize = (text: string): string =>
+  text.replace(/<[^>]*>/g, '').trim().slice(0, 2000);
 
 const app = new Hono()
-const { injectWebSocket, upgradeWebSocket } = createNodeWebSocket({ app }) // <-- ADD THIS
+const { injectWebSocket, upgradeWebSocket } = createNodeWebSocket({ app })
 const clients = new Set<any>();
+
 app.use('*', trimTrailingSlash())
 
 // Middlewares
@@ -70,9 +74,8 @@ app.get('/get-voice-token', async (c) => {
   const roomName = c.req.query('room') || 'hideout';
   const participantName = c.req.query('identity') || 'user-' + Math.floor(Math.random() * 1000);
 
-  // These would ideally come from your .env file
-  const apiKey = 'milan_test_key' // process.env.LIVEKIT_API_KEY || 'devkey';
-  const apiSecret = 'milan_super_secret_key_32_characters_long_12345' // process.env.LIVEKIT_API_SECRET || 'secret';
+  const apiKey    = process.env.LIVEKIT_API_KEY    || 'devkey';
+  const apiSecret = process.env.LIVEKIT_API_SECRET || 'secret';
 
 
   const at = new AccessToken(apiKey, apiSecret, {
@@ -97,10 +100,13 @@ app.post('/messages', async (c) => {
   console.log("Request Body:", body); // See what's actually arriving
 
   try {
+    const content = sanitize(body.content ?? '');
+    if (!content) return c.json({ error: 'Empty message' }, 400);
+
     const [newMessage] = await db.insert(messages).values({
       roomId: body.roomId,
       senderId: body.userId,
-      content: body.content,
+      content,
       timestamp: new Date(),
     }).returning();
 
@@ -152,6 +158,76 @@ app.get('/chat-history', async (c) => {
   console.error("Database error:", error);
   return c.json({ error: "Failed to fetch history" }, 500);
 }
+});
+
+app.get('/channels', async (c) => {
+  const rows = await db.select().from(channelsTable);
+  return c.json(rows);
+});
+
+app.post('/channels', async (c) => {
+  const { name, type } = await c.req.json();
+  const id = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+  if (!id || !name || !['text', 'voice'].includes(type)) {
+    return c.json({ error: 'Invalid channel data' }, 400);
+  }
+  const existing = await db.select({ id: channelsTable.id }).from(channelsTable).where(eq(channelsTable.id, id));
+  if (existing.length > 0) {
+    return c.json({ error: 'Channel already exists' }, 409);
+  }
+  const newChannel = { id, name: name.trim(), type };
+  await db.insert(channelsTable).values(newChannel);
+  const payload = JSON.stringify({ type: 'CHANNEL_CREATED', channel: newChannel });
+  clients.forEach(client => {
+    if (client.readyState === 1) client.send(payload);
+  });
+  return c.json(newChannel);
+});
+
+// ── Image proxy — viewer IP never reaches the origin server ──────────────────
+function isBlockedHost(hostname: string): boolean {
+  const h = hostname.toLowerCase().replace(/^\[|\]$/g, ''); // strip IPv6 brackets
+  if (['localhost', '127.0.0.1', '0.0.0.0', '::1', '169.254.169.254', '100.100.100.200', 'metadata.google.internal'].includes(h)) return true;
+  if (/^10\./.test(h) || /^192\.168\./.test(h) || /^172\.(1[6-9]|2\d|3[01])\./.test(h)) return true;
+  return false;
+}
+
+app.get('/proxy-image', async (c) => {
+  const url = c.req.query('url');
+  if (!url) return c.json({ error: 'Missing url' }, 400);
+
+  let parsed: URL;
+  try { parsed = new URL(url); } catch { return c.json({ error: 'Invalid URL' }, 400); }
+
+  if (!['http:', 'https:'].includes(parsed.protocol)) return c.json({ error: 'Invalid protocol' }, 400);
+  if (isBlockedHost(parsed.hostname)) return c.json({ error: 'Blocked host' }, 403);
+
+  try {
+    const res = await fetch(url, {
+      signal: AbortSignal.timeout(10_000),
+      headers: { 'User-Agent': 'GeeChat-Proxy/1.0' },
+    });
+    const contentType = res.headers.get('content-type') ?? '';
+    if (!contentType.startsWith('image/') && !contentType.startsWith('video/')) {
+      return c.json({ error: 'Not media' }, 415);
+    }
+    const buf = await res.arrayBuffer();
+    if (buf.byteLength > 10 * 1024 * 1024) return c.json({ error: 'Too large' }, 413);
+    return new Response(buf, {
+      headers: { 'Content-Type': contentType, 'Cache-Control': 'public, max-age=3600' },
+    });
+  } catch {
+    return c.json({ error: 'Proxy failed' }, 502);
+  }
+});
+
+app.post('/voice-state', async (c) => {
+  const { channelId, participants } = await c.req.json();
+  const payload = JSON.stringify({ type: 'VOICE_STATE', channelId, participants });
+  clients.forEach((client) => {
+    if (client.readyState === 1) client.send(payload);
+  });
+  return c.json({ ok: true });
 });
 
 app.route('/auth', authRoutes); // This makes routes like /auth/register

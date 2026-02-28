@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Menu, ipcMain } from 'electron'
+import { app, BrowserWindow, Menu, ipcMain, shell } from 'electron'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import electronUpdater from 'electron-updater';
@@ -34,9 +34,10 @@ const createWindow = () => {
       height: 28,
     },
     webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false,
-      webSecurity: false,
+      nodeIntegration: false,
+      contextIsolation: true,
+      webSecurity: true,
+      preload: path.join(__dirname, 'preload.cjs'),
     },
   })
 
@@ -72,6 +73,15 @@ autoUpdater.on('update-downloaded', () => {
   mainWindow?.webContents.send('update-ready')
 })
 
+ipcMain.handle('get-version', () => app.getVersion())
+
+// Open URLs in the default system browser — never inside the Electron window
+ipcMain.handle('open-external', (_, url) => {
+  if (typeof url === 'string' && (url.startsWith('http://') || url.startsWith('https://'))) {
+    return shell.openExternal(url)
+  }
+})
+
 // User clicked "Restart & Update" — destroy windows first to release file locks,
 // then hand off to the installer so it can replace the old build cleanly
 ipcMain.on('install-update', () => {
@@ -86,6 +96,14 @@ app.whenReady().then(() => {
   const splash = createSplash()
   const win = createWindow()
   mainWindow = win
+
+  // Prevent renderer from navigating away from the app (e.g. link clicks bypassing our dialog)
+  win.webContents.on('will-navigate', (event, navigationUrl) => {
+    const isLocal = navigationUrl.startsWith('http://localhost') || navigationUrl.startsWith('file://')
+    if (!isLocal) event.preventDefault()
+  })
+  // Block window.open() from spawning new browser windows
+  win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }))
 
   const splashStart = Date.now()
   win.once('ready-to-show', () => {

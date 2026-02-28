@@ -8,7 +8,14 @@ export const users = sqliteTable('users', {
   avatarUrl: text('avatar_url'),
 });
 
-// 2. LOCAL: Chat Messages
+// 2. CHANNELS
+export const channels = sqliteTable('channels', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  type: text('type').notNull(), // 'text' | 'voice'
+});
+
+// 3. LOCAL: Chat Messages
 export const messages = sqliteTable('messages', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   roomId: text('room_id').notNull(), // e.g., 'main-room'
