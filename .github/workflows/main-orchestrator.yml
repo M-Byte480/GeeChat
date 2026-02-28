@@ -28,8 +28,8 @@ jobs:
         with:
           filters: |
             server:
-              - 'apps/server/**'
-              - 'package.json' # Optional: sync if root deps change
+              - 'chat4gamers/apps/server/**'
+              - 'chat4gamers/package.json'
 
 
       - name: Manual Yarn Version Bump
