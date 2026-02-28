@@ -1,6 +1,8 @@
 name: Remote Deploy
 
 on:
+  workflow_dispatch:
+    # empty to allow manual trigger
   push:
     branches:
       - jarvis-deploy
