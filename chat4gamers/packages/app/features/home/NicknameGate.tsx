@@ -6,7 +6,7 @@ import { YStack, Input, Button, Text, Paragraph } from '@my/ui'
 const storage = () => (typeof window !== 'undefined' ? window.localStorage : null)
 
 type Props = {
-  children: (nickname: string) => React.ReactNode
+  children: (nickname: string, changeNickname: (name: string) => void) => React.ReactNode
 }
 
 export function NicknameGate({ children }: Props) {
@@ -22,6 +22,13 @@ export function NicknameGate({ children }: Props) {
 
   const handleSubmit = () => {
     const trimmed = input.trim()
+    if (!trimmed) return
+    storage()?.setItem('nickname', trimmed)
+    setNickname(trimmed)
+  }
+
+  const changeNickname = (name: string) => {
+    const trimmed = name.trim()
     if (!trimmed) return
     storage()?.setItem('nickname', trimmed)
     setNickname(trimmed)
@@ -72,5 +79,5 @@ export function NicknameGate({ children }: Props) {
     )
   }
 
-  return <>{children(nickname)}</>
+  return <>{children(nickname, changeNickname)}</>
 }

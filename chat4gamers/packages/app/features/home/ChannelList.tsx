@@ -1,23 +1,24 @@
 'use client'
 
-import { YStack, XStack, Text } from '@my/ui'
-import { Hash, Volume2 } from '@tamagui/lucide-icons'
-import type { Channel } from './types'
+import { YStack, XStack, Text, Button } from '@my/ui'
+import { Hash, Volume2, Plus } from '@tamagui/lucide-icons'
+import type { Channel, ChannelType } from './types'
 
 type Props = {
   channels: Channel[]
   activeChannelId: string
   onSelect: (channel: Channel) => void
   voiceParticipants: Record<string, string[]>
+  onCreateChannel: (type: ChannelType) => void
 }
 
-export function ChannelList({ channels, activeChannelId, onSelect, voiceParticipants }: Props) {
+export function ChannelList({ channels, activeChannelId, onSelect, voiceParticipants, onCreateChannel }: Props) {
   const textChannels = channels.filter(c => c.type === 'text')
   const voiceChannels = channels.filter(c => c.type === 'voice')
 
   return (
     <YStack flex={1} gap="$1">
-      <SectionLabel label="Text Channels" />
+      <SectionLabel label="Text Channels" onAdd={() => onCreateChannel('text')} />
       {textChannels.map(ch => (
         <ChannelRow
           key={ch.id}
@@ -27,7 +28,7 @@ export function ChannelList({ channels, activeChannelId, onSelect, voiceParticip
         />
       ))}
 
-      <SectionLabel label="Voice Channels" mt="$3" />
+      <SectionLabel label="Voice Channels" onAdd={() => onCreateChannel('voice')} mt="$3" />
       {voiceChannels.map(ch => (
         <YStack key={ch.id}>
           <ChannelRow
@@ -44,20 +45,28 @@ export function ChannelList({ channels, activeChannelId, onSelect, voiceParticip
   )
 }
 
-function SectionLabel({ label, mt }: { label: string; mt?: string }) {
+function SectionLabel({ label, onAdd, mt }: { label: string; onAdd: () => void; mt?: string }) {
   return (
-    <Text
-      fontSize={10}
-      color="$color10"
-      fontWeight="700"
-      letterSpacing={1}
-      textTransform="uppercase"
-      px="$2"
-      pb="$1"
-      mt={mt as any}
-    >
-      {label}
-    </Text>
+    <XStack alignItems="center" px="$2" pb="$1" mt={mt as any}>
+      <Text
+        flex={1}
+        fontSize={10}
+        color="$color10"
+        fontWeight="700"
+        letterSpacing={1}
+        textTransform="uppercase"
+      >
+        {label}
+      </Text>
+      <Button
+        size="$1"
+        chromeless
+        icon={Plus}
+        onPress={onAdd}
+        color="$color10"
+        hoverStyle={{ color: '$color' }}
+      />
+    </XStack>
   )
 }
 

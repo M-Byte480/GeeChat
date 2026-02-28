@@ -9,27 +9,21 @@ export function UpdateBanner() {
   const [ready, setReady] = useState(false)
 
   useEffect(() => {
-    if (typeof window === 'undefined') return
+    const api = (window as any).electronAPI
+    if (!api) return // Not running in Electron
 
-    let ipcRenderer: any
-    try {
-      ipcRenderer = (window as any).require('electron').ipcRenderer
-    } catch {
-      return // Not running in Electron
-    }
-
-    ipcRenderer.on('update-progress', (_: any, percent: number) => {
+    const removeProgress = api.onUpdateProgress((percent: number) => {
       setProgress(percent)
     })
 
-    ipcRenderer.on('update-ready', () => {
+    const removeReady = api.onUpdateReady(() => {
       setProgress(null)
       setReady(true)
     })
 
     return () => {
-      ipcRenderer.removeAllListeners('update-progress')
-      ipcRenderer.removeAllListeners('update-ready')
+      removeProgress?.()
+      removeReady?.()
     }
   }, [])
 
@@ -62,7 +56,7 @@ export function UpdateBanner() {
           <Button
             size="$3"
             theme="active"
-            onPress={() => (window as any).require('electron').ipcRenderer.send('install-update')}
+            onPress={() => (window as any).electronAPI?.installUpdate()}
           >
             Restart & Update
           </Button>

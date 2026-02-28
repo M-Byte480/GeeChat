@@ -1,19 +1,29 @@
 'use client'
 
-import { XStack, YStack, Sheet, Button, Text } from '@my/ui'
-import { Menu, Volume2 } from '@tamagui/lucide-icons'
-import { useState, useCallback } from 'react'
+import { XStack, YStack, Sheet, Button, Text, Input, Paragraph } from '@my/ui'
+import { Menu, Volume2, Settings, Pencil } from '@tamagui/lucide-icons'
+import { useState, useCallback, useEffect } from 'react'
+import { WS_BASE, API_BASE } from 'app/constants/config'
 import { Sidebar } from './Sidebar'
 import { ChatArea } from './ChatArea'
-import { NicknameGate } from './NicknameGate'
+import { IdentityGate } from './identity'
+import type { Identity } from './identity'
 import { UpdateBanner } from './UpdateBanner'
-import { Channel, CHANNELS } from './types'
+import { Channel, ChannelType, CHANNELS } from './types'
 
 export function HomeScreen() {
   const [showMobileMenu, setShowMobileMenu] = useState(false)
   const [activeChannel, setActiveChannel] = useState<Channel>(CHANNELS[0])
   const [voiceParticipants, setVoiceParticipants] = useState<Record<string, string[]>>({})
   const [connectedVoiceChannelId, setConnectedVoiceChannelId] = useState<string | null>(null)
+  const [channels, setChannels] = useState<Channel[]>(CHANNELS)
+  const [showSettings, setShowSettings] = useState(false)
+  const [showEditUsername, setShowEditUsername] = useState(false)
+  const [usernameInput, setUsernameInput] = useState('')
+  const [showCreateChannel, setShowCreateChannel] = useState(false)
+  const [createChannelType, setCreateChannelType] = useState<ChannelType>('text')
+  const [newChannelName, setNewChannelName] = useState('')
+  const [appVersion, setAppVersion] = useState('')
 
   const handleParticipantsChange = useCallback((channelId: string, participants: string[]) => {
     setVoiceParticipants(prev => ({ ...prev, [channelId]: participants }))
@@ -31,19 +41,72 @@ export function HomeScreen() {
     setConnectedVoiceChannelId(null)
   }, [])
 
+  const handleOpenCreateChannel = useCallback((type: ChannelType) => {
+    setCreateChannelType(type)
+    setNewChannelName('')
+    setShowCreateChannel(true)
+  }, [])
+
+  const handleCreateChannel = useCallback(async () => {
+    const name = newChannelName.trim()
+    if (!name) return
+    try {
+      await fetch(`${API_BASE}/channels`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, type: createChannelType }),
+      })
+      setShowCreateChannel(false)
+    } catch {}
+  }, [newChannelName, createChannelType])
+
+  // Fetch channels from server on startup (falls back to hardcoded defaults on error)
+  useEffect(() => {
+    fetch(`${API_BASE}/channels`)
+      .then(r => r.json())
+      .then(data => { if (Array.isArray(data)) setChannels(data) })
+      .catch(() => {})
+  }, [])
+
+  // Listen for voice state and channel creation broadcasts
+  useEffect(() => {
+    const ws = new WebSocket(`${WS_BASE}/ws`)
+    ws.onmessage = (event) => {
+      try {
+        const msg = JSON.parse(event.data)
+        if (msg.type === 'VOICE_STATE') {
+          setVoiceParticipants(prev => ({ ...prev, [msg.channelId]: msg.participants }))
+        }
+        if (msg.type === 'CHANNEL_CREATED') {
+          setChannels(prev => {
+            if (prev.find(ch => ch.id === msg.channel.id)) return prev
+            return [...prev, msg.channel]
+          })
+        }
+      } catch {}
+    }
+    return () => ws.close()
+  }, [])
+
+  // Get app version from Electron
+  useEffect(() => {
+    (window as any).electronAPI?.getVersion().then((v: string) => setAppVersion(v))
+  }, [])
+
   const sidebarProps = {
-    channels: CHANNELS,
+    channels,
     activeChannel,
     voiceParticipants,
     connectedVoiceChannelId,
     onChannelSelect: handleChannelSelect,
     onParticipantsChange: handleParticipantsChange,
     onVoiceDisconnect: handleVoiceDisconnect,
+    onCreateChannel: handleOpenCreateChannel,
   }
 
   return (
-    <NicknameGate>
-      {(nickname) => (
+    <IdentityGate>
+      {(identity: Identity, changeUsername) => (
         <YStack height="100vh" bg="$background" position="relative">
           <UpdateBanner />
           {/* Thin drag region for Electron window dragging */}
@@ -52,9 +115,39 @@ export function HomeScreen() {
             bg="$color1"
             borderBottomWidth={1}
             borderColor="$borderColor"
+            alignItems="center"
+            px="$3"
             // @ts-ignore — Electron-specific CSS property
             style={{ WebkitAppRegion: 'drag', userSelect: 'none' }}
-          />
+          >
+            {/* Interactive zone — must opt out of drag so clicks work */}
+            <XStack gap="$2" alignItems="center" // @ts-ignore
+              style={{ WebkitAppRegion: 'no-drag' }}>
+              <Button
+                size="$1"
+                chromeless
+                onPress={() => { setUsernameInput(identity.username); setShowEditUsername(true) }}
+              >
+                <XStack gap="$2" alignItems="center">
+                  {identity.pfp && (
+                    // @ts-ignore — native img in web/Electron
+                    <img
+                      src={identity.pfp}
+                      style={{ width: 20, height: 20, borderRadius: '50%', objectFit: 'cover' }}
+                    />
+                  )}
+                  <Text fontSize="$2" color="$color11" fontWeight="600">{identity.username}</Text>
+                  <Pencil size={10} color="$color10" />
+                </XStack>
+              </Button>
+              <Button
+                size="$1"
+                chromeless
+                icon={Settings}
+                onPress={() => setShowSettings(true)}
+              />
+            </XStack>
+          </XStack>
         <XStack flex={1} bg="$background">
           {/* THIN ICON RAIL */}
           <YStack width={60} bg="$color2" borderRightWidth={1} borderColor="$borderColor" $max-md={{ display: 'none' }}>
@@ -63,7 +156,7 @@ export function HomeScreen() {
 
           {/* DESKTOP SIDEBAR */}
           <YStack $max-lg={{ display: 'none' }}>
-            <Sidebar width={250} nickname={nickname} {...sidebarProps} />
+            <Sidebar width={250} nickname={identity.username} {...sidebarProps} />
           </YStack>
 
           {/* MAIN CONTENT */}
@@ -74,7 +167,7 @@ export function HomeScreen() {
             </XStack>
 
             {activeChannel.type === 'text' ? (
-              <ChatArea nickname={nickname} channelId={activeChannel.id} />
+              <ChatArea identity={identity} channelId={activeChannel.id} />
             ) : (
               <VoiceChannelView
                 channelId={activeChannel.id}
@@ -88,7 +181,7 @@ export function HomeScreen() {
             <Sheet.Frame p="$4">
               <Sidebar
                 width="100%"
-                nickname={nickname}
+                nickname={identity.username}
                 {...sidebarProps}
                 onChannelSelect={(ch) => {
                   handleChannelSelect(ch)
@@ -99,9 +192,94 @@ export function HomeScreen() {
             <Sheet.Overlay />
           </Sheet>
         </XStack>
+
+          {/* ── Edit username dialog ── */}
+          <Sheet open={showEditUsername} onOpenChange={setShowEditUsername} modal dismissOnSnapToBottom snapPoints={[35]}>
+            <Sheet.Frame p="$5" gap="$4">
+              <Text fontWeight="700" fontSize="$6">Change username</Text>
+              <Input
+                value={usernameInput}
+                onChangeText={setUsernameInput}
+                placeholder="New username..."
+                size="$4"
+                autoFocus
+                autoCapitalize="none"
+                autoCorrect={false}
+                onSubmitEditing={() => {
+                  const t = usernameInput.trim()
+                  if (t) { changeUsername(t); setShowEditUsername(false) }
+                }}
+              />
+              <Button
+                theme="active"
+                size="$4"
+                disabled={!usernameInput.trim()}
+                onPress={() => {
+                  const t = usernameInput.trim()
+                  if (t) { changeUsername(t); setShowEditUsername(false) }
+                }}
+              >
+                Save
+              </Button>
+            </Sheet.Frame>
+            <Sheet.Overlay />
+          </Sheet>
+
+          {/* ── Create channel dialog ── */}
+          <Sheet open={showCreateChannel} onOpenChange={setShowCreateChannel} modal dismissOnSnapToBottom snapPoints={[35]}>
+            <Sheet.Frame p="$5" gap="$4">
+              <Text fontWeight="700" fontSize="$6">
+                New {createChannelType === 'text' ? 'Text' : 'Voice'} Channel
+              </Text>
+              <Input
+                value={newChannelName}
+                onChangeText={setNewChannelName}
+                placeholder="channel-name"
+                size="$4"
+                autoFocus
+                autoCapitalize="none"
+                autoCorrect={false}
+                onSubmitEditing={handleCreateChannel}
+              />
+              <Button
+                theme="active"
+                size="$4"
+                disabled={!newChannelName.trim()}
+                onPress={handleCreateChannel}
+              >
+                Create Channel
+              </Button>
+            </Sheet.Frame>
+            <Sheet.Overlay />
+          </Sheet>
+
+          {/* ── Settings dialog ── */}
+          <Sheet open={showSettings} onOpenChange={setShowSettings} modal dismissOnSnapToBottom snapPoints={[35]}>
+            <Sheet.Frame p="$5" gap="$4">
+              <Text fontWeight="700" fontSize="$6">Settings</Text>
+              <YStack gap="$3">
+                <XStack jc="space-between" ai="center">
+                  <Paragraph color="$color10">Version</Paragraph>
+                  <Text fontWeight="600">{appVersion || '—'}</Text>
+                </XStack>
+                <XStack jc="space-between" ai="center">
+                  <Paragraph color="$color10">Username</Paragraph>
+                  <Text fontWeight="600">{identity.username}</Text>
+                </XStack>
+                <XStack jc="space-between" ai="center">
+                  <Paragraph color="$color10">Public Key</Paragraph>
+                  <Text fontWeight="600" fontSize="$2" color="$color10">
+                    {identity.publicKey.slice(0, 16)}…
+                  </Text>
+                </XStack>
+              </YStack>
+            </Sheet.Frame>
+            <Sheet.Overlay />
+          </Sheet>
+
         </YStack>
       )}
-    </NicknameGate>
+    </IdentityGate>
   )
 }
 

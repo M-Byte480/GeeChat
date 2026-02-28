@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Button, YStack, Text, XStack } from '@my/ui'
 import { Room, RoomEvent, Track } from 'livekit-client'
-import { Mic, MicOff, PhoneOff, TestTube } from 'lucide-react'
+import { Mic, MicOff, PhoneOff, TestTube, Volume2, VolumeX } from 'lucide-react'
 import { API_BASE, LIVEKIT_WS } from 'app/constants/config'
 
 type Props = {
@@ -13,8 +13,17 @@ type Props = {
 
 export const VoiceRoom = ({ channelId, nickname, onParticipantsChange, onDisconnect }: Props) => {
   const [room, setRoom] = useState<Room | null>(null)
+
+  const broadcastToServer = (ch: string, participants: string[]) => {
+    fetch(`${API_BASE}/voice-state`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ channelId: ch, participants }),
+    }).catch(() => {})
+  }
   const [isJoined, setIsJoined] = useState(false)
   const [isMicEnabled, setIsMicEnabled] = useState(true)
+  const [isDeafened, setIsDeafened] = useState(false)
   const [testMic, setTestMic] = useState(false)
   const [micAudioElement, setMicAudioElement] = useState<HTMLAudioElement | null>(null)
 
@@ -27,7 +36,9 @@ export const VoiceRoom = ({ channelId, nickname, onParticipantsChange, onDisconn
     ]
 
     const onParticipantEvent = () => {
-      onParticipantsChange(channelId, getParticipants())
+      const participants = getParticipants()
+      onParticipantsChange(channelId, participants)
+      broadcastToServer(channelId, participants)
     }
 
     room.on(RoomEvent.ParticipantConnected, onParticipantEvent)
@@ -90,7 +101,9 @@ export const VoiceRoom = ({ channelId, nickname, onParticipantsChange, onDisconn
 
       // Initial participant list
       const remoteIds = Array.from(newRoom.remoteParticipants.values()).map(p => p.identity)
-      onParticipantsChange(channelId, [nickname, ...remoteIds])
+      const initialParticipants = [nickname, ...remoteIds]
+      onParticipantsChange(channelId, initialParticipants)
+      broadcastToServer(channelId, initialParticipants)
     } catch (err) {
       console.error(`Failed to join ${channelId}:`, err)
     }
@@ -101,6 +114,13 @@ export const VoiceRoom = ({ channelId, nickname, onParticipantsChange, onDisconn
     const next = !isMicEnabled
     await room.localParticipant.setMicrophoneEnabled(next)
     setIsMicEnabled(next)
+  }
+
+  const toggleDeafen = () => {
+    if (!room) return
+    const next = !isDeafened
+    room.remoteParticipants.forEach(p => p.setVolume(next ? 0 : 1))
+    setIsDeafened(next)
   }
 
   const onMicTest = () => {
@@ -128,8 +148,10 @@ export const VoiceRoom = ({ channelId, nickname, onParticipantsChange, onDisconn
     setRoom(null)
     setIsJoined(false)
     setIsMicEnabled(true)
+    setIsDeafened(false)
     setTestMic(false)
     onParticipantsChange(channelId, [])
+    broadcastToServer(channelId, [])
     onDisconnect?.()
   }
 
@@ -151,6 +173,13 @@ export const VoiceRoom = ({ channelId, nickname, onParticipantsChange, onDisconn
               theme={isMicEnabled ? 'blue' : 'red'}
               onPress={toggleMic}
               icon={isMicEnabled ? Mic : MicOff}
+              circular
+            />
+            <Button
+              size="$3"
+              theme={isDeafened ? 'red' : 'blue'}
+              onPress={toggleDeafen}
+              icon={isDeafened ? VolumeX : Volume2}
               circular
             />
             <Button
