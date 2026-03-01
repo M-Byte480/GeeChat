@@ -63,6 +63,9 @@ jobs:
       # 3. ONLY Sync jarvis-deploy if the server folder changed
       - name: Sync jarvis-deploy
         if: steps.filter.outputs.server == 'true'
+        with:
+          token: ${{ secrets.MY_PAT_TOKEN }}
+          fetch-depth: 0
         run: |
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
