@@ -1,5 +1,14 @@
 export type ChannelType = 'text' | 'voice'
 
+export type Message = {
+  id: number
+  content: string
+  roomId: string
+  senderId: string
+  senderName: string
+  timestamp: string
+}
+
 export type Channel = {
   id: string
   name: string
