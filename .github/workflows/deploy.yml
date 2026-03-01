@@ -21,6 +21,4 @@ jobs:
             cd /home/gchat/GeeGeeChat/chat4gamers/apps/server
             git fetch origin jarvis-deploy
             git reset --hard origin/jarvis-deploy
-            yarn install
-            yarn build
-            sudo systemctl restart geechat-backend
+            docker compose up -d --build
