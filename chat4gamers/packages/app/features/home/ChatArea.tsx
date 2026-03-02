@@ -6,6 +6,7 @@ import { useMessages } from './hooks/useMessages'
 import { MessageContent } from './components/MessageContent'
 import { ImageLightbox } from './components/ImageLightbox'
 import { ExternalLinkDialog } from './components/ExternalLinkDialog'
+import {ChannelBanner} from "app/features/home/channel/ChannelBanner";
 
 type Props = {
   identity: Identity
@@ -54,8 +55,8 @@ export const ChatArea = ({ identity, channelId }: Props) => {
   }, [messages, identity.publicKey, scrollToBottom])
 
   return (
-    <YStack flex={1} p="$4" bg="$background" height="100%">
-      {errorBanner && (
+    <YStack flex={1} pb="$4" bg="$background" height="100%">
+      {errorBanner && false && (
         <XStack
           bg="$red9" px="$4" py="$2" mb="$3" borderRadius="$3"
           alignItems="center" gap="$3" animation="quick" enterStyle={{ opacity: 0, y: -8 }}

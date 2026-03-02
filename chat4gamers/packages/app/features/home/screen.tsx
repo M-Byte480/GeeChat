@@ -10,6 +10,9 @@ import type { Identity } from './identity'
 import { UpdateBanner } from './UpdateBanner'
 import { VoiceChannelView } from './components/VoiceChannelView'
 import { useChannels } from './hooks/useChannels'
+import {ServerPane} from "app/features/home/server-pane/ServerPane";
+import {UserListPane} from "app/features/home/UserListPane";
+import {ChannelBanner} from "app/features/home/channel/ChannelBanner";
 
 export function HomeScreen() {
   const {
@@ -88,10 +91,7 @@ export function HomeScreen() {
           </XStack>
 
           <XStack flex={1} bg="$background">
-            {/* Thin icon rail */}
-            <YStack width={60} bg="$color2" borderRightWidth={1} borderColor="$borderColor" $max-md={{ display: 'none' }}>
-              <Button icon={Menu} chromeless size="$4" />
-            </YStack>
+            <ServerPane />
 
             {/* Desktop sidebar */}
             <YStack $max-lg={{ display: 'none' }}>
@@ -100,18 +100,24 @@ export function HomeScreen() {
 
             {/* Main content */}
             <YStack flex={1}>
+              < ChannelBanner />
+
               <XStack p="$4" $sm={{ display: 'none' }} borderBottomWidth={1} borderColor="$borderColor" width="100%" jc="center">
                 <Button icon={Menu} onPress={() => setShowMobileMenu(true)} />
               </XStack>
 
-              {activeChannel.type === 'text' ? (
-                <ChatArea identity={identity} channelId={activeChannel.id} />
-              ) : (
-                <VoiceChannelView
-                  channelId={activeChannel.id}
-                  participants={voiceParticipants[activeChannel.id] ?? []}
-                />
-              )}
+              <XStack flex={1} bg="$background" gap="$4" px="$4" pb="$4">
+                {activeChannel.type === 'text' ? (
+                  <ChatArea identity={identity} channelId={activeChannel.id} />
+                ) : (
+                  <VoiceChannelView
+                    channelId={activeChannel.id}
+                    participants={voiceParticipants[activeChannel.id] ?? []}
+                  />
+                )}
+                <UserListPane />
+              </XStack>
+
             </YStack>
 
             {/* Mobile drawer */}
@@ -126,6 +132,8 @@ export function HomeScreen() {
               </Sheet.Frame>
               <Sheet.Overlay />
             </Sheet>
+
+
           </XStack>
 
           {/* ── Edit username ── */}
