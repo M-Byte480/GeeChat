@@ -3,7 +3,6 @@ import { Button, YStack, Text, XStack } from '@my/ui'
 import { Room, RoomEvent, Track } from 'livekit-client'
 import { Mic, MicOff, PhoneOff, TestTube, Volume2, VolumeX } from 'lucide-react'
 import { API_BASE, LIVEKIT_WS } from 'app/constants/config'
-import { KrispNoiseFilter } from '@livekit/krisp-noise-filter'
 import { createLocalAudioTrack } from 'livekit-client'
 
 type Props = {
@@ -77,6 +76,8 @@ export const VoiceRoom = ({ channelId, nickname, onParticipantsChange, onDisconn
   }, [channelId])
 
   const joinRoom = async () => {
+    const { KrispNoiseFilter } = await import('@livekit/krisp-noise-filter');
+
     try {
       const resp = await fetch(
         `${API_BASE}/get-voice-token?room=${channelId}&identity=${encodeURIComponent(nickname)}`
