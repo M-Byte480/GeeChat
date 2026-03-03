@@ -3422,7 +3422,18 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@livekit/mutex@npm:1.1.1":
+"@livekit/krisp-noise-filter@npm:^0.4.1":
+  version: 0.4.1
+  resolution: "@livekit/krisp-noise-filter@npm:0.4.1"
+  dependencies:
+    "@livekit/mutex": "npm:^1.1.1"
+  peerDependencies:
+    livekit-client: ^2.0.8
+  checksum: 10/954f26d2669370160bc588afccb53612b19ac4ee78e7e022906da7cefd5625f28b4e1943cdbec7f71196eb2112ed67d7a46bb8dc5d6854dd61b8c4ab89989cb3
+  languageName: node
+  linkType: hard
+
+"@livekit/mutex@npm:1.1.1, @livekit/mutex@npm:^1.1.1":
   version: 1.1.1
   resolution: "@livekit/mutex@npm:1.1.1"
   checksum: 10/63e2d402615ad2787c823e0bc55db0d65958e645dc3dff8e11d5f94d35aacdcdf6e8ba75e812e5cca71152183129ec06ebaa0c6dd46258c4524366053cff1212
@@ -14443,6 +14454,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "next-app@workspace:apps/next"
   dependencies:
+    "@livekit/krisp-noise-filter": "npm:^0.4.1"
     "@playwright/test": "npm:^1.57.0"
     "@tamagui/config": "npm:^2.0.0-rc.0"
     "@tamagui/next-plugin": "npm:^2.0.0-rc.0"

@@ -2,17 +2,19 @@
 
 import { YStack, XStack, Text, Button } from '@my/ui'
 import { Hash, Volume2, Plus } from '@tamagui/lucide-icons'
+import { useRef } from 'react'
 import type { Channel, ChannelType } from './types'
 
 type Props = {
   channels: Channel[]
   activeChannelId: string
   onSelect: (channel: Channel) => void
+  onJoinVoice: (channel: Channel) => void
   voiceParticipants: Record<string, string[]>
   onCreateChannel: (type: ChannelType) => void
 }
 
-export function ChannelList({ channels, activeChannelId, onSelect, voiceParticipants, onCreateChannel }: Props) {
+export function ChannelList({ channels, activeChannelId, onSelect, onJoinVoice, voiceParticipants, onCreateChannel }: Props) {
   const textChannels = channels.filter(c => c.type === 'text')
   const voiceChannels = channels.filter(c => c.type === 'voice')
 
@@ -35,6 +37,7 @@ export function ChannelList({ channels, activeChannelId, onSelect, voiceParticip
             channel={ch}
             isActive={ch.id === activeChannelId}
             onSelect={onSelect}
+            onJoinVoice={onJoinVoice}
           />
           {(voiceParticipants[ch.id] ?? []).map(identity => (
             <ParticipantRow key={identity} identity={identity} />
@@ -70,12 +73,31 @@ function SectionLabel({ label, onAdd, mt }: { label: string; onAdd: () => void; 
   )
 }
 
-function ChannelRow({ channel, isActive, onSelect }: {
+const DOUBLE_CLICK_MS = 350
+
+function ChannelRow({ channel, isActive, onSelect, onJoinVoice }: {
   channel: Channel
   isActive: boolean
   onSelect: (ch: Channel) => void
+  onJoinVoice?: (ch: Channel) => void
 }) {
+  const lastPressRef = useRef(0)
   const Icon = channel.type === 'text' ? Hash : Volume2
+
+  const handlePress = () => {
+    if (channel.type === 'voice' && onJoinVoice) {
+      const now = Date.now()
+      if (now - lastPressRef.current < DOUBLE_CLICK_MS) {
+        onJoinVoice(channel)
+        lastPressRef.current = 0
+      } else {
+        onSelect(channel)
+        lastPressRef.current = now
+      }
+    } else {
+      onSelect(channel)
+    }
+  }
 
   return (
     <XStack
@@ -85,7 +107,7 @@ function ChannelRow({ channel, isActive, onSelect }: {
       gap="$2"
       alignItems="center"
       cursor="pointer"
-      onPress={() => onSelect(channel)}
+      onPress={handlePress}
       backgroundColor={isActive ? '$color4' : 'transparent'}
       hoverStyle={{ backgroundColor: isActive ? '$color4' : '$color3' }}
       animation="quick"

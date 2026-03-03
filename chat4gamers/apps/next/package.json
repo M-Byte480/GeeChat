@@ -50,6 +50,7 @@
     "asar": true
   },
   "dependencies": {
+    "@livekit/krisp-noise-filter": "^0.4.1",
     "@tamagui/config": "^2.0.0-rc.0",
     "@tamagui/next-theme": "^2.0.0-rc.0",
     "app": "0.0.0",
