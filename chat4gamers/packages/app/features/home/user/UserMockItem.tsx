@@ -1,18 +1,19 @@
-import {AvatarButton} from "app/features/home/components/AvatarButton";
-import {Paragraph, XStack, YStack} from "@my/ui";
+import {XStack} from "@my/ui";
+import {UserAvatar} from "app/features/home/components/UserAvatar";
+import {UserStatus} from "app/features/home/types/User";
 
 export function UserMockItem(){
+  const user = {
+    username: 'Gamer123',
+    status: UserStatus.ONLINE,
+    publicKey: '',
+    avatarUrl: 'https://placehold.co/100x100'
+  }
     return(
       <XStack>
-        <AvatarButton />
-        <YStack>
-          <Paragraph size="$3" >
-            User Name
-          </Paragraph>
-          <Paragraph size="$2" >
-            Last message preview...
-          </Paragraph>
-        </YStack>
+        <UserAvatar
+          user={user}
+        />
       </XStack>
     )
 }
