@@ -55,7 +55,7 @@ export const ChatArea = ({ identity, channelId }: Props) => {
   }, [messages, identity.publicKey, scrollToBottom])
 
   return (
-    <YStack flex={1} pb="$4" bg="$background" height="100%">
+    <YStack flex={1} pl={"$2"} pb="$4" bg="$background" height="100%" >
       {errorBanner && false && (
         <XStack
           bg="$red9" px="$4" py="$2" mb="$3" borderRadius="$3"
@@ -66,7 +66,7 @@ export const ChatArea = ({ identity, channelId }: Props) => {
         </XStack>
       )}
 
-      <ScrollView ref={scrollViewRef} flex={1} mb="$4" onScroll={handleScroll} scrollEventThrottle={100}>
+      <ScrollView ref={scrollViewRef} flex={1} mb="$2" onScroll={handleScroll} scrollEventThrottle={100}>
         <YStack gap="$2">
           {messages.map(msg => (
             <XStack key={msg.id} gap="$3" alignItems="flex-start">

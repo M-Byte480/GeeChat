@@ -13,7 +13,11 @@ import { useChannels } from './hooks/useChannels'
 import {ServerPane} from "app/features/home/server-pane/ServerPane";
 
 import {ChannelBanner} from "app/features/home/channel/ChannelBanner";
-import {UserListPane} from "app/features/home/user/UserListPane";
+import {MemberPane} from "app/features/home/user/MemberPane";
+import {ThisUserProperties} from "app/features/home/user/ThisUserProperties";
+import {SettingsSheet} from "app/features/home/sheets/SettingsSheet";
+import {CreateChannelSheet} from "app/features/home/sheets/CreateChannelSheet";
+import {EditUsernameSheet} from "app/features/home/sheets/EditUsernameSheet";
 
 export function HomeScreen() {
   const {
@@ -52,6 +56,16 @@ export function HomeScreen() {
     onParticipantsChange: handleParticipantsChange,
     onVoiceDisconnect: handleVoiceDisconnect,
     onCreateChannel: handleOpenCreateChannel,
+  }
+
+  let nickname;
+
+  function onParticipantsChange() {
+
+  }
+
+  function onVoiceDisconnect() {
+
   }
 
   return (
@@ -93,7 +107,16 @@ export function HomeScreen() {
 
           <XStack flex={1} bg="$background">
             <ServerPane />
-
+            <XStack position={"absolute"}
+                    bottom={0}
+                    left={0}
+                    >
+              <ThisUserProperties connectedVoiceChannelId={connectedVoiceChannelId}
+                                  nickname={nickname}
+                                  onParticipantsChange={onParticipantsChange}
+                                  onVoiceDisconnect={onVoiceDisconnect}
+              />
+            </XStack>
             {/* Desktop sidebar */}
             <YStack $max-lg={{ display: 'none' }}>
               <Sidebar width={250} nickname={identity.username} {...sidebarProps} />
@@ -107,7 +130,7 @@ export function HomeScreen() {
                 <Button icon={Menu} onPress={() => setShowMobileMenu(true)} />
               </XStack>
 
-              <XStack flex={1} bg="$background" gap="$4" px="$4" pb="$4">
+              <XStack flex={1} bg="$background" gap="$2">
                 {activeChannel.type === 'text' ? (
                   <ChatArea identity={identity} channelId={activeChannel.id} />
                 ) : (
@@ -116,7 +139,7 @@ export function HomeScreen() {
                     participants={voiceParticipants[activeChannel.id] ?? []}
                   />
                 )}
-                <UserListPane />
+                <MemberPane />
               </XStack>
 
             </YStack>
@@ -138,83 +161,29 @@ export function HomeScreen() {
           </XStack>
 
           {/* ── Edit username ── */}
-          <Sheet open={showEditUsername} onOpenChange={setShowEditUsername} modal dismissOnSnapToBottom snapPoints={[35]}>
-            <Sheet.Frame p="$5" gap="$4">
-              <Text fontWeight="700" fontSize="$6">Change username</Text>
-              <Input
-                value={usernameInput}
-                onChangeText={setUsernameInput}
-                placeholder="New username..."
-                size="$4"
-                autoFocus
-                autoCapitalize="none"
-                autoCorrect={false}
-                onSubmitEditing={() => {
-                  const t = usernameInput.trim()
-                  if (t) { changeUsername(t); setShowEditUsername(false) }
-                }}
-              />
-              <Button
-                theme="active"
-                size="$4"
-                disabled={!usernameInput.trim()}
-                onPress={() => {
-                  const t = usernameInput.trim()
-                  if (t) { changeUsername(t); setShowEditUsername(false) }
-                }}
-              >
-                Save
-              </Button>
-            </Sheet.Frame>
-            <Sheet.Overlay />
-          </Sheet>
+          <EditUsernameSheet
+            showEditUsername={showEditUsername}
+            setShowEditUsername={setShowEditUsername}
+            usernameInput={usernameInput}
+            setUsernameInput={setUsernameInput}
+            changeUsername={changeUsername}
+          />
 
-          {/* ── Create channel ── */}
-          <Sheet open={showCreateChannel} onOpenChange={setShowCreateChannel} modal dismissOnSnapToBottom snapPoints={[35]}>
-            <Sheet.Frame p="$5" gap="$4">
-              <Text fontWeight="700" fontSize="$6">
-                New {createChannelType === 'text' ? 'Text' : 'Voice'} Channel
-              </Text>
-              <Input
-                value={newChannelName}
-                onChangeText={setNewChannelName}
-                placeholder="channel-name"
-                size="$4"
-                autoFocus
-                autoCapitalize="none"
-                autoCorrect={false}
-                onSubmitEditing={handleCreateChannel}
-              />
-              <Button theme="active" size="$4" disabled={!newChannelName.trim()} onPress={handleCreateChannel}>
-                Create Channel
-              </Button>
-            </Sheet.Frame>
-            <Sheet.Overlay />
-          </Sheet>
+          <CreateChannelSheet
+            showCreateChannel={showCreateChannel}
+            setShowCreateChannel={setShowCreateChannel}
+            createChannelType={createChannelType}
+            newChannelName={newChannelName}
+            setNewChannelName={setNewChannelName}
+            handleCreateChannel={handleCreateChannel}
+          />
 
-          {/* ── Settings ── */}
-          <Sheet open={showSettings} onOpenChange={setShowSettings} modal dismissOnSnapToBottom snapPoints={[35]}>
-            <Sheet.Frame p="$5" gap="$4">
-              <Text fontWeight="700" fontSize="$6">Settings</Text>
-              <YStack gap="$3">
-                <XStack jc="space-between" ai="center">
-                  <Paragraph color="$color10">Version</Paragraph>
-                  <Text fontWeight="600">{appVersion || '—'}</Text>
-                </XStack>
-                <XStack jc="space-between" ai="center">
-                  <Paragraph color="$color10">Username</Paragraph>
-                  <Text fontWeight="600">{identity.username}</Text>
-                </XStack>
-                <XStack jc="space-between" ai="center">
-                  <Paragraph color="$color10">Public Key</Paragraph>
-                  <Text fontWeight="600" fontSize="$2" color="$color10">
-                    {identity.publicKey.slice(0, 16)}…
-                  </Text>
-                </XStack>
-              </YStack>
-            </Sheet.Frame>
-            <Sheet.Overlay />
-          </Sheet>
+        <SettingsSheet
+          showSettings={showSettings}
+          setShowSettings={setShowSettings}
+          identity={identity}
+          appVersion={appVersion}
+        />
 
         </YStack>
       )}

@@ -1,9 +1,9 @@
 'use client'
 
 import { YStack } from '@my/ui'
-import { ChannelList } from './ChannelList'
 import type { Channel, ChannelType } from './types'
-import {ThisUserProperties} from "app/features/home/user/ThisUserProperties";
+import {ServerBanner} from "app/features/home/channel/ServerBanner";
+import {ChannelList} from "app/features/home/channel/ChannelList";
 
 type Props = {
   width?: number | string
@@ -19,7 +19,7 @@ type Props = {
 }
 
 export const Sidebar = ({
-  width = 200,
+  width = 240,
   channels,
   activeChannel,
   nickname,
@@ -31,9 +31,22 @@ export const Sidebar = ({
   onCreateChannel,
 }: Props) => (
   // @ts-ignore
-  <YStack flex={1} width={width} bg="$backgroundHover" borderRightWidth={1} borderColor="$borderColor" overflow="hidden">
-    {/* Scrollable channel list */}
-    <YStack flex={1} p="$3" overflow="hidden">
+  <YStack
+    flex={1}
+    width={width}
+    bg="$backgroundHover"
+    borderRightWidth={1}
+    borderColor="$borderColor"
+  >
+    {/* Fixed Header */}
+    <ServerBanner />
+
+    {/* Scrollable Area */}
+    <YStack
+      flex={1}
+      overflowY="auto" // Allows the list to scroll
+      p="$2"
+    >
       <ChannelList
         channels={channels}
         activeChannelId={activeChannel.id}
@@ -42,12 +55,5 @@ export const Sidebar = ({
         onCreateChannel={onCreateChannel}
       />
     </YStack>
-
-    <ThisUserProperties connectedVoiceChannelId={connectedVoiceChannelId}
-                        nickname={nickname}
-                        onParticipantsChange={onParticipantsChange}
-                        onVoiceDisconnect={onVoiceDisconnect}
-     />
-
   </YStack>
 )
