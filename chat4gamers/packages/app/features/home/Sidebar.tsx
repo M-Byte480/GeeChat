@@ -1,9 +1,9 @@
 'use client'
 
 import { YStack } from '@my/ui'
-import { VoiceRoom } from './VoiceRoom'
 import { ChannelList } from './ChannelList'
 import type { Channel, ChannelType } from './types'
+import {ThisUserProperties} from "app/features/home/user/ThisUserProperties";
 
 type Props = {
   width?: number | string
@@ -43,14 +43,11 @@ export const Sidebar = ({
       />
     </YStack>
 
-    {/* Voice controls — persist as long as connected, regardless of active channel */}
-    {connectedVoiceChannelId && (
-      <VoiceRoom
-        channelId={connectedVoiceChannelId}
-        nickname={nickname}
-        onParticipantsChange={onParticipantsChange}
-        onDisconnect={onVoiceDisconnect}
-      />
-    )}
+    <ThisUserProperties connectedVoiceChannelId={connectedVoiceChannelId}
+                        nickname={nickname}
+                        onParticipantsChange={onParticipantsChange}
+                        onVoiceDisconnect={onVoiceDisconnect}
+     />
+
   </YStack>
 )

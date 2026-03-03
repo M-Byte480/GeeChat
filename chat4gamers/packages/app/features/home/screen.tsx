@@ -11,8 +11,9 @@ import { UpdateBanner } from './UpdateBanner'
 import { VoiceChannelView } from './components/VoiceChannelView'
 import { useChannels } from './hooks/useChannels'
 import {ServerPane} from "app/features/home/server-pane/ServerPane";
-import {UserListPane} from "app/features/home/UserListPane";
+
 import {ChannelBanner} from "app/features/home/channel/ChannelBanner";
+import {UserListPane} from "app/features/home/user/UserListPane";
 
 export function HomeScreen() {
   const {

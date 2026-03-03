@@ -64,7 +64,7 @@ function SectionLabel({ label, onAdd, mt }: { label: string; onAdd: () => void; 
         icon={Plus}
         onPress={onAdd}
         color="$color10"
-        hoverStyle={{ color: '$color' }}
+        hoverStyle={{  }}
       />
     </XStack>
   )
