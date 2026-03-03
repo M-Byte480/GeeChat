@@ -1,4 +1,4 @@
-import { XStack} from "@my/ui";
+import { XStack, Spacer} from "@my/ui";
 import {AvatarButton} from "app/features/home/components/AvatarButton";
 import {ChannelTitle} from "app/features/home/channel/ChannelTitle";
 import {ChannelDescription} from "app/features/home/channel/ChannelDescription";
@@ -10,11 +10,12 @@ export function ChannelBanner() {
 
   return (
     <XStack
-      bg="$red9" px="$4" py="$2" borderRadius="$3"
+      bg="$gray2" px="$4" py="$2" borderRadius="$3"
       alignItems="center" gap="$3"
     >
       <ChannelTitle />
       <ChannelDescription />
+      <Spacer flex={1} />
       <AvatarButton onClickCallback={()=> expandUserList()} />
     </XStack>
   )
