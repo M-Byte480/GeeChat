@@ -1,6 +1,6 @@
 'use client'
 
-import { XStack, YStack, Sheet, Button, Text, Input, Paragraph } from '@my/ui'
+import { XStack, YStack, Sheet, Button, Text } from '@my/ui'
 import { Menu, Settings, Pencil } from '@tamagui/lucide-icons'
 import { useState, useEffect } from 'react'
 import { Sidebar } from './Sidebar'
@@ -10,14 +10,24 @@ import type { Identity } from './identity'
 import { UpdateBanner } from './UpdateBanner'
 import { VoiceChannelView } from './components/VoiceChannelView'
 import { useChannels } from './hooks/useChannels'
-import {ServerPane} from "app/features/home/server-pane/ServerPane";
+import { ServerPane } from 'app/features/home/server-pane/ServerPane'
+import { ChannelBanner } from 'app/features/home/channel/ChannelBanner'
+import { MemberPane } from 'app/features/home/user/MemberPane'
+import { ThisUserProperties } from 'app/features/home/user/ThisUserProperties'
+import { SettingsSheet } from 'app/features/home/sheets/SettingsSheet'
+import { CreateChannelSheet } from 'app/features/home/sheets/CreateChannelSheet'
+import { EditUsernameSheet } from 'app/features/home/sheets/EditUsernameSheet'
+import { UserStatus } from 'app/features/home/types/User'
+import type { User } from 'app/features/home/types/User'
 
-import {ChannelBanner} from "app/features/home/channel/ChannelBanner";
-import {MemberPane} from "app/features/home/user/MemberPane";
-import {ThisUserProperties} from "app/features/home/user/ThisUserProperties";
-import {SettingsSheet} from "app/features/home/sheets/SettingsSheet";
-import {CreateChannelSheet} from "app/features/home/sheets/CreateChannelSheet";
-import {EditUsernameSheet} from "app/features/home/sheets/EditUsernameSheet";
+const MOCK_MEMBERS: User[] = [
+  { username: 'Milan',       publicKey: 'pk1', status: UserStatus.ONLINE },
+  { username: 'Gamer123',    publicKey: 'pk2', status: UserStatus.ONLINE },
+  { username: 'ProSniper',   publicKey: 'pk3', status: UserStatus.AWAY },
+  { username: 'NightOwl',    publicKey: 'pk4', status: UserStatus.DO_NOT_DISTURB },
+  { username: 'PixelHunter', publicKey: 'pk5', status: UserStatus.OFFLINE },
+  { username: 'StarCraft',   publicKey: 'pk6', status: UserStatus.ONLINE },
+]
 
 export function HomeScreen() {
   const {
@@ -32,6 +42,7 @@ export function HomeScreen() {
     setNewChannelName,
     handleParticipantsChange,
     handleChannelSelect,
+    handleVoiceJoin,
     handleVoiceDisconnect,
     handleOpenCreateChannel,
     handleCreateChannel,
@@ -40,6 +51,7 @@ export function HomeScreen() {
   const [showMobileMenu, setShowMobileMenu] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [showEditUsername, setShowEditUsername] = useState(false)
+  const [showMemberPane, setShowMemberPane] = useState(true)
   const [usernameInput, setUsernameInput] = useState('')
   const [appVersion, setAppVersion] = useState('')
 
@@ -53,19 +65,10 @@ export function HomeScreen() {
     voiceParticipants,
     connectedVoiceChannelId,
     onChannelSelect: handleChannelSelect,
+    onJoinVoice: handleVoiceJoin,
     onParticipantsChange: handleParticipantsChange,
     onVoiceDisconnect: handleVoiceDisconnect,
     onCreateChannel: handleOpenCreateChannel,
-  }
-
-  let nickname;
-
-  function onParticipantsChange() {
-
-  }
-
-  function onVoiceDisconnect() {
-
   }
 
   return (
@@ -107,14 +110,13 @@ export function HomeScreen() {
 
           <XStack flex={1} bg="$background">
             <ServerPane />
-            <XStack position={"absolute"}
-                    bottom={0}
-                    left={0}
-                    >
-              <ThisUserProperties connectedVoiceChannelId={connectedVoiceChannelId}
-                                  nickname={nickname}
-                                  onParticipantsChange={onParticipantsChange}
-                                  onVoiceDisconnect={onVoiceDisconnect}
+            <XStack position="absolute" bottom={0} left={0}>
+              <ThisUserProperties
+                connectedVoiceChannelId={connectedVoiceChannelId}
+                nickname={identity.username}
+                user={{ username: identity.username, publicKey: identity.publicKey, status: UserStatus.ONLINE, avatarUrl: identity.pfp }}
+                onParticipantsChange={handleParticipantsChange}
+                onVoiceDisconnect={handleVoiceDisconnect}
               />
             </XStack>
             {/* Desktop sidebar */}
@@ -124,7 +126,10 @@ export function HomeScreen() {
 
             {/* Main content */}
             <YStack flex={1}>
-              < ChannelBanner />
+              <ChannelBanner
+                showMemberPane={showMemberPane}
+                onToggleMemberPane={() => setShowMemberPane(p => !p)}
+              />
 
               <XStack p="$4" $sm={{ display: 'none' }} borderBottomWidth={1} borderColor="$borderColor" width="100%" jc="center">
                 <Button icon={Menu} onPress={() => setShowMobileMenu(true)} />
@@ -139,7 +144,7 @@ export function HomeScreen() {
                     participants={voiceParticipants[activeChannel.id] ?? []}
                   />
                 )}
-                <MemberPane />
+                {showMemberPane && <MemberPane members={MOCK_MEMBERS} />}
               </XStack>
 
             </YStack>

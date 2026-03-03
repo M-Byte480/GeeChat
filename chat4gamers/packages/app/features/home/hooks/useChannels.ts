@@ -15,12 +15,16 @@ export function useChannels() {
     setVoiceParticipants(prev => ({ ...prev, [channelId]: participants }))
   }, [])
 
+  // Single click: just view the channel, never auto-join voice
   const handleChannelSelect = useCallback((channel: Channel) => {
     setActiveChannel(channel)
-    if (channel.type === 'voice' && connectedVoiceChannelId !== channel.id) {
-      setConnectedVoiceChannelId(channel.id)
-    }
-  }, [connectedVoiceChannelId])
+  }, [])
+
+  // Double click on a voice channel: actually join the call
+  const handleVoiceJoin = useCallback((channel: Channel) => {
+    setActiveChannel(channel)
+    setConnectedVoiceChannelId(channel.id)
+  }, [])
 
   const handleVoiceDisconnect = useCallback(() => {
     setConnectedVoiceChannelId(null)
@@ -85,6 +89,7 @@ export function useChannels() {
     setNewChannelName,
     handleParticipantsChange,
     handleChannelSelect,
+    handleVoiceJoin,
     handleVoiceDisconnect,
     handleOpenCreateChannel,
     handleCreateChannel,

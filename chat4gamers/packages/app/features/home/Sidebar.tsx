@@ -13,6 +13,7 @@ type Props = {
   voiceParticipants: Record<string, string[]>
   connectedVoiceChannelId: string | null
   onChannelSelect: (channel: Channel) => void
+  onJoinVoice: (channel: Channel) => void
   onParticipantsChange: (channelId: string, participants: string[]) => void
   onVoiceDisconnect: () => void
   onCreateChannel: (type: ChannelType) => void
@@ -26,6 +27,7 @@ export const Sidebar = ({
   voiceParticipants,
   connectedVoiceChannelId,
   onChannelSelect,
+  onJoinVoice,
   onParticipantsChange,
   onVoiceDisconnect,
   onCreateChannel,
@@ -51,6 +53,7 @@ export const Sidebar = ({
         channels={channels}
         activeChannelId={activeChannel.id}
         onSelect={onChannelSelect}
+        onJoinVoice={onJoinVoice}
         voiceParticipants={voiceParticipants}
         onCreateChannel={onCreateChannel}
       />

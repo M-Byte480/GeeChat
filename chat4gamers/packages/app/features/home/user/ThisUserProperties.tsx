@@ -1,15 +1,18 @@
 import { XStack, YStack, Text, Separator } from "@my/ui";
 import { VoiceRoom } from "app/features/home/VoiceRoom";
 import { UserMockItem } from "app/features/home/user/UserMockItem";
+import type { User } from "app/features/home/types/User";
 
 export function ThisUserProperties({
                                      connectedVoiceChannelId,
                                      nickname,
+                                     user,
                                      onParticipantsChange,
                                      onVoiceDisconnect
                                    }: {
   connectedVoiceChannelId: string | null;
-  nickname: string;
+  nickname: string | undefined;
+  user: User;
   onParticipantsChange: (channelId: string, participants: string[]) => void;
   onVoiceDisconnect: () => void;
 }) {
@@ -62,7 +65,7 @@ export function ThisUserProperties({
 
       {/* 1. Profile Header Section */}
       <YStack bg="$color3" p="$3" gap="$2">
-        <UserMockItem />
+        <UserMockItem user={user} />
       </YStack>
 
 

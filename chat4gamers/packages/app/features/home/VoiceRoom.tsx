@@ -3,6 +3,8 @@ import { Button, YStack, Text, XStack } from '@my/ui'
 import { Room, RoomEvent, Track } from 'livekit-client'
 import { Mic, MicOff, PhoneOff, TestTube, Volume2, VolumeX } from 'lucide-react'
 import { API_BASE, LIVEKIT_WS } from 'app/constants/config'
+import { KrispNoiseFilter } from '@livekit/krisp-noise-filter'
+import { createLocalAudioTrack } from 'livekit-client'
 
 type Props = {
   channelId: string
@@ -83,7 +85,26 @@ export const VoiceRoom = ({ channelId, nickname, onParticipantsChange, onDisconn
 
       const newRoom = new Room({ adaptiveStream: true })
       await newRoom.connect(LIVEKIT_WS, token, { autoSubscribe: true })
-      await newRoom.localParticipant.setMicrophoneEnabled(true)
+
+      const audioTrack = await createLocalAudioTrack({
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true,
+      })
+
+      const krispProcessor = KrispNoiseFilter()
+      await audioTrack.setProcessor(krispProcessor)
+      await krispProcessor.setEnabled(true)
+
+      await newRoom.localParticipant.publishTrack(audioTrack, {
+        name: 'microphone',
+        // High-quality preset for gamers
+        audioPreset: {
+          maxBitrate: 48000,
+        }
+      })
+
+      // await newRoom.localParticipant.setMicrophoneEnabled(true)
 
       // Attach already-subscribed audio tracks
       newRoom.remoteParticipants.forEach(participant => {
