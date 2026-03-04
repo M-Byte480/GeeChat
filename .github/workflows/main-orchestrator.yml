@@ -37,8 +37,10 @@ jobs:
         run: |
           cd chat4gamers/apps/next
           
-          # 1. Bump the file (This handles the Yarn patches correctly)
-          yarn version patch
+          yarn version patch --no-deferred
+          
+          # 2. Sync the lockfile WITHOUT running build scripts (Crucial)
+          yarn install --mode=skip-build
           
           # 2. Extract version for Git
           NEW_VERSION=$(node -p "require('./package.json').version")
@@ -80,22 +82,10 @@ jobs:
     runs-on: windows-latest
     defaults:
       run:
-        working-directory: chat4gamers
-
+        working-directory: chat4gamers/apps/next
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: stable
-          targets: x86_64-pc-windows-msvc
-
-      - name: Rust Cache
-        uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: "packages/audio-native -> target"
 
       - name: Install Node
         uses: actions/setup-node@v4
@@ -107,10 +97,8 @@ jobs:
       - name: Install Dependencies
         run: yarn install
 
-      - name: Build and Package Electron App
-        run: |
-          yarn turbo run build
-          yarn workspace next-app package
+      - name: Build Electron App
+        run: yarn package # This runs your: electron-builder --publish always
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_SKIP_SIGNING: true
