@@ -5,7 +5,20 @@
     "build": {
       "env": ["DISABLE_EXTRACTION", "NODE_ENV", "EAS_BUILD_PLATFORM"],
       "dependsOn": ["^build"],
-      "outputs": [".next/**", "!.next/cache/**", "build/**", "node_modules/.cache/metro/**"]
+      "outputs": [
+        ".next/**",
+        "out/**",
+        "dist/**",
+        "index.js",
+        "!.next/cache/**",
+        "build/**",
+        "node_modules/.cache/metro/**",
+        "*.node"
+      ]
+    },
+    "package": {
+      "dependsOn": ["build"],
+      "cache": false
     },
     "dev": {
       "cache": false,
