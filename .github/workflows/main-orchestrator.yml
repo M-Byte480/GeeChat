@@ -43,6 +43,7 @@ jobs:
           
           # 2. Update the lockfile BUT explicitly ignore all build scripts
           # This prevents Yarn from trying to build Tamagui/Rust/SQLite
+          export YARN_ENABLE_SCRIPTS=false
           yarn install --mode=skip-build
           
           # 3. Extract version for Git
