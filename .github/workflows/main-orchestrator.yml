@@ -37,28 +37,24 @@ jobs:
         run: |
           cd chat4gamers/apps/next
           
+          # 1. Bump the version without triggering ANY side effects
+          # --no-deferred prevents Yarn from creating a 'deferred' version file
           yarn version patch --no-deferred
           
-          # 2. Sync the lockfile WITHOUT running build scripts (Crucial)
+          # 2. Update the lockfile BUT explicitly ignore all build scripts
+          # This prevents Yarn from trying to build Tamagui/Rust/SQLite
           yarn install --mode=skip-build
           
-          # 2. Extract version for Git
+          # 3. Extract version for Git
           NEW_VERSION=$(node -p "require('./package.json').version")
-          echo "Bumping to $NEW_VERSION"
           echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
-          
-          # 3. Configure Git
+        
+          # 4. Standard Git flow...
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
-          
-          # 4. Commit the change back to main
-          git add package.json
+          git add ../../yarn.lock package.json
           git commit -m "chore(release): bump version to $NEW_VERSION [skip ci]" || echo "No changes"
-          
-          # 5. Create the tag locally
           git tag -f v$NEW_VERSION
-          
-          # 6. Push using the PAT URL to trigger the next pipeline
           git push https://x-access-token:${{ secrets.MY_PAT_TOKEN }}@github.com/${{ github.repository }}.git main --tags --force
 
 
