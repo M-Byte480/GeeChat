@@ -80,10 +80,22 @@ jobs:
     runs-on: windows-latest
     defaults:
       run:
-        working-directory: chat4gamers/apps/next
+        working-directory: chat4gamers
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          targets: x86_64-pc-windows-msvc
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "packages/audio-native -> target"
 
       - name: Install Node
         uses: actions/setup-node@v4
@@ -95,8 +107,10 @@ jobs:
       - name: Install Dependencies
         run: yarn install
 
-      - name: Build Electron App
-        run: yarn package # This runs your: electron-builder --publish always
+      - name: Build and Package Electron App
+        run: |
+          yarn turbo run build
+          yarn workspace next-app package
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_SKIP_SIGNING: true
