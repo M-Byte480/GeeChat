@@ -76,8 +76,6 @@ export const VoiceRoom = ({ channelId, nickname, onParticipantsChange, onDisconn
   }, [channelId])
 
   const joinRoom = async () => {
-    const { KrispNoiseFilter } = await import('@livekit/krisp-noise-filter');
-
     try {
       const resp = await fetch(
         `${API_BASE}/get-voice-token?room=${channelId}&identity=${encodeURIComponent(nickname)}`
@@ -93,15 +91,19 @@ export const VoiceRoom = ({ channelId, nickname, onParticipantsChange, onDisconn
         autoGainControl: true,
       })
 
-      const krispProcessor = KrispNoiseFilter()
-      await audioTrack.setProcessor(krispProcessor)
-      await krispProcessor.setEnabled(true)
+      // Since we're in Electron, we can't 'setProcessor' with a Native .node file
+      // directly in the browser thread. Instead, we use your Rust binary
+      // for the "Main" processing or via a Worklet if you went the WASM route.
+
+      // For now, we've removed the Krisp bloat.
+      // If you want to use your 'packages/audio-native', we'll call it here
+      // or via the Electron IPC bridge.
 
       await newRoom.localParticipant.publishTrack(audioTrack, {
         name: 'microphone',
         // High-quality preset for gamers
         audioPreset: {
-          maxBitrate: 48000,
+          maxBitrate: 48000
         }
       })
 

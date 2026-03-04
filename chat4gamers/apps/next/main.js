@@ -3,10 +3,27 @@ import path from 'node:path'
 import fs from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import electronUpdater from 'electron-updater';
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+
 const { autoUpdater } = electronUpdater;
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
+
+let gate;
+try {
+    const nativePath = app.isPackaged
+        ? path.join(process.resourcesPath, 'app.asar.unpacked', 'node_modules/@geechat/audio-native/index.js')
+        : '@geechat/audio-native';
+
+    const { NoiseGate } = require(nativePath);
+    gate = new NoiseGate(0.05);
+} catch (e) {
+    console.error("Failed to load Rust Audio Native module:", e);
+    // Fallback so the app doesn't crash, even if the gate doesn't work
+    gate = { processAudioFast: () => {} };
+}
 
 const createSplash = () => {
   const splash = new BrowserWindow({
@@ -75,6 +92,11 @@ autoUpdater.on('update-downloaded', () => {
 })
 
 ipcMain.handle('get-version', () => app.getVersion())
+
+ipcMain.handle('process-audio', (event, buffer /* Float32Array */ ) => {
+    gate.processAudioFast(buffer)
+    return buffer
+})
 
 // Deferred so app.getPath('userData') is only called after app.whenReady()
 const getSafeStorePath = () => path.join(app.getPath('userData'), 'identity.enc')

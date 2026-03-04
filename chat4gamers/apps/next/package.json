@@ -20,6 +20,10 @@
   },
   "build": {
     "appId": "ie.milan.geechat",
+    "asar": true,
+    "asarUnpack": [
+      "**/node_modules/@geechat/audio-native/**/*.node"
+    ],
     "productName": "GeeChat",
     "directories": {
       "output": "dist-electron"
@@ -31,7 +35,9 @@
       "out/**/*",
       "package.json",
       "tsconfig.json",
-      "index.js"
+      "index.js",
+      "node_modules/@geechat/audio-native/index.js",
+      "node_modules/@geechat/audio-native/*.node"
     ],
     "win": {
       "target": "nsis",
@@ -46,8 +52,7 @@
       "createStartMenuShortcut": true,
       "shortcutName": "GeeChat",
       "runAfterFinish": true
-    },
-    "asar": true
+    }
   },
   "dependencies": {
     "@livekit/krisp-noise-filter": "^0.4.1",
