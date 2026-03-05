@@ -7,6 +7,7 @@ import { MessageContent } from './components/MessageContent'
 import { ImageLightbox } from './components/ImageLightbox'
 import { ExternalLinkDialog } from './components/ExternalLinkDialog'
 import {ChannelBanner} from "app/features/home/channel/ChannelBanner";
+import { EmojiPicker } from './components/EmojiPicker'
 
 type Props = {
   identity: Identity
@@ -20,6 +21,10 @@ export const ChatArea = ({ identity, channelId, serverUrl }: Props) => {
 
   const [pendingUrl, setPendingUrl] = useState<string | null>(null)
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null)
+
+  const handleEmojiSelect = (emoji: string) => {
+    handleInputChange(inputText + emoji)
+  }
 
   const scrollViewRef = useRef<any>(null)
   const isAtBottomRef = useRef(true)
@@ -89,7 +94,7 @@ export const ChatArea = ({ identity, channelId, serverUrl }: Props) => {
         )}
       </ScrollView>
 
-      <XStack gap="$2" alignItems="center">
+      <XStack gap="$2" alignItems="center" position="relative">
         <Input
           flex={1}
           placeholder="Type a message..."
@@ -98,6 +103,7 @@ export const ChatArea = ({ identity, channelId, serverUrl }: Props) => {
           onChangeText={handleInputChange}
           onSubmitEditing={sendMessage}
         />
+        <EmojiPicker onSelect={handleEmojiSelect} />
         <Button size="$4" icon={Send} onPress={sendMessage} disabled={!inputText.trim()} theme="active" />
       </XStack>
 
