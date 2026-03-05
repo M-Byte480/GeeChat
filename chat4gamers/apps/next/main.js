@@ -14,8 +14,8 @@ const __dirname = path.dirname(__filename)
 let gate;
 try {
     const nativePath = app.isPackaged
-        ? path.join(process.resourcesPath, 'app.asar.unpacked', 'node_modules/@geechat/audio-native/index.js')
-        : '@geechat/audio-native';
+        ? path.join(process.resourcesPath, 'audio-native.win32-x64-msvc.node')
+        : path.join(__dirname, '../../packages/audio-native/audio-native.win32-x64-msvc.node');
 
     const { NoiseGate } = require(nativePath);
     gate = new NoiseGate(0.05);

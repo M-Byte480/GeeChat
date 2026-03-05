@@ -2,21 +2,23 @@ import { useEffect, useState } from 'react'
 import { Button, YStack, Text, XStack } from '@my/ui'
 import { Room, RoomEvent, Track } from 'livekit-client'
 import { Mic, MicOff, PhoneOff, TestTube, Volume2, VolumeX } from 'lucide-react'
-import { API_BASE, LIVEKIT_WS } from 'app/constants/config'
+// server URLs are passed as props — no hardcoded config needed
 import { createLocalAudioTrack } from 'livekit-client'
 
 type Props = {
   channelId: string
   nickname: string
+  serverUrl: string
   onParticipantsChange: (channelId: string, participants: string[]) => void
   onDisconnect?: () => void
 }
 
-export const VoiceRoom = ({ channelId, nickname, onParticipantsChange, onDisconnect }: Props) => {
+export const VoiceRoom = ({ channelId, nickname, serverUrl, onParticipantsChange, onDisconnect }: Props) => {
+  const livekitWs = serverUrl.replace(/^https:\/\//, 'wss://').replace(/^http:\/\//, 'ws://')
   const [room, setRoom] = useState<Room | null>(null)
 
   const broadcastToServer = (ch: string, participants: string[]) => {
-    fetch(`${API_BASE}/voice-state`, {
+    fetch(`${serverUrl}/voice-state`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ channelId: ch, participants }),
@@ -78,12 +80,12 @@ export const VoiceRoom = ({ channelId, nickname, onParticipantsChange, onDisconn
   const joinRoom = async () => {
     try {
       const resp = await fetch(
-        `${API_BASE}/get-voice-token?room=${channelId}&identity=${encodeURIComponent(nickname)}`
+        `${serverUrl}/get-voice-token?room=${channelId}&identity=${encodeURIComponent(nickname)}`
       )
       const { token } = await resp.json()
 
       const newRoom = new Room({ adaptiveStream: true })
-      await newRoom.connect(LIVEKIT_WS, token, { autoSubscribe: true })
+      await newRoom.connect(livekitWs, token, { autoSubscribe: true })
 
       const audioTrack = await createLocalAudioTrack({
         echoCancellation: true,
