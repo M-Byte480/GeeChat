@@ -3,7 +3,10 @@
   "private": true,
   "workspaces": [
     "./apps/*",
-    "./packages/*"
+    "./packages/app",
+    "./packages/ui",
+    "./packages/config",
+    "./packages/api-client"
   ],
   "scripts": {
     "native": "cd apps/expo && yarn start",
@@ -16,14 +19,15 @@
     "web:extract": "DISABLE_EXTRACTION=false yarn workspace next-app dev",
     "web:prod": "yarn workspace next-app build",
     "web:prod:serve": "yarn workspace next-app serve",
-    "Disabled:postinstall": "if [ \"$CI\" != \"true\" ]; then yarn check-tamagui && yarn build; fi",
+    "postinstall": "yarn check-tamagui && yarn build",
     "build": "yarn workspaces foreach --all --exclude next-app run build",
     "upgrade:tamagui": "yarn up '*tamagui*'@latest '@tamagui/*'@latest",
     "upgrade:tamagui:canary": "yarn up '*tamagui*'@canary '@tamagui/*'@canary",
     "check-tamagui": "tamagui check",
     "test": "vitest run",
     "test:watch": "vitest",
-    "prepare": "husky"
+    "prepare": "husky",
+    "build:native": "cd packages/audio-native && yarn install && yarn build:electron"
   },
   "resolutions": {
     "react": "19.1.0",

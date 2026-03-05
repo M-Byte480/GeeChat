@@ -21,13 +21,16 @@
   "build": {
     "appId": "ie.REDACTED_USERNAME.geechat",
     "asar": true,
-    "asarUnpack": [
-      "**/node_modules/@geechat/audio-native/**/*.node"
-    ],
     "productName": "GeeChat",
     "directories": {
       "output": "dist-electron"
     },
+    "extraResources": [
+      {
+        "from": "../../packages/audio-native/audio-native.win32-x64-msvc.node",
+        "to": "audio-native.win32-x64-msvc.node"
+      }
+    ],
     "files": [
       "main.js",
       "preload.cjs",
@@ -35,9 +38,7 @@
       "out/**/*",
       "package.json",
       "tsconfig.json",
-      "index.js",
-      "node_modules/@geechat/audio-native/index.js",
-      "node_modules/@geechat/audio-native/*.node"
+      "index.js"
     ],
     "win": {
       "target": "nsis",
