@@ -27,7 +27,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "prepare": "husky",
-    "build:native": "cd packages/audio-native && yarn install && yarn build:electron"
+    "build:native": "cd apps/audio-native && yarn install && yarn build"
   },
   "resolutions": {
     "react": "19.1.0",
@@ -61,6 +61,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.3",
-    "cross-env": "^10.1.0"
+    "cross-env": "^10.1.0",
+    "shx": "^0.4.0"
   }
 }

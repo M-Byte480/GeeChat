@@ -3,27 +3,15 @@
 /**
  * AppDialog — reusable centered modal dialog for web/Electron.
  *
- * Usage:
- *   <AppDialog open={show} onClose={() => setShow(false)} title="My Dialog">
- *     <Input ... />
- *     <XStack gap="$3" jc="flex-end">
- *       <AppDialog.Cancel onPress={() => setShow(false)} />
- *       <Button theme="active" onPress={handleSubmit}>Confirm</Button>
- *     </XStack>
- *   </AppDialog>
- *
- * Why not Sheet?
- *   Sheet slides up from the bottom. Dialog is a centered overlay — better
- *   for confirmations, forms, and prompts that aren't tied to a swipe gesture.
- *
- * Why the explicit `style` props?
- *   Tamagui Dialog.Overlay and Dialog.Content don't automatically apply
- *   `position: fixed` in Next.js/Electron. Without it they render in-flow
- *   and push surrounding layout. The `style` props force correct behaviour.
+ * Uses ReactDOM.createPortal directly to document.body, bypassing Tamagui's
+ * Dialog.Portal which requires PortalProvider and doesn't teleport reliably
+ * in Next.js/Electron without it.
  */
 
-import { Dialog, Button, XStack, YStack, Text } from '@my/ui'
+import { Button, XStack, YStack, Text } from '@my/ui'
 import { X } from '@tamagui/lucide-icons'
+import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import type { ReactNode } from 'react'
 
 type Props = {
@@ -36,71 +24,63 @@ type Props = {
 }
 
 export function AppDialog({ open, onClose, title, description, width = 420, children }: Props) {
-  return (
-    <Dialog modal open={open} onOpenChange={(isOpen) => { if (!isOpen) onClose() }}>
-      <Dialog.Portal>
-        {/* Full-screen dimmed backdrop */}
-        <Dialog.Overlay
-          key="overlay"
-          animation="quick"
-          enterStyle={{ opacity: 0 }}
-          exitStyle={{ opacity: 0 }}
-          // @ts-ignore – explicit fixed positioning required for Next.js/Electron
-          style={{
-            position: 'fixed',
-            inset: 0,
-            backgroundColor: 'rgba(0,0,0,0.55)',
-            zIndex: 10000,
-          }}
-        />
+  // Avoid SSR mismatch — only portal after mount
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => { setMounted(true) }, [])
 
-        {/* Centered content box */}
-        <Dialog.Content
-          bordered
-          elevate
-          key="content"
-          animation="quick"
-          enterStyle={{ opacity: 0, scale: 0.95, y: -8 }}
-          exitStyle={{ opacity: 0, scale: 0.95, y: 8 }}
-          gap="$4"
-          p="$6"
-          // @ts-ignore – explicit fixed positioning required for Next.js/Electron
-          style={{
-            position: 'fixed',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            width,
-            maxWidth: '90vw',
-            zIndex: 10001,
-          }}
-        >
-          {/* Header row */}
-          <XStack alignItems="center" justifyContent="space-between">
-            <Dialog.Title fontWeight="700" fontSize="$6">{title}</Dialog.Title>
-            <Dialog.Close asChild>
-              <Button size="$2" circular chromeless icon={X} onPress={onClose} />
-            </Dialog.Close>
-          </XStack>
+  if (!open || !mounted) return null
 
-          {description && (
-            <Dialog.Description color="$color10" fontSize="$3" mt="$-2">
-              {description}
-            </Dialog.Description>
-          )}
+  return createPortal(
+    // Backdrop — fills viewport, click-away closes
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 10000,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      <div
+        style={{
+          position: 'fixed',
+          inset: 0,
+          backgroundColor: 'rgba(0,0,0,0.55)',
+        }}
+        onClick={onClose}
+      />
 
-          {children}
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog>
+      {/* Content panel — sits above backdrop */}
+      <YStack
+        bg="$background"
+        borderRadius="$4"
+        borderWidth={1}
+        borderColor="$borderColor"
+        p="$6"
+        gap="$4"
+        // @ts-ignore
+        style={{ position: 'relative', zIndex: 1, width, maxWidth: '90vw', boxShadow: '0 8px 32px rgba(0,0,0,0.4)' }}
+      >
+        <XStack alignItems="center" justifyContent="space-between">
+          <Text fontWeight="700" fontSize="$6">{title}</Text>
+          <Button size="$2" circular chromeless icon={X} onPress={onClose} />
+        </XStack>
+
+        {description && (
+          <Text color="$color10" fontSize="$3" mt="$-2">{description}</Text>
+        )}
+
+        {children}
+      </YStack>
+    </div>,
+    document.body,
   )
 }
 
-/** Convenience cancel button pre-wired to Dialog.Close */
+/** Convenience cancel button */
 AppDialog.Cancel = function Cancel({ onPress, label = 'Cancel' }: { onPress: () => void; label?: string }) {
   return (
-    <Dialog.Close asChild>
-      <Button size="$4" chromeless onPress={onPress}>{label}</Button>
-    </Dialog.Close>
+    <Button size="$4" chromeless onPress={onPress}>{label}</Button>
   )
 }

@@ -1,8 +1,13 @@
 import { useState, useCallback, useEffect } from 'react'
-import { API_BASE, WS_BASE } from 'app/constants/config'
 import { Channel, ChannelType, CHANNELS } from '../types'
 
-export function useChannels() {
+function deriveWsBase(url: string): string {
+  return url.replace(/^https:\/\//, 'wss://').replace(/^http:\/\//, 'ws://')
+}
+
+export function useChannels(serverUrl: string | null) {
+  const apiBase = serverUrl ?? null
+  const wsBase = serverUrl ? deriveWsBase(serverUrl) : null
   const [channels, setChannels] = useState<Channel[]>(CHANNELS)
   const [activeChannel, setActiveChannel] = useState<Channel>(CHANNELS[0])
   const [voiceParticipants, setVoiceParticipants] = useState<Record<string, string[]>>({})
@@ -38,28 +43,30 @@ export function useChannels() {
 
   const handleCreateChannel = useCallback(async () => {
     const name = newChannelName.trim()
-    if (!name) return
+    if (!name || !apiBase) return
     try {
-      await fetch(`${API_BASE}/channels`, {
+      await fetch(`${apiBase}/channels`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, type: createChannelType }),
       })
       setShowCreateChannel(false)
     } catch {}
-  }, [newChannelName, createChannelType])
+  }, [newChannelName, createChannelType, apiBase])
 
-  // Fetch channel list on mount
+  // Fetch channel list when server changes
   useEffect(() => {
-    fetch(`${API_BASE}/channels`)
+    if (!apiBase) { setChannels(CHANNELS); return }
+    fetch(`${apiBase}/channels`)
       .then(r => r.json())
       .then(data => { if (Array.isArray(data)) setChannels(data) })
       .catch(() => {})
-  }, [])
+  }, [apiBase])
 
   // WebSocket listener for voice state and new channel broadcasts
   useEffect(() => {
-    const ws = new WebSocket(`${WS_BASE}/ws`)
+    if (!wsBase) return
+    const ws = new WebSocket(`${wsBase}/ws`)
     ws.onmessage = (event) => {
       try {
         const msg = JSON.parse(event.data)
@@ -75,7 +82,7 @@ export function useChannels() {
       } catch {}
     }
     return () => ws.close()
-  }, [])
+  }, [wsBase])
 
   return {
     channels,

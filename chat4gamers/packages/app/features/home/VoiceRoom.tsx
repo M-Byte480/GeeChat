@@ -1,50 +1,174 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Button, YStack, Text, XStack } from '@my/ui'
-import { Room, RoomEvent, Track } from 'livekit-client'
-import { Mic, MicOff, PhoneOff, TestTube, Volume2, VolumeX } from 'lucide-react'
-import { API_BASE, LIVEKIT_WS } from 'app/constants/config'
-import { createLocalAudioTrack } from 'livekit-client'
+import { Room, RoomEvent, Track, LocalAudioTrack } from 'livekit-client'
+import { Mic, MicOff, PhoneOff, TestTube, Volume2, VolumeX, Wand2 } from 'lucide-react'
 
 type Props = {
   channelId: string
   nickname: string
+  serverUrl: string
   onParticipantsChange: (channelId: string, participants: string[]) => void
   onDisconnect?: () => void
 }
 
-export const VoiceRoom = ({ channelId, nickname, onParticipantsChange, onDisconnect }: Props) => {
-  const [room, setRoom] = useState<Room | null>(null)
+type ProcessedAudio = {
+  track: MediaStreamTrack
+  cleanup: () => void
+  enableMonitor: () => void
+  disableMonitor: () => void
+  setDenoise: (enabled: boolean) => void
+  nativeAvailable: boolean
+}
+
+/**
+ * Build a noise-suppressed MediaStreamTrack via the native RNNoise .node addon.
+ *
+ * Architecture:
+ *   getUserMedia → AudioContext → ScriptProcessorNode → MediaStreamDestination
+ *
+ * The ScriptProcessorNode runs on the main JS thread and calls
+ * window.electronAPI.processAudioFrame() synchronously — a contextBridge proxy
+ * to the preload's napi-rs Denoiser instance.  No WASM, no AudioWorklet, no IPC.
+ *
+ * Ring buffer: ScriptProcessorNode delivers 512-sample blocks; RNNoise needs
+ * 480 samples.  LCM(512, 480) = 7680 → the 15-block / 16-frame cycle balances
+ * perfectly.  Pre-buffer of 480 silence samples prevents cold-start underruns.
+ *
+ * Fallback: if the native addon is unavailable (web, or first-run before build),
+ * audio passes through unprocessed — the browser's own echoCancellation still runs.
+ */
+async function buildProcessedAudio(): Promise<ProcessedAudio> {
+  const rawStream = await navigator.mediaDevices.getUserMedia({
+    audio: {
+      echoCancellation: true,
+      noiseSuppression: false, // RNNoise handles this natively
+      autoGainControl: true,
+      sampleRate: 48000,
+      channelCount: 1,
+    },
+  })
+
+  const ctx = new AudioContext({ sampleRate: 48000 })
+
+  const processAudioFrame: ((input: Float32Array) => number[]) | null =
+    (window as any).electronAPI?.processAudioFrame ?? null
+
+  const BLOCK     = 512  // ScriptProcessorNode buffer size (power-of-2 closest to 480)
+  const FRAME     = 480  // RNNoise frame size
+  const inRing    = new Float32Array(BLOCK + FRAME) // 992 samples — fits max inFill
+  const outRing   = new Float32Array(BLOCK + FRAME) // 992 samples — fits max outLen
+  let   inFill    = 0
+  let   outLen    = FRAME // pre-buffer 1 silent frame so queue never drains cold
+  let   denoiseEnabled = !!processAudioFrame   // mutable flag — toggled at runtime
+
+  // eslint-disable-next-line @typescript-eslint/no-deprecated
+  const scriptNode = ctx.createScriptProcessor(BLOCK, 1, 1)
+
+  scriptNode.onaudioprocess = (e: AudioProcessingEvent) => {
+    const inp = e.inputBuffer.getChannelData(0)
+    const out = e.outputBuffer.getChannelData(0)
+
+    // Accumulate BLOCK new input samples
+    inRing.set(inp, inFill)
+    inFill += inp.length // always BLOCK
+
+    if (processAudioFrame && denoiseEnabled) {
+      // Native RNNoise path — synchronous, zero IPC
+      while (inFill >= FRAME) {
+        const processed = processAudioFrame(inRing.subarray(0, FRAME))
+        for (let i = 0; i < FRAME; i++) outRing[outLen + i] = processed[i]!
+        outLen += FRAME
+        inRing.copyWithin(0, FRAME, inFill)
+        inFill -= FRAME
+      }
+    } else {
+      // Raw / fallback: bypass — copy input straight to output ring
+      while (inFill >= FRAME) {
+        outRing.set(inRing.subarray(0, FRAME), outLen)
+        outLen += FRAME
+        inRing.copyWithin(0, FRAME, inFill)
+        inFill -= FRAME
+      }
+    }
+
+    // Drain output ring → Web Audio output
+    const toCopy = Math.min(outLen, out.length)
+    out.set(outRing.subarray(0, toCopy))
+    if (outLen > toCopy) outRing.copyWithin(0, toCopy, outLen)
+    outLen -= toCopy
+    for (let i = toCopy; i < out.length; i++) out[i] = 0
+  }
+
+  const source = ctx.createMediaStreamSource(rawStream)
+  const dest   = ctx.createMediaStreamDestination()
+
+  source.connect(scriptNode)
+  scriptNode.connect(dest)
+
+  // Monitor (Test Mic): connect processor directly to ctx.destination —
+  // avoids MediaStream → <audio> jitter buffer that causes its own stuttering.
+  const monitorGain = ctx.createGain()
+  monitorGain.gain.value = 0.5
+  monitorGain.connect(ctx.destination)
+
+  const enableMonitor  = () => scriptNode.connect(monitorGain)
+  const disableMonitor = () => { try { scriptNode.disconnect(monitorGain) } catch {} }
+
+  const processedTrack = dest.stream.getAudioTracks()[0]!
+
+  const cleanup = () => {
+    disableMonitor()
+    source.disconnect()
+    scriptNode.disconnect()
+    rawStream.getTracks().forEach(t => t.stop())
+    ctx.close()
+  }
+
+  const setDenoise = (enabled: boolean) => { denoiseEnabled = enabled }
+
+  return {
+    track: processedTrack,
+    cleanup,
+    enableMonitor,
+    disableMonitor,
+    setDenoise,
+    nativeAvailable: !!processAudioFrame,
+  }
+}
+
+export const VoiceRoom = ({ channelId, nickname, serverUrl, onParticipantsChange, onDisconnect }: Props) => {
+  const livekitWs = serverUrl.replace(/^https:\/\//, 'wss://').replace(/^http:\/\//, 'ws://')
+
+  const [room, setRoom]               = useState<Room | null>(null)
+  const [isJoined, setIsJoined]       = useState(false)
+  const [isMicEnabled, setIsMicEnabled] = useState(true)
+  const [isDeafened, setIsDeafened]   = useState(false)
+  const [testMic, setTestMic]           = useState(false)
+  const [denoiseOn, setDenoiseOn]       = useState(true)
+  const [nativeAvailable, setNativeAvailable] = useState(false)
+  const audioRef                        = useRef<ProcessedAudio | null>(null)
 
   const broadcastToServer = (ch: string, participants: string[]) => {
-    fetch(`${API_BASE}/voice-state`, {
+    fetch(`${serverUrl}/voice-state`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ channelId: ch, participants }),
     }).catch(() => {})
   }
-  const [isJoined, setIsJoined] = useState(false)
-  const [isMicEnabled, setIsMicEnabled] = useState(true)
-  const [isDeafened, setIsDeafened] = useState(false)
-  const [testMic, setTestMic] = useState(false)
-  const [micAudioElement, setMicAudioElement] = useState<HTMLAudioElement | null>(null)
 
   useEffect(() => {
     if (!room) return
-
     const getParticipants = () => [
       nickname,
       ...Array.from(room.remoteParticipants.values()).map(p => p.identity),
     ]
-
     const onParticipantEvent = () => {
       const participants = getParticipants()
       onParticipantsChange(channelId, participants)
       broadcastToServer(channelId, participants)
     }
-
     room.on(RoomEvent.ParticipantConnected, onParticipantEvent)
     room.on(RoomEvent.ParticipantDisconnected, onParticipantEvent)
-
     room.on(RoomEvent.TrackSubscribed, (track) => {
       if (track.kind === Track.Kind.Audio) {
         const el = track.attach()
@@ -52,19 +176,12 @@ export const VoiceRoom = ({ channelId, nickname, onParticipantsChange, onDisconn
         el.play().catch(err => console.warn('Autoplay blocked:', err))
       }
     })
-
     room.on(RoomEvent.TrackUnsubscribed, (track) => {
       track.detach().forEach(el => el.remove())
     })
-
-    room.on('audioPlaybackChanged', () => {
-      if (!room.canPlaybackAudio) console.log('Audio playback blocked by browser')
-    })
-
     return () => { room.removeAllListeners() }
   }, [room, channelId, nickname, onParticipantsChange])
 
-  // Disconnect and clear when the selected voice channel changes while joined
   useEffect(() => {
     return () => {
       if (room) {
@@ -78,38 +195,24 @@ export const VoiceRoom = ({ channelId, nickname, onParticipantsChange, onDisconn
   const joinRoom = async () => {
     try {
       const resp = await fetch(
-        `${API_BASE}/get-voice-token?room=${channelId}&identity=${encodeURIComponent(nickname)}`
+        `${serverUrl}/get-voice-token?room=${channelId}&identity=${encodeURIComponent(nickname)}`
       )
       const { token } = await resp.json()
 
+      const audio = await buildProcessedAudio()
+      audioRef.current = audio
+      setNativeAvailable(audio.nativeAvailable)
+      setDenoiseOn(audio.nativeAvailable)
+
       const newRoom = new Room({ adaptiveStream: true })
-      await newRoom.connect(LIVEKIT_WS, token, { autoSubscribe: true })
+      await newRoom.connect(livekitWs, token, { autoSubscribe: true })
 
-      const audioTrack = await createLocalAudioTrack({
-        echoCancellation: true,
-        noiseSuppression: true,
-        autoGainControl: true,
-      })
-
-      // Since we're in Electron, we can't 'setProcessor' with a Native .node file
-      // directly in the browser thread. Instead, we use your Rust binary
-      // for the "Main" processing or via a Worklet if you went the WASM route.
-
-      // For now, we've removed the Krisp bloat.
-      // If you want to use your 'packages/audio-native', we'll call it here
-      // or via the Electron IPC bridge.
-
-      await newRoom.localParticipant.publishTrack(audioTrack, {
+      const lkTrack = new LocalAudioTrack(audio.track)
+      await newRoom.localParticipant.publishTrack(lkTrack, {
         name: 'microphone',
-        // High-quality preset for gamers
-        audioPreset: {
-          maxBitrate: 48000
-        }
+        audioPreset: { maxBitrate: 48000 },
       })
 
-      // await newRoom.localParticipant.setMicrophoneEnabled(true)
-
-      // Attach already-subscribed audio tracks
       newRoom.remoteParticipants.forEach(participant => {
         participant.trackPublications.forEach(pub => {
           if (pub.track && pub.kind === Track.Kind.Audio) {
@@ -123,11 +226,9 @@ export const VoiceRoom = ({ channelId, nickname, onParticipantsChange, onDisconn
       setRoom(newRoom)
       setIsJoined(true)
 
-      // Initial participant list
       const remoteIds = Array.from(newRoom.remoteParticipants.values()).map(p => p.identity)
-      const initialParticipants = [nickname, ...remoteIds]
-      onParticipantsChange(channelId, initialParticipants)
-      broadcastToServer(channelId, initialParticipants)
+      onParticipantsChange(channelId, [nickname, ...remoteIds])
+      broadcastToServer(channelId, [nickname, ...remoteIds])
     } catch (err) {
       console.error(`Failed to join ${channelId}:`, err)
     }
@@ -150,33 +251,34 @@ export const VoiceRoom = ({ channelId, nickname, onParticipantsChange, onDisconn
   const onMicTest = () => {
     const next = !testMic
     setTestMic(next)
-    if (next && room) {
-      const pub = room.localParticipant.getTrackPublication(Track.Source.Microphone)
-      if (pub?.audioTrack) {
-        const el = pub.audioTrack.attach()
-        el.volume = 0.5
-        document.body.appendChild(el)
-        setMicAudioElement(el)
-      }
-    } else if (micAudioElement) {
-      micAudioElement.remove()
-      setMicAudioElement(null)
+    if (next) {
+      audioRef.current?.enableMonitor()
+    } else {
+      audioRef.current?.disableMonitor()
     }
   }
 
   const leaveRoom = async () => {
     if (!room) return
     await room.disconnect()
-    micAudioElement?.remove()
-    setMicAudioElement(null)
+    audioRef.current?.cleanup()
+    audioRef.current = null
     setRoom(null)
     setIsJoined(false)
     setIsMicEnabled(true)
     setIsDeafened(false)
     setTestMic(false)
+    setDenoiseOn(true)
+    setNativeAvailable(false)
     onParticipantsChange(channelId, [])
     broadcastToServer(channelId, [])
     onDisconnect?.()
+  }
+
+  const toggleDenoise = () => {
+    const next = !denoiseOn
+    setDenoiseOn(next)
+    audioRef.current?.setDenoise(next)
   }
 
   return (
@@ -192,36 +294,17 @@ export const VoiceRoom = ({ channelId, nickname, onParticipantsChange, onDisconn
           </Button>
         ) : (
           <>
-            <Button
-              size="$3"
-              theme={isMicEnabled ? 'blue' : 'red'}
-              onPress={toggleMic}
-              icon={isMicEnabled ? Mic : MicOff}
-              circular
-            />
-            <Button
-              size="$3"
-              theme={isDeafened ? 'red' : 'blue'}
-              onPress={toggleDeafen}
-              icon={isDeafened ? VolumeX : Volume2}
-              circular
-            />
-            <Button
-              size="$3"
-              chromeless={!testMic}
-              theme={testMic ? 'yellow' : 'gray'}
-              onPress={onMicTest}
-              icon={TestTube}
-            >
+            <Button size="$3" theme={isMicEnabled ? 'blue' : 'red'} onPress={toggleMic} icon={isMicEnabled ? Mic : MicOff} circular />
+            <Button size="$3" theme={isDeafened ? 'red' : 'blue'} onPress={toggleDeafen} icon={isDeafened ? VolumeX : Volume2} circular />
+            <Button size="$3" chromeless={!testMic} theme={testMic ? 'yellow' : 'gray'} onPress={onMicTest} icon={TestTube}>
               {testMic ? 'Hearing Self' : 'Test Mic'}
             </Button>
-            <Button
-              size="$3"
-              theme="red"
-              variant="outlined"
-              onPress={leaveRoom}
-              icon={PhoneOff}
-            >
+            {nativeAvailable && (
+              <Button size="$3" theme={denoiseOn ? 'green' : 'gray'} onPress={toggleDenoise} icon={Wand2}>
+                {denoiseOn ? 'RNNoise On' : 'RNNoise Off'}
+              </Button>
+            )}
+            <Button size="$3" theme="red" variant="outlined" onPress={leaveRoom} icon={PhoneOff}>
               Leave
             </Button>
           </>

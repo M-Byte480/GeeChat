@@ -1,12 +1,17 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import type { Identity } from './types'
+import type { Identity, Server } from './types'
 import { deserializeFromStorage, serializeForStorage } from './crypto'
 import { WelcomeScreen } from './WelcomeScreen'
 
 type Props = {
-  children: (identity: Identity, changeUsername: (name: string) => void) => React.ReactNode
+  children: (
+    identity: Identity,
+    changeUsername: (name: string) => void,
+    servers: Server[],
+    addServer: (server: Server) => void,
+  ) => React.ReactNode
 }
 
 export function IdentityGate({ children }: Props) {
@@ -31,13 +36,23 @@ export function IdentityGate({ children }: Props) {
     })
   }, [])
 
+  const persist = useCallback((updated: Identity) => {
+    ;(window as any).electronAPI?.safestoreSet(serializeForStorage(updated))
+    setIdentity(updated)
+  }, [])
+
   const changeUsername = useCallback((name: string) => {
     const trimmed = name.trim()
     if (!trimmed || !identity) return
-    const updated = { ...identity, username: trimmed }
-    ;(window as any).electronAPI?.safestoreSet(serializeForStorage(updated))
-    setIdentity(updated)
-  }, [identity])
+    persist({ ...identity, username: trimmed })
+  }, [identity, persist])
+
+  const addServer = useCallback((server: Server) => {
+    if (!identity) return
+    const already = identity.servers.some(s => s.id === server.id)
+    if (already) return
+    persist({ ...identity, servers: [...identity.servers, server] })
+  }, [identity, persist])
 
   if (!mounted) return null
 
@@ -45,5 +60,5 @@ export function IdentityGate({ children }: Props) {
     return <WelcomeScreen onIdentityReady={setIdentity} />
   }
 
-  return <>{children(identity, changeUsername)}</>
+  return <>{children(identity, changeUsername, identity.servers, addServer)}</>
 }
