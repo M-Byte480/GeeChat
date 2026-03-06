@@ -1,6 +1,6 @@
 import { XStack, YStack, Input, ScrollView, Image, Text, Button, Paragraph } from '@my/ui'
 import { Send, X } from '@tamagui/lucide-icons'
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import type { Identity } from './identity/types'
 import { useMessages } from './hooks/useMessages'
 import { MessageContent } from './components/MessageContent'
@@ -18,13 +18,24 @@ type Props = {
 export const ChatArea = ({ identity, channelId, serverUrl }: Props) => {
   const { messages, inputText, typingUser, errorBanner, setErrorBanner, sendMessage, handleInputChange } =
     useMessages({ channelId, identity, serverUrl })
+  const selectionRef = useRef({ start: 0, end: 0 });
+  const inputRef = useRef<any>(null)
+  const inputTextRef = useRef(inputText)
+  inputTextRef.current = inputText
 
   const [pendingUrl, setPendingUrl] = useState<string | null>(null)
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null)
 
-  const handleEmojiSelect = (emoji: string) => {
-    handleInputChange(inputText + emoji)
-  }
+  const handleEmojiSelect = useCallback((emoji: string, keepOpen: boolean) => {
+    const { start, end } = selectionRef.current
+    const newText = inputTextRef.current.substring(0, start) + emoji + inputTextRef.current.substring(end)
+    handleInputChange(newText)
+    const newPos = start + emoji.length
+    selectionRef.current = { start: newPos, end: newPos }
+    // Only refocus when the picker is closing — shift+clicking keeps the picker
+    // open and calling focus() with shift held would extend the selection
+    if (!keepOpen) requestAnimationFrame(() => inputRef.current?.focus())
+  }, [handleInputChange])
 
   const scrollViewRef = useRef<any>(null)
   const isAtBottomRef = useRef(true)
@@ -96,11 +107,15 @@ export const ChatArea = ({ identity, channelId, serverUrl }: Props) => {
 
       <XStack gap="$2" alignItems="center" position="relative">
         <Input
+          ref={inputRef}
           flex={1}
           placeholder="Type a message..."
           size="$4"
           value={inputText}
           onChangeText={handleInputChange}
+          onSelectionChange={(e) => {
+            selectionRef.current = e.nativeEvent.selection;
+          }}
           onSubmitEditing={sendMessage}
         />
         <EmojiPicker onSelect={handleEmojiSelect} />

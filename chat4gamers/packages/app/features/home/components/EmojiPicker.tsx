@@ -1,6 +1,7 @@
 import { Button, ScrollView, Text, XStack, YStack } from '@my/ui'
 import { Smile, X } from '@tamagui/lucide-icons'
-import { useState } from 'react'
+import { memo, useState } from 'react'
+import { Pressable } from 'react-native'
 
 const EMOJI_CATEGORIES: { label: string; emojis: string[] }[] = [
   {
@@ -50,15 +51,16 @@ const EMOJI_CATEGORIES: { label: string; emojis: string[] }[] = [
 ]
 
 type Props = {
-  onSelect: (emoji: string) => void
+  onSelect: (emoji: string, keepOpen: boolean) => void
 }
 
-export const EmojiPicker = ({ onSelect }: Props) => {
+export const EmojiPicker = memo(({ onSelect }: Props) => {
   const [open, setOpen] = useState(false)
 
-  const handleSelect = (emoji: string) => {
-    onSelect(emoji)
-    setOpen(false)
+  const handleSelect = (emoji: string, e: any) => {
+    const isShiftPressed = e.shiftKey || e.nativeEvent?.shiftKey
+    onSelect(emoji, isShiftPressed)
+    if (!isShiftPressed) setOpen(false)
   }
 
   return (
@@ -100,17 +102,13 @@ export const EmojiPicker = ({ onSelect }: Props) => {
                   <Text fontSize="$1" color="$gray9" paddingLeft="$1">{cat.label}</Text>
                   <XStack flexWrap="wrap">
                     {cat.emojis.map((emoji) => (
-                      <Button
+                      <Pressable
                         key={emoji}
-                        size="$3"
-                        chromeless
-                        onPress={() => handleSelect(emoji)}
-                        paddingHorizontal="$1"
-                        paddingVertical="$1"
-                        minWidth={36}
+                        onPress={(e) => handleSelect(emoji, e)}
+                        style={{ width: 36, height: 36, alignItems: 'center', justifyContent: 'center' }}
                       >
-                        {emoji}
-                      </Button>
+                        <Text fontSize="$5">{emoji}</Text>
+                      </Pressable>
                     ))}
                   </XStack>
                 </YStack>
@@ -128,4 +126,4 @@ export const EmojiPicker = ({ onSelect }: Props) => {
       />
     </YStack>
   )
-}
+})
