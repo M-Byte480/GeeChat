@@ -2,7 +2,10 @@
   "name": "chat4gamers",
   "private": true,
   "workspaces": [
-    "./apps/*",
+    "./apps/expo",
+    "./apps/federation",
+    "./apps/next",
+    "./apps/server",
     "./packages/app",
     "./packages/ui",
     "./packages/config",
