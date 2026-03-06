@@ -11,19 +11,6 @@ const { autoUpdater } = electronUpdater;
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
-let gate;
-try {
-    const nativePath = app.isPackaged
-        ? path.join(process.resourcesPath, 'audio-native.win32-x64-msvc.node')
-        : path.join(__dirname, '../../packages/audio-native/audio-native.win32-x64-msvc.node');
-
-    const { NoiseGate } = require(nativePath);
-    gate = new NoiseGate(0.05);
-} catch (e) {
-    console.error("Failed to load Rust Audio Native module:", e);
-    // Fallback so the app doesn't crash, even if the gate doesn't work
-    gate = { processAudioFast: () => {} };
-}
 
 const createSplash = () => {
   const splash = new BrowserWindow({
@@ -55,6 +42,7 @@ const createWindow = () => {
       nodeIntegration: false,
       contextIsolation: true,
       webSecurity: true,
+      sandbox: false,  // preload needs Node built-ins (path, require) to load .node addon
       preload: path.join(__dirname, 'preload.cjs'),
     },
   })
@@ -92,11 +80,6 @@ autoUpdater.on('update-downloaded', () => {
 })
 
 ipcMain.handle('get-version', () => app.getVersion())
-
-ipcMain.handle('process-audio', (event, buffer /* Float32Array */ ) => {
-    gate.processAudioFast(buffer)
-    return buffer
-})
 
 // Deferred so app.getPath('userData') is only called after app.whenReady()
 const getSafeStorePath = () => path.join(app.getPath('userData'), 'identity.enc')

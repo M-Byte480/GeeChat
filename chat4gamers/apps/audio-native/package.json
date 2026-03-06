@@ -1,0 +1,27 @@
+{
+  "name": "@geechat/audio-native",
+  "version": "0.0.0",
+  "private": true,
+  "napi": {
+    "name": "audio-native",
+    "triples": {
+      "defaults": false,
+      "additional": [
+        "x86_64-pc-windows-msvc"
+      ]
+    }
+  },
+  "main": "index.js",
+  "files": [
+    "index.js",
+    "index.d.ts",
+    "*.node"
+  ],
+  "scripts": {
+    "build": "napi build --platform --release",
+    "build:debug": "napi build --platform"
+  },
+  "devDependencies": {
+    "@napi-rs/cli": "^3"
+  }
+}

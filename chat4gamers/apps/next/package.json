@@ -25,12 +25,6 @@
     "directories": {
       "output": "dist-electron"
     },
-    "extraResources": [
-      {
-        "from": "../../packages/audio-native/audio-native.win32-x64-msvc.node",
-        "to": "audio-native.win32-x64-msvc.node"
-      }
-    ],
     "files": [
       "main.js",
       "preload.cjs",
@@ -39,6 +33,12 @@
       "package.json",
       "tsconfig.json",
       "index.js"
+    ],
+    "extraResources": [
+      {
+        "from": "../audio-native/audio-native.win32-x64-msvc.node",
+        "to": "audio-native.win32-x64-msvc.node"
+      }
     ],
     "win": {
       "target": "nsis",
