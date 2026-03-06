@@ -7,12 +7,14 @@ export function ThisUserProperties({
                                      connectedVoiceChannelId,
                                      nickname,
                                      user,
+                                     serverUrl,
                                      onParticipantsChange,
                                      onVoiceDisconnect
                                    }: {
   connectedVoiceChannelId: string | null;
   nickname: string | undefined;
   user: User;
+  serverUrl: string | null;
   onParticipantsChange: (channelId: string, participants: string[]) => void;
   onVoiceDisconnect: () => void;
 }) {
@@ -29,12 +31,13 @@ export function ThisUserProperties({
       ml={8}
     >
       {/* 3. Voice Section */}
-      {connectedVoiceChannelId && (
+      {connectedVoiceChannelId && serverUrl && (
         <YStack bg="$backgroundHover" p="$2" borderRadius="$2">
           <Text fontSize="$1" fontWeight="800" color="$gray10" mb="$1">VOICE CONNECTED</Text>
           <VoiceRoom
             channelId={connectedVoiceChannelId}
             nickname={nickname}
+            serverUrl={serverUrl}
             onParticipantsChange={onParticipantsChange}
             onDisconnect={onVoiceDisconnect}
           />

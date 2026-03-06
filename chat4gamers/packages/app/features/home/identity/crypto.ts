@@ -94,6 +94,7 @@ export async function generateIdentity(
     username,
     pfp,
     privateKeyBytes,
+    servers: [],
   }
 
   return { file, identity }
@@ -122,6 +123,7 @@ export async function decryptIdentity(file: IdentityFile, passphrase: string): P
     username: file.username,
     pfp: file.pfp,
     privateKeyBytes: new Uint8Array(decryptedBuf),
+    servers: file.servers ?? [],
   }
 }
 
@@ -159,6 +161,7 @@ export function serializeForStorage(identity: Identity): string {
     username: identity.username,
     pfp: identity.pfp,
     privateKeyB64,
+    servers: identity.servers,
   })
 }
 
@@ -171,5 +174,6 @@ export function deserializeFromStorage(json: string): Identity {
     username: stored.username,
     pfp: stored.pfp,
     privateKeyBytes,
+    servers: stored.servers ?? [],
   }
 }

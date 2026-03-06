@@ -1,15 +1,21 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { API_BASE, WS_BASE } from 'app/constants/config'
 import { signMessage } from '../identity/crypto'
 import type { Identity } from '../identity/types'
 import type { Message } from '../types'
 
+function deriveWsBase(url: string): string {
+  return url.replace(/^https:\/\//, 'wss://').replace(/^http:\/\//, 'ws://')
+}
+
 type Params = {
   channelId: string
   identity: Identity
+  serverUrl: string
 }
 
-export function useMessages({ channelId, identity }: Params) {
+export function useMessages({ channelId, identity, serverUrl }: Params) {
+  const apiBase = serverUrl
+  const wsBase = deriveWsBase(serverUrl)
   const [messages, setMessages] = useState<Message[]>([])
   const [inputText, setInputText] = useState('')
   const [typingUser, setTypingUser] = useState<string | null>(null)
@@ -32,7 +38,7 @@ export function useMessages({ channelId, identity }: Params) {
 
   // Fetch history + open WebSocket
   useEffect(() => {
-    fetch(`${API_BASE}/chat-history?channel=${channelId}`)
+    fetch(`${apiBase}/chat-history?channel=${channelId}`)
       .then(res => {
         if (!res.ok) throw new Error('Server error')
         return res.json()
@@ -40,7 +46,7 @@ export function useMessages({ channelId, identity }: Params) {
       .then(data => { if (Array.isArray(data)) setMessages(data) })
       .catch(() => showError('Could not load message history. Is the server running?'))
 
-    const ws = new WebSocket(`${WS_BASE}/ws`)
+    const ws = new WebSocket(`${wsBase}/ws`)
     socketRef.current = ws
 
     ws.onmessage = (event) => {
@@ -69,7 +75,7 @@ export function useMessages({ channelId, identity }: Params) {
     ws.onerror = () => showError('Connection lost. Reconnect by switching channels.')
 
     return () => ws.close()
-  }, [channelId, identity.username, showError])
+  }, [channelId, identity.username, showError, apiBase, wsBase])
 
   const sendMessage = async () => {
     if (!inputText.trim()) return
@@ -90,7 +96,7 @@ export function useMessages({ channelId, identity }: Params) {
 
     try {
       const signature = await signMessage(identity.privateKeyBytes, currentText, channelId, timestamp)
-      await fetch(`${API_BASE}/messages`, {
+      await fetch(`${apiBase}/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

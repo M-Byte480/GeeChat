@@ -46,3 +46,7 @@ thumbs.db
 
 # turbo build log
 **/.turbo/*
+
+# electron build outputs
+**/dist-main/
+**/dist-electron/

@@ -11,11 +11,12 @@ import {ChannelBanner} from "app/features/home/channel/ChannelBanner";
 type Props = {
   identity: Identity
   channelId: string
+  serverUrl: string
 }
 
-export const ChatArea = ({ identity, channelId }: Props) => {
+export const ChatArea = ({ identity, channelId, serverUrl }: Props) => {
   const { messages, inputText, typingUser, errorBanner, setErrorBanner, sendMessage, handleInputChange } =
-    useMessages({ channelId, identity })
+    useMessages({ channelId, identity, serverUrl })
 
   const [pendingUrl, setPendingUrl] = useState<string | null>(null)
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null)

@@ -11,6 +11,7 @@ import { UpdateBanner } from './UpdateBanner'
 import { VoiceChannelView } from './components/VoiceChannelView'
 import { useChannels } from './hooks/useChannels'
 import { ServerPane } from 'app/features/home/server-pane/ServerPane'
+import type { Server } from 'app/features/home/identity/types'
 import { ChannelBanner } from 'app/features/home/channel/ChannelBanner'
 import { MemberPane } from 'app/features/home/user/MemberPane'
 import { ThisUserProperties } from 'app/features/home/user/ThisUserProperties'
@@ -30,6 +31,8 @@ const MOCK_MEMBERS: User[] = [
 ]
 
 export function HomeScreen() {
+  const [activeServer, setActiveServer] = useState<Server | null>(null)
+
   const {
     channels,
     activeChannel,
@@ -46,7 +49,7 @@ export function HomeScreen() {
     handleVoiceDisconnect,
     handleOpenCreateChannel,
     handleCreateChannel,
-  } = useChannels()
+  } = useChannels(activeServer?.url ?? null)
 
   const [showMobileMenu, setShowMobileMenu] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
@@ -73,7 +76,7 @@ export function HomeScreen() {
 
   return (
     <IdentityGate>
-      {(identity: Identity, changeUsername) => (
+      {(identity: Identity, changeUsername, servers, addServer) => (
         <YStack height="100vh" bg="$background" position="relative">
           <UpdateBanner />
 
@@ -109,12 +112,18 @@ export function HomeScreen() {
           </XStack>
 
           <XStack flex={1} bg="$background">
-            <ServerPane />
+            <ServerPane
+              servers={servers}
+              activeServerId={activeServer?.id ?? null}
+              onSelectServer={setActiveServer}
+              onAddServer={addServer}
+            />
             <XStack position="absolute" bottom={0} left={0}>
               <ThisUserProperties
                 connectedVoiceChannelId={connectedVoiceChannelId}
                 nickname={identity.username}
                 user={{ username: identity.username, publicKey: identity.publicKey, status: UserStatus.ONLINE, avatarUrl: identity.pfp }}
+                serverUrl={activeServer?.url ?? null}
                 onParticipantsChange={handleParticipantsChange}
                 onVoiceDisconnect={handleVoiceDisconnect}
               />
@@ -136,8 +145,13 @@ export function HomeScreen() {
               </XStack>
 
               <XStack flex={1} bg="$background" gap="$2">
-                {activeChannel.type === 'text' ? (
-                  <ChatArea identity={identity} channelId={activeChannel.id} />
+                {!activeServer ? (
+                  <YStack flex={1} alignItems="center" justifyContent="center" gap="$3">
+                    <Text color="$color10" fontSize="$5" fontWeight="600">No server selected</Text>
+                    <Text color="$color9" fontSize="$3">Add a server using the + button on the left, then select it.</Text>
+                  </YStack>
+                ) : activeChannel.type === 'text' ? (
+                  <ChatArea identity={identity} channelId={activeChannel.id} serverUrl={activeServer.url} />
                 ) : (
                   <VoiceChannelView
                     channelId={activeChannel.id}

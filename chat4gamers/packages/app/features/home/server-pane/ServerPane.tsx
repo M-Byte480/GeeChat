@@ -5,8 +5,16 @@ import { DirectMessagesButton } from './DirectMessagesButton'
 import { AddServerButton } from './AddServerButton'
 import { ServerListComponent } from './ServerListComponent'
 import { AddServerDialog } from 'app/features/home/sheets/AddServerDialog'
+import type { Server } from 'app/features/home/identity/types'
 
-export function ServerPane() {
+type Props = {
+  servers: Server[]
+  activeServerId: string | null
+  onSelectServer: (server: Server) => void
+  onAddServer: (server: Server) => void
+}
+
+export function ServerPane({ servers, activeServerId, onSelectServer, onAddServer }: Props) {
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [showAddServer, setShowAddServer] = useState(false)
 
@@ -27,10 +35,18 @@ export function ServerPane() {
         />
         <DirectMessagesButton />
         <AddServerButton onPress={() => setShowAddServer(true)} />
-        <ServerListComponent />
+        <ServerListComponent
+          servers={servers}
+          activeServerId={activeServerId}
+          onSelectServer={onSelectServer}
+        />
       </YStack>
 
-      <AddServerDialog open={showAddServer} onClose={() => setShowAddServer(false)} />
+      <AddServerDialog
+        open={showAddServer}
+        onClose={() => setShowAddServer(false)}
+        onAddServer={(server) => { onAddServer(server); setShowAddServer(false) }}
+      />
     </>
   )
 }

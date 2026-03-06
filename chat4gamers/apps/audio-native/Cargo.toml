@@ -1,0 +1,21 @@
+[package]
+name = "audio-native"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+# napi-rs: Rust → Node.js native addon bridge
+napi         = { version = "2", default-features = false, features = ["napi8"] }
+napi-derive  = "2"
+# RNNoise: same neural-network algorithm Discord used before Krisp (pure Rust port)
+nnnoiseless  = "0.4"
+
+[build-dependencies]
+napi-build = "2"
+
+[profile.release]
+opt-level = "s"
+lto = true
