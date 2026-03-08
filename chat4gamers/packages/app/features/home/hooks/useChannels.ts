@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react'
-import { Channel, ChannelType, CHANNELS } from '../types'
+import { Channel, ChannelType, CHANNELS } from '../types/types'
 
 function deriveWsBase(url: string): string {
   return url.replace(/^https:\/\//, 'wss://').replace(/^http:\/\//, 'ws://')
@@ -8,8 +8,8 @@ function deriveWsBase(url: string): string {
 export function useChannels(serverUrl: string | null) {
   const apiBase = serverUrl ?? null
   const wsBase = serverUrl ? deriveWsBase(serverUrl) : null
-  const [channels, setChannels] = useState<Channel[]>(CHANNELS)
-  const [activeChannel, setActiveChannel] = useState<Channel>(CHANNELS[0])
+  const [channels, setChannels] = useState<Channel[]>([])
+  const [activeChannel, setActiveChannel] = useState<Channel>({} as Channel)
   const [voiceParticipants, setVoiceParticipants] = useState<Record<string, string[]>>({})
   const [connectedVoiceChannelId, setConnectedVoiceChannelId] = useState<string | null>(null)
   const [showCreateChannel, setShowCreateChannel] = useState(false)

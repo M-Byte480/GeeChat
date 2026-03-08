@@ -12,6 +12,7 @@ import voiceRouter from './routes/voice.js'
 import proxyRouter from './routes/proxy.js'
 import authRoutes from './routes/auth.js'
 import chatRoutes from './routes/chat.js'
+import membersRouter from './routes/members.js'
 
 const app = new Hono()
 const { injectWebSocket, upgradeWebSocket } = createNodeWebSocket({ app })
@@ -30,6 +31,7 @@ app.route('/', voiceRouter)
 app.route('/', proxyRouter)
 app.route('/auth', authRoutes)
 app.route('/chat', chatRoutes)
+app.route('/', membersRouter)
 
 const server = serve({ fetch: app.fetch, port: 4000, hostname: '0.0.0.0' })
 injectWebSocket(server)
