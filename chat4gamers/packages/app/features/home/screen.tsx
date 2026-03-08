@@ -115,6 +115,7 @@ export function HomeScreen() {
               onAddServer={addServer}
               isDMsActive={!activeServer}
               onSelectDMs={() => setActiveServer(null)}
+              identity={{ publicKey: identity.publicKey, username: identity.username, pfp: identity.pfp }}
               serverContextOptions={(server) => [
                 { label: 'Mark as Read',  onPress: () => {} },
                 { label: 'Copy URL',      onPress: () => navigator.clipboard.writeText(server.url) },
@@ -134,7 +135,7 @@ export function HomeScreen() {
             {/* Desktop sidebar */}
             <YStack $max-lg={{ display: 'none' }}>
               {activeServer ? (
-                <Sidebar width={250} nickname={identity.username} {...sidebarProps} />
+                <Sidebar width={250} nickname={identity.username} activeServer={activeServer} {...sidebarProps} />
               ) : (
                 <DirectMessagesComponent />
               )}
@@ -177,12 +178,15 @@ export function HomeScreen() {
             {/* Mobile drawer */}
             <Sheet open={showMobileMenu} onOpenChange={setShowMobileMenu} modal dismissOnSnapToBottom>
               <Sheet.Frame p="$4">
-                <Sidebar
-                  width="100%"
-                  nickname={identity.username}
-                  {...sidebarProps}
-                  onChannelSelect={(ch) => { handleChannelSelect(ch); setShowMobileMenu(false) }}
-                />
+                {activeServer && (
+                  <Sidebar
+                    width="100%"
+                    nickname={identity.username}
+                    activeServer={activeServer}
+                    {...sidebarProps}
+                    onChannelSelect={(ch) => { handleChannelSelect(ch); setShowMobileMenu(false) }}
+                  />
+                )}
               </Sheet.Frame>
               <Sheet.Overlay />
             </Sheet>
@@ -208,12 +212,12 @@ export function HomeScreen() {
             handleCreateChannel={handleCreateChannel}
           />
 
-        <SettingsSheet
-          showSettings={showSettings}
-          setShowSettings={setShowSettings}
-          identity={identity}
-          appVersion={appVersion}
-        />
+          <SettingsSheet
+            showSettings={showSettings}
+            setShowSettings={setShowSettings}
+            identity={identity}
+            appVersion={appVersion}
+          />
 
         </YStack>
       )}

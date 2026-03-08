@@ -16,9 +16,10 @@ type Props = {
   isDMsActive: boolean
   onSelectDMs: () => void
   serverContextOptions?: (server: Server) => ContextMenuOption[]
+  identity: { publicKey: string; username: string; pfp?: string }
 }
 
-export function ServerPane({ servers, activeServerId, onSelectServer, onAddServer, isDMsActive, onSelectDMs, serverContextOptions }: Props) {
+export function ServerPane({ servers, activeServerId, onSelectServer, onAddServer, isDMsActive, onSelectDMs, serverContextOptions, identity }: Props) {
   const [isCollapsed, setIsCollapsed] = useState(true)
   const [showAddServer, setShowAddServer] = useState(false)
 
@@ -51,6 +52,7 @@ export function ServerPane({ servers, activeServerId, onSelectServer, onAddServe
         open={showAddServer}
         onClose={() => setShowAddServer(false)}
         onAddServer={(server) => { onAddServer(server); setShowAddServer(false) }}
+        identity={identity}
       />
     </>
   )

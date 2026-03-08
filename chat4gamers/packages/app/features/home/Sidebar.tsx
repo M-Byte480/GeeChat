@@ -1,12 +1,16 @@
 'use client'
 
 import { YStack } from '@my/ui'
+import { useState } from 'react'
 import type { Channel, ChannelType } from './types'
-import {ServerBanner} from "app/features/home/channel/ServerBanner";
-import {ChannelList} from "app/features/home/channel/ChannelList";
+import type { Server } from 'app/features/home/identity/types'
+import { ServerBanner } from 'app/features/home/channel/ServerBanner'
+import { ChannelList } from 'app/features/home/channel/ChannelList'
+import { JoinRequestsSheet } from 'app/features/home/sheets/JoinRequestsSheet'
 
 type Props = {
   width?: number | string
+  activeServer: Server
   channels: Channel[]
   activeChannel: Channel
   nickname: string
@@ -21,6 +25,7 @@ type Props = {
 
 export const Sidebar = ({
   width = 240,
+  activeServer,
   channels,
   activeChannel,
   nickname,
@@ -31,32 +36,41 @@ export const Sidebar = ({
   onParticipantsChange,
   onVoiceDisconnect,
   onCreateChannel,
-}: Props) => (
-  // @ts-ignore
-  <YStack
-    flex={1}
-    width={width}
-    bg="$backgroundHover"
-    borderRightWidth={1}
-    borderColor="$borderColor"
-  >
-    {/* Fixed Header */}
-    <ServerBanner />
+}: Props) => {
+  const [showJoinRequests, setShowJoinRequests] = useState(false)
 
-    {/* Scrollable Area */}
+  return (
+    // @ts-ignore
     <YStack
       flex={1}
-      overflowY="auto" // Allows the list to scroll
-      p="$2"
+      width={width}
+      bg="$backgroundHover"
+      borderRightWidth={1}
+      borderColor="$borderColor"
     >
-      <ChannelList
-        channels={channels}
-        activeChannelId={activeChannel.id}
-        onSelect={onChannelSelect}
-        onJoinVoice={onJoinVoice}
-        voiceParticipants={voiceParticipants}
-        onCreateChannel={onCreateChannel}
+      <ServerBanner
+        serverName={activeServer.name}
+        onViewJoinRequests={() => setShowJoinRequests(true)}
+      />
+
+      {/* Scrollable channel list */}
+      <YStack flex={1} overflowY="auto" p="$2">
+        <ChannelList
+          channels={channels}
+          activeChannelId={activeChannel.id}
+          onSelect={onChannelSelect}
+          onJoinVoice={onJoinVoice}
+          voiceParticipants={voiceParticipants}
+          onCreateChannel={onCreateChannel}
+        />
+      </YStack>
+
+      <JoinRequestsSheet
+        open={showJoinRequests}
+        onClose={() => setShowJoinRequests(false)}
+        serverUrl={activeServer.url}
+        serverName={activeServer.name}
       />
     </YStack>
-  </YStack>
-)
+  )
+}
