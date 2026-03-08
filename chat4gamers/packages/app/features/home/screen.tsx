@@ -4,31 +4,25 @@ import { XStack, YStack, Sheet, Button, Text } from '@my/ui'
 import { Menu, Settings, Pencil } from '@tamagui/lucide-icons'
 import { useState, useEffect } from 'react'
 import { Sidebar } from './Sidebar'
-import { ChatArea } from './ChatArea'
+import { ChatArea } from './chat/ChatArea'
 import { IdentityGate } from './identity'
 import type { Identity } from './identity'
 import { UpdateBanner } from './UpdateBanner'
 import { VoiceChannelView } from './components/VoiceChannelView'
 import { useChannels } from './hooks/useChannels'
+import { useServerMembers } from './hooks/useServerMembers'
 import { ServerPane } from 'app/features/home/server-pane/ServerPane'
 import type { Server } from 'app/features/home/identity/types'
 import { ChannelBanner } from 'app/features/home/channel/ChannelBanner'
+import { DirectMessagesBanner } from 'app/features/home/chat/DirectMessagesBanner'
+import { DirectMessagesComponent } from 'app/features/home/chat/DirectMessagesComponent'
+import { DirectMessagePage } from 'app/features/home/chat/DirectMessagePage'
 import { MemberPane } from 'app/features/home/user/MemberPane'
 import { ThisUserProperties } from 'app/features/home/user/ThisUserProperties'
 import { SettingsSheet } from 'app/features/home/sheets/SettingsSheet'
+import { UserStatus } from 'app/features/home/types/User'
 import { CreateChannelSheet } from 'app/features/home/sheets/CreateChannelSheet'
 import { EditUsernameSheet } from 'app/features/home/sheets/EditUsernameSheet'
-import { UserStatus } from 'app/features/home/types/User'
-import type { User } from 'app/features/home/types/User'
-
-const MOCK_MEMBERS: User[] = [
-  { username: 'Milan',       publicKey: 'pk1', status: UserStatus.ONLINE },
-  { username: 'Gamer123',    publicKey: 'pk2', status: UserStatus.ONLINE },
-  { username: 'ProSniper',   publicKey: 'pk3', status: UserStatus.AWAY },
-  { username: 'NightOwl',    publicKey: 'pk4', status: UserStatus.DO_NOT_DISTURB },
-  { username: 'PixelHunter', publicKey: 'pk5', status: UserStatus.OFFLINE },
-  { username: 'StarCraft',   publicKey: 'pk6', status: UserStatus.ONLINE },
-]
 
 export function HomeScreen() {
   const [activeServer, setActiveServer] = useState<Server | null>(null)
@@ -50,6 +44,8 @@ export function HomeScreen() {
     handleOpenCreateChannel,
     handleCreateChannel,
   } = useChannels(activeServer?.url ?? null)
+
+  const serverMembers = useServerMembers(activeServer?.url ?? null)
 
   const [showMobileMenu, setShowMobileMenu] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
@@ -117,6 +113,14 @@ export function HomeScreen() {
               activeServerId={activeServer?.id ?? null}
               onSelectServer={setActiveServer}
               onAddServer={addServer}
+              isDMsActive={!activeServer}
+              onSelectDMs={() => setActiveServer(null)}
+              identity={{ publicKey: identity.publicKey, username: identity.username, pfp: identity.pfp }}
+              serverContextOptions={(server) => [
+                { label: 'Mark as Read',  onPress: () => {} },
+                { label: 'Copy URL',      onPress: () => navigator.clipboard.writeText(server.url) },
+                { label: 'Leave Server',  onPress: () => {}, destructive: true },
+              ]}
             />
             <XStack position="absolute" bottom={0} left={0}>
               <ThisUserProperties
@@ -130,15 +134,26 @@ export function HomeScreen() {
             </XStack>
             {/* Desktop sidebar */}
             <YStack $max-lg={{ display: 'none' }}>
-              <Sidebar width={250} nickname={identity.username} {...sidebarProps} />
+              {activeServer ? (
+                <Sidebar width={250} nickname={identity.username} activeServer={activeServer} {...sidebarProps} />
+              ) : (
+                <DirectMessagesComponent />
+              )}
             </YStack>
 
             {/* Main content */}
             <YStack flex={1}>
-              <ChannelBanner
-                showMemberPane={showMemberPane}
-                onToggleMemberPane={() => setShowMemberPane(p => !p)}
-              />
+              {activeServer ? (
+                <ChannelBanner
+                  showMemberPane={showMemberPane}
+                  onToggleMemberPane={() => setShowMemberPane(p => !p)}
+                />
+              ) : (
+                <DirectMessagesBanner
+                  showMemberPane={showMemberPane}
+                  onToggleMemberPane={() => setShowMemberPane(p => !p)}
+                />
+              )}
 
               <XStack p="$4" $sm={{ display: 'none' }} borderBottomWidth={1} borderColor="$borderColor" width="100%" jc="center">
                 <Button icon={Menu} onPress={() => setShowMobileMenu(true)} />
@@ -146,10 +161,7 @@ export function HomeScreen() {
 
               <XStack flex={1} bg="$background" gap="$2">
                 {!activeServer ? (
-                  <YStack flex={1} alignItems="center" justifyContent="center" gap="$3">
-                    <Text color="$color10" fontSize="$5" fontWeight="600">No server selected</Text>
-                    <Text color="$color9" fontSize="$3">Add a server using the + button on the left, then select it.</Text>
-                  </YStack>
+                  <DirectMessagePage />
                 ) : activeChannel.type === 'text' ? (
                   <ChatArea identity={identity} channelId={activeChannel.id} serverUrl={activeServer.url} />
                 ) : (
@@ -158,7 +170,7 @@ export function HomeScreen() {
                     participants={voiceParticipants[activeChannel.id] ?? []}
                   />
                 )}
-                {showMemberPane && <MemberPane members={MOCK_MEMBERS} />}
+                {activeServer && showMemberPane && <MemberPane members={serverMembers} />}
               </XStack>
 
             </YStack>
@@ -166,12 +178,15 @@ export function HomeScreen() {
             {/* Mobile drawer */}
             <Sheet open={showMobileMenu} onOpenChange={setShowMobileMenu} modal dismissOnSnapToBottom>
               <Sheet.Frame p="$4">
-                <Sidebar
-                  width="100%"
-                  nickname={identity.username}
-                  {...sidebarProps}
-                  onChannelSelect={(ch) => { handleChannelSelect(ch); setShowMobileMenu(false) }}
-                />
+                {activeServer && (
+                  <Sidebar
+                    width="100%"
+                    nickname={identity.username}
+                    activeServer={activeServer}
+                    {...sidebarProps}
+                    onChannelSelect={(ch) => { handleChannelSelect(ch); setShowMobileMenu(false) }}
+                  />
+                )}
               </Sheet.Frame>
               <Sheet.Overlay />
             </Sheet>
@@ -197,12 +212,12 @@ export function HomeScreen() {
             handleCreateChannel={handleCreateChannel}
           />
 
-        <SettingsSheet
-          showSettings={showSettings}
-          setShowSettings={setShowSettings}
-          identity={identity}
-          appVersion={appVersion}
-        />
+          <SettingsSheet
+            showSettings={showSettings}
+            setShowSettings={setShowSettings}
+            identity={identity}
+            appVersion={appVersion}
+          />
 
         </YStack>
       )}
