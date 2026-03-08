@@ -1,13 +1,12 @@
 import { XStack, YStack, Input, ScrollView, Image, Text, Button, Paragraph } from '@my/ui'
 import { Send, X } from '@tamagui/lucide-icons'
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
-import type { Identity } from './identity/types'
-import { useMessages } from './hooks/useMessages'
-import { MessageContent } from './components/MessageContent'
-import { ImageLightbox } from './components/ImageLightbox'
-import { ExternalLinkDialog } from './components/ExternalLinkDialog'
-import {ChannelBanner} from "app/features/home/channel/ChannelBanner";
-import { EmojiPicker } from './components/EmojiPicker'
+import type { Identity } from '../identity/types'
+import { useMessages } from '../hooks/useMessages'
+import { MessageContent } from '../components/MessageContent'
+import { ImageLightbox } from '../components/ImageLightbox'
+import { ExternalLinkDialog } from '../components/ExternalLinkDialog'
+import { EmojiPicker } from '../components/EmojiPicker'
 
 type Props = {
   identity: Identity

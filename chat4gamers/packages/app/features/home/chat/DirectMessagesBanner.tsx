@@ -1,17 +1,14 @@
 import { MainContentBanner } from '../components/MainContentBanner'
-import { ChannelTitle } from './ChannelTitle'
-import { ChannelDescription } from './ChannelDescription'
 
 type Props = {
   showMemberPane: boolean
   onToggleMemberPane: () => void
 }
 
-export function ChannelBanner({ showMemberPane, onToggleMemberPane }: Props) {
+export function DirectMessagesBanner({ showMemberPane, onToggleMemberPane }: Props) {
   return (
     <MainContentBanner showMemberPane={showMemberPane} onToggleMemberPane={onToggleMemberPane}>
-      <ChannelTitle />
-      <ChannelDescription />
+      {/* TODO: Add DM banner content */}
     </MainContentBanner>
   )
 }
