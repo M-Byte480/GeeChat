@@ -20,8 +20,7 @@ services:
     restart: always
     ports:
       - "4000:4000"
-    environment:
-      - LIVEKIT_API_KEY=milan_test_key
-      - LIVEKIT_API_SECRET=milan_super_secret_key_32_characters_long_12345
+    env_file:
+      - .env
     volumes:
       - ./data:/app/data
