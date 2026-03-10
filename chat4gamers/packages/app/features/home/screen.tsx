@@ -88,7 +88,7 @@ export function HomeScreen() {
             style={{ WebkitAppRegion: 'drag', userSelect: 'none' }}
           >
             <XStack gap="$2" alignItems="center" // @ts-ignore
-              style={{ WebkitAppRegion: 'no-drag' }}>
+                    style={{ WebkitAppRegion: 'no-drag' }}>
               <Button
                 size="$1"
                 chromeless
@@ -114,7 +114,13 @@ export function HomeScreen() {
               onSelectServer={setActiveServer}
               onAddServer={addServer}
               isDMsActive={!activeServer}
-              onSelectDMs={() => setActiveServer(null)}
+              onSelectDMs={() => {
+                setActiveServer(null)
+                // Select the first channel
+                if (channels.length > 0) {
+                  handleChannelSelect(channels[0])
+                }
+              }}
               identity={{ publicKey: identity.publicKey, username: identity.username, pfp: identity.pfp }}
               serverContextOptions={(server) => [
                 { label: 'Mark as Read',  onPress: () => {} },
