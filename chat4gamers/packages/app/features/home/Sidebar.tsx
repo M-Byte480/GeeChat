@@ -2,24 +2,24 @@
 
 import { YStack } from '@my/ui'
 import { useState } from 'react'
-import type { Channel, ChannelType } from './types'
 import type { Server } from 'app/features/home/identity/types'
 import { ServerBanner } from 'app/features/home/channel/ServerBanner'
 import { ChannelList } from 'app/features/home/channel/ChannelList'
 import { JoinRequestsSheet } from 'app/features/home/sheets/JoinRequestsSheet'
+import {Channel, ChannelType} from "app/features/home/types/types";
 
 type Props = {
   width?: number | string
   activeServer: Server
   channels: Channel[]
   activeChannel: Channel
-  nickname: string
+  // nickname: string
   voiceParticipants: Record<string, string[]>
-  connectedVoiceChannelId: string | null
+  // connectedVoiceChannelId: string | null
   onChannelSelect: (channel: Channel) => void
   onJoinVoice: (channel: Channel) => void
-  onParticipantsChange: (channelId: string, participants: string[]) => void
-  onVoiceDisconnect: () => void
+  // onParticipantsChange: (channelId: string, participants: string[]) => void
+  // onVoiceDisconnect: () => void
   onCreateChannel: (type: ChannelType) => void
 }
 
@@ -28,13 +28,9 @@ export const Sidebar = ({
   activeServer,
   channels,
   activeChannel,
-  nickname,
   voiceParticipants,
-  connectedVoiceChannelId,
   onChannelSelect,
   onJoinVoice,
-  onParticipantsChange,
-  onVoiceDisconnect,
   onCreateChannel,
 }: Props) => {
   const [showJoinRequests, setShowJoinRequests] = useState(false)
