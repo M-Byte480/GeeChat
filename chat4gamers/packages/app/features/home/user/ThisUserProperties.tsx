@@ -45,14 +45,14 @@ export function ThisUserProperties({
       )}
       {/* 2. Body Section: Activity/Game */}
       <YStack p="$3" gap="$3">
-        <YStack>
+        {false && <YStack>
           <Text fontSize="$1" fontWeight="800" color="$gray10" textTransform="uppercase">
             Playing a Game
           </Text>
           <XStack alignItems="center" mt="$1">
             <Text fontWeight="bold" fontSize="$4">CS2</Text>
           </XStack>
-        </YStack>
+        </YStack> }
 
         <Separator />
 

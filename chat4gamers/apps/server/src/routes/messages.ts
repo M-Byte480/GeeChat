@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
 import { eq, desc } from 'drizzle-orm'
 import { db } from '../db/index.js'
-import { messages } from '../db/schema.js'
+import { messages, users } from '../db/schema.js'
 import { verifyEd25519 } from '../lib/crypto.js'
 import { sanitize } from '../lib/sanitize.js'
 import { broadcast } from '../ws.js'
@@ -11,6 +11,7 @@ const router = new Hono()
 router.post('/messages', async (c) => {
   const body = await c.req.json()
   try {
+    // Client sends roomId — maps to channelId in the schema
     const { roomId, userId, senderName, signature, timestamp } = body
     const content = sanitize(body.content ?? '')
     if (!content) return c.json({ error: 'Empty message' }, 400)
@@ -29,16 +30,17 @@ router.post('/messages', async (c) => {
     }
 
     const [newMessage] = await db.insert(messages).values({
-      roomId,
+      channelId: roomId,
       senderId: userId,
-      senderName: senderName.trim().slice(0, 64),
       content,
       timestamp: new Date(),
       signature,
     }).returning()
 
-    broadcast(JSON.stringify({ type: 'NEW_MESSAGE', channelId: roomId, ...newMessage }))
-    return c.json(newMessage)
+    // Return shape the client expects: roomId + senderName
+    const result = { ...newMessage, roomId: newMessage.channelId, senderName: senderName.trim().slice(0, 64) }
+    broadcast(JSON.stringify({ type: 'NEW_MESSAGE', ...result }))
+    return c.json(result)
   } catch (err: any) {
     console.error('POST /messages error:', err.stack || err)
     return c.json({ error: err.message }, 500)
@@ -49,9 +51,20 @@ router.get('/chat-history', async (c) => {
   const channel = c.req.query('channel')
   if (!channel) return c.json({ error: 'channel query param required' }, 400)
   try {
-    const history = await db.select()
+    const history = await db
+      .select({
+        id:         messages.id,
+        roomId:     messages.channelId,   // alias so client receives roomId
+        channelId:  messages.channelId,
+        senderId:   messages.senderId,
+        senderName: users.username,       // join users to get name
+        content:    messages.content,
+        timestamp:  messages.timestamp,
+        signature:  messages.signature,
+      })
       .from(messages)
-      .where(eq(messages.roomId, channel))
+      .innerJoin(users, eq(messages.senderId, users.publicKey))
+      .where(eq(messages.channelId, channel))
       .orderBy(desc(messages.timestamp))
       .limit(50)
     return c.json(history.reverse())

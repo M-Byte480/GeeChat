@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { XStack, Text, Button } from '@my/ui'
+import {XStack, Text, Button, YStack} from '@my/ui'
 import { Download, RotateCcw } from '@tamagui/lucide-icons'
 
 export function UpdateBanner() {
@@ -31,10 +31,6 @@ export function UpdateBanner() {
 
   return (
     <XStack
-      position="absolute"
-      bottom="$4"
-      left="$4"
-      right="$4"
       bg={ready ? '$blue9' : '$color3'}
       px="$4"
       py="$3"
@@ -45,7 +41,6 @@ export function UpdateBanner() {
       gap="$3"
       zIndex={1000}
       animation="quick"
-      enterStyle={{ opacity: 0, y: 8 }}
     >
       {ready ? (
         <>
