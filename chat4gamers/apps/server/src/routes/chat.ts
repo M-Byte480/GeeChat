@@ -10,7 +10,7 @@ chat.get('/history/:roomId', async (c) => {
 
   const history = await db.select()
     .from(messages)
-    .where(eq(messages.roomId, roomId))
+    .where(eq(messages.channelId, roomId))
     .orderBy(desc(messages.timestamp))
     .limit(50); // Only get last 50
 
@@ -18,13 +18,14 @@ chat.get('/history/:roomId', async (c) => {
 });
 
 chat.post('/send', async (c) => {
-  const { content, roomId, userId } = await c.req.json();
+  const { content, roomId, userId, signature = '' } = await c.req.json();
 
   const result = await db.insert(messages).values({
-    content,
-    roomId,
+    channelId: roomId,
     senderId: userId,
-    timestamp: new Date()
+    content,
+    timestamp: new Date(),
+    signature,
   }).returning();
 
   return c.json(result[0]);

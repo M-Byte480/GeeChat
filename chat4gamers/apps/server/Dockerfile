@@ -1,10 +1,10 @@
-FROM node:20
+FROM node:22-alpine
 LABEL authors="REDACTED_USERNAME"
 
 WORKDIR /app
 COPY package.json yarn.lock* ./
 RUN yarn install
 COPY . .
+RUN yarn build
 EXPOSE 4000
-CMD ["yarn", "start"]
-
+CMD ["node", "dist/index.js"]

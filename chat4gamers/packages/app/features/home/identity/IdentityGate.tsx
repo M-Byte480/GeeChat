@@ -11,6 +11,7 @@ type Props = {
     changeUsername: (name: string) => void,
     servers: Server[],
     addServer: (server: Server) => void,
+    deleteServer: (serverId: string) => void
   ) => React.ReactNode
 }
 
@@ -28,6 +29,7 @@ export function IdentityGate({ children }: Props) {
       if (json) {
         try {
           setIdentity(deserializeFromStorage(json))
+          console.log(deserializeFromStorage(json))
         } catch {
           // Corrupted data — fall through to WelcomeScreen
         }
@@ -54,11 +56,16 @@ export function IdentityGate({ children }: Props) {
     persist({ ...identity, servers: [...identity.servers, server] })
   }, [identity, persist])
 
+  const deleteServer = useCallback((serverUrl: string) => {
+    if (!identity) return
+    persist({ ...identity, servers: identity.servers.filter(s => s.url !== serverUrl) })
+  }, [identity, persist])
+
   if (!mounted) return null
 
   if (!identity) {
     return <WelcomeScreen onIdentityReady={setIdentity} />
   }
 
-  return <>{children(identity, changeUsername, identity.servers, addServer)}</>
+  return <>{children(identity, changeUsername, identity.servers, addServer, deleteServer)}</>
 }

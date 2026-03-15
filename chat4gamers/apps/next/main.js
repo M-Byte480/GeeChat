@@ -102,6 +102,7 @@ ipcMain.handle('load-identity-file', async () => {
     properties: ['openFile'],
   })
   if (canceled || filePaths.length === 0) return null
+
   return fs.readFileSync(filePaths[0], 'utf8')
 })
 
@@ -128,6 +129,7 @@ ipcMain.handle('safestore-set', (_, plaintext) => {
 
 ipcMain.handle('safestore-get', () => {
   const p = getSafeStorePath()
+    console.log(p)
   if (!fs.existsSync(p)) return null
   if (!safeStorage.isEncryptionAvailable()) return null
   const encrypted = fs.readFileSync(p)

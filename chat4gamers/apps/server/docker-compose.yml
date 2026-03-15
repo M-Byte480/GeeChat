@@ -20,8 +20,7 @@ services:
     restart: always
     ports:
       - "4000:4000"
-    environment:
-      - LIVEKIT_API_KEY=REDACTED_LIVEKIT_KEY
-      - LIVEKIT_API_SECRET=REDACTED_TOKEN_SECRET
+    env_file:
+      - .env
     volumes:
       - ./data:/app/data

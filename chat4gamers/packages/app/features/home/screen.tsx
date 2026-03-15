@@ -1,226 +1,232 @@
 'use client'
 
-import { XStack, YStack, Sheet, Button, Text } from '@my/ui'
-import { Menu, Settings, Pencil } from '@tamagui/lucide-icons'
-import { useState, useEffect } from 'react'
+import { XStack, YStack, Sheet, Button } from '@my/ui'
+import { Menu } from '@tamagui/lucide-icons'
+import { useState, useEffect, useCallback } from 'react'
 import { Sidebar } from './Sidebar'
 import { ChatArea } from './chat/ChatArea'
 import { IdentityGate } from './identity'
 import type { Identity } from './identity'
-import { UpdateBanner } from './UpdateBanner'
 import { VoiceChannelView } from './components/VoiceChannelView'
 import { useChannels } from './hooks/useChannels'
 import { useServerMembers } from './hooks/useServerMembers'
 import { ServerPane } from 'app/features/home/server-pane/ServerPane'
-import type { Server } from 'app/features/home/identity/types'
 import { ChannelBanner } from 'app/features/home/channel/ChannelBanner'
 import { DirectMessagesBanner } from 'app/features/home/chat/DirectMessagesBanner'
 import { DirectMessagesComponent } from 'app/features/home/chat/DirectMessagesComponent'
 import { DirectMessagePage } from 'app/features/home/chat/DirectMessagePage'
 import { MemberPane } from 'app/features/home/user/MemberPane'
-import { ThisUserProperties } from 'app/features/home/user/ThisUserProperties'
-import { SettingsSheet } from 'app/features/home/sheets/SettingsSheet'
-import { UserStatus } from 'app/features/home/types/User'
-import { CreateChannelSheet } from 'app/features/home/sheets/CreateChannelSheet'
-import { EditUsernameSheet } from 'app/features/home/sheets/EditUsernameSheet'
+import { TopScreenStatusBar } from 'app/features/home/TopScreenStatusBar'
+import { NotificationBanner } from 'app/features/home/NotificationBanner'
+import { useAppStore } from 'app/features/home/hooks/useAppStore'
+import { UserPromptDialog } from 'app/features/home/components/UserPromptDialog'
+import { OverlayManager } from 'app/features/home/managers/OverlayManager'
+import { useChannelsController } from 'app/features/home/hooks/useChannelsController'
+import {Channel, ChannelType} from 'app/features/home/types/types'
+
+const EMPTY_CHANNELS: Channel[] = []
+const EMPTY_VOICE_PARTICIPANTS: Record<string, string[]> = {}
 
 export function HomeScreen() {
-  const [activeServer, setActiveServer] = useState<Server | null>(null)
+  const activeServerUrl = useAppStore((s) => s.activeServerUrl)
+  const setActiveServerUrl = useAppStore((s) => s.setActiveServerUrl)
+  const channels = useAppStore((s) => s.cache[activeServerUrl ?? '']?.channels ?? EMPTY_CHANNELS)
+  const voiceParticipants = useAppStore((s) => s.cache[activeServerUrl ?? '']?.voiceParticipants ?? EMPTY_VOICE_PARTICIPANTS)
 
   const {
-    channels,
     activeChannel,
-    voiceParticipants,
     connectedVoiceChannelId,
-    showCreateChannel,
-    setShowCreateChannel,
-    createChannelType,
-    newChannelName,
-    setNewChannelName,
-    handleParticipantsChange,
     handleChannelSelect,
     handleVoiceJoin,
     handleVoiceDisconnect,
-    handleOpenCreateChannel,
-    handleCreateChannel,
-  } = useChannels(activeServer?.url ?? null)
+    handleParticipantsChange,
+  } = useChannels(activeServerUrl)
 
-  const serverMembers = useServerMembers(activeServer?.url ?? null)
-
-  const [showMobileMenu, setShowMobileMenu] = useState(false)
+  const [usernameInput, setUsernameInput] = useState('')
   const [showSettings, setShowSettings] = useState(false)
   const [showEditUsername, setShowEditUsername] = useState(false)
+  const [showMobileMenu, setShowMobileMenu] = useState(false)
   const [showMemberPane, setShowMemberPane] = useState(true)
-  const [usernameInput, setUsernameInput] = useState('')
+  const [showCreateChannel, setShowCreateChannel] = useState(false)
+  const [createChannelType, setCreateChannelType] = useState<ChannelType>('text')
+  const [newChannelName, setNewChannelName] = useState('')
   const [appVersion, setAppVersion] = useState('')
+
+  useChannelsController(activeServerUrl)
+
+  const serverMembers = useServerMembers(activeServerUrl)
+
+  const handleOpenCreateChannel = useCallback((type: ChannelType) => {
+    setCreateChannelType(type)
+    setNewChannelName('')
+    setShowCreateChannel(true)
+  }, [])
 
   useEffect(() => {
     (window as any).electronAPI?.getVersion().then((v: string) => setAppVersion(v))
   }, [])
 
-  const sidebarProps = {
-    channels,
-    activeChannel,
-    voiceParticipants,
-    connectedVoiceChannelId,
-    onChannelSelect: handleChannelSelect,
-    onJoinVoice: handleVoiceJoin,
-    onParticipantsChange: handleParticipantsChange,
-    onVoiceDisconnect: handleVoiceDisconnect,
-    onCreateChannel: handleOpenCreateChannel,
-  }
-
   return (
     <IdentityGate>
-      {(identity: Identity, changeUsername, servers, addServer) => (
-        <YStack height="100vh" bg="$background" position="relative">
-          <UpdateBanner />
+      {(identity: Identity, changeUsername, servers, addServer, deleteServer) => {
+        const activeServer = servers.find(s => s.url === activeServerUrl) ?? null
 
-          {/* Thin drag region for Electron window dragging */}
-          <XStack
-            height={28}
-            bg="$color1"
-            borderBottomWidth={1}
-            borderColor="$borderColor"
-            alignItems="center"
-            px="$3"
-            // @ts-ignore — Electron-specific CSS property
-            style={{ WebkitAppRegion: 'drag', userSelect: 'none' }}
-          >
-            <XStack gap="$2" alignItems="center" // @ts-ignore
-              style={{ WebkitAppRegion: 'no-drag' }}>
-              <Button
-                size="$1"
-                chromeless
-                onPress={() => { setUsernameInput(identity.username); setShowEditUsername(true) }}
-              >
-                <XStack gap="$2" alignItems="center">
-                  {identity.pfp && (
-                    // @ts-ignore — native img in web/Electron
-                    <img src={identity.pfp} style={{ width: 20, height: 20, borderRadius: '50%', objectFit: 'cover' }} />
-                  )}
-                  <Text fontSize="$2" color="$color11" fontWeight="600">{identity.username}</Text>
-                  <Pencil size={10} color="$color10" />
-                </XStack>
-              </Button>
-              <Button size="$1" chromeless icon={Settings} onPress={() => setShowSettings(true)} />
-            </XStack>
-          </XStack>
+        const sidebarProps = {
+          channels,
+          activeChannel,
+          voiceParticipants,
+          onChannelSelect: handleChannelSelect,
+          onJoinVoice: handleVoiceJoin,
+          onCreateChannel: handleOpenCreateChannel,
+        }
 
-          <XStack flex={1} bg="$background">
-            <ServerPane
-              servers={servers}
-              activeServerId={activeServer?.id ?? null}
-              onSelectServer={setActiveServer}
-              onAddServer={addServer}
-              isDMsActive={!activeServer}
-              onSelectDMs={() => setActiveServer(null)}
-              identity={{ publicKey: identity.publicKey, username: identity.username, pfp: identity.pfp }}
-              serverContextOptions={(server) => [
-                { label: 'Mark as Read',  onPress: () => {} },
-                { label: 'Copy URL',      onPress: () => navigator.clipboard.writeText(server.url) },
-                { label: 'Leave Server',  onPress: () => {}, destructive: true },
-              ]}
+        return (
+          <YStack height="100vh" bg="$background" position="relative">
+
+            <TopScreenStatusBar
+              setUsernameInput={setUsernameInput}
+              setShowEditUsername={setShowEditUsername}
+              setShowSettings={setShowSettings}
+              identity={identity}
             />
-            <XStack position="absolute" bottom={0} left={0}>
-              <ThisUserProperties
-                connectedVoiceChannelId={connectedVoiceChannelId}
-                nickname={identity.username}
-                user={{ username: identity.username, publicKey: identity.publicKey, status: UserStatus.ONLINE, avatarUrl: identity.pfp }}
-                serverUrl={activeServer?.url ?? null}
-                onParticipantsChange={handleParticipantsChange}
-                onVoiceDisconnect={handleVoiceDisconnect}
+
+            <NotificationBanner />
+
+            <XStack flex={1} bg="$background">
+              <ServerPane
+                servers={servers}
+                activeServerId={activeServer?.id ?? null}
+                onSelectServer={(server) => setActiveServerUrl(server.url)}
+                onAddServer={addServer}
+                isDMsActive={!activeServer}
+                onSelectDMs={() => {
+                  setActiveServerUrl(null)
+                  if (channels.length > 0) handleChannelSelect(channels[0])
+                }}
+                identity={{ publicKey: identity.publicKey, username: identity.username, pfp: identity.pfp }}
+                serverContextOptions={(server) => [
+                  { label: 'Mark as Read', onPress: () => {} },
+                  { label: 'Copy URL', onPress: () => navigator.clipboard.writeText(server.url) },
+                  {
+                    label: 'Leave Server',
+                    onPress: async () => {
+                      try {
+                        const res = await fetch(`${server.url}/leave`, {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ publicKey: identity.publicKey }),
+                        })
+                        const data = await res.json()
+                        if (!res.ok) {
+                          console.error(data.error ?? 'Failed to leave server')
+                          return
+                        }
+                        deleteServer(server.url)
+                        if (activeServer?.url === server.url) {
+                          setActiveServerUrl(null)
+                        }
+                      } catch (e) {
+                        console.error('Failed to leave server', e)
+                      }
+                    },
+                    destructive: true,
+                  },
+                ]}
               />
-            </XStack>
-            {/* Desktop sidebar */}
-            <YStack $max-lg={{ display: 'none' }}>
-              {activeServer ? (
-                <Sidebar width={250} nickname={identity.username} activeServer={activeServer} {...sidebarProps} />
-              ) : (
-                <DirectMessagesComponent />
-              )}
-            </YStack>
 
-            {/* Main content */}
-            <YStack flex={1}>
-              {activeServer ? (
-                <ChannelBanner
-                  showMemberPane={showMemberPane}
-                  onToggleMemberPane={() => setShowMemberPane(p => !p)}
-                />
-              ) : (
-                <DirectMessagesBanner
-                  showMemberPane={showMemberPane}
-                  onToggleMemberPane={() => setShowMemberPane(p => !p)}
-                />
-              )}
+              <UserPromptDialog
+                connectedVoiceChannelId={connectedVoiceChannelId}
+                passedIdentity={identity}
+                activeServer={activeServer}
+                handleParticipantsChange={handleParticipantsChange}
+                handleVoiceDisconnect={handleVoiceDisconnect}
+              />
 
-              <XStack p="$4" $sm={{ display: 'none' }} borderBottomWidth={1} borderColor="$borderColor" width="100%" jc="center">
-                <Button icon={Menu} onPress={() => setShowMobileMenu(true)} />
-              </XStack>
-
-              <XStack flex={1} bg="$background" gap="$2">
-                {!activeServer ? (
-                  <DirectMessagePage />
-                ) : activeChannel.type === 'text' ? (
-                  <ChatArea identity={identity} channelId={activeChannel.id} serverUrl={activeServer.url} />
+              {/* Desktop sidebar */}
+              <YStack>
+                {activeServer ? (
+                    // {
+                    //   visitedServer.map(id => (
+                        <Sidebar width={250} activeServer={activeServer} {...sidebarProps} />
+                    //   ))
+                    // }
                 ) : (
-                  <VoiceChannelView
-                    channelId={activeChannel.id}
-                    participants={voiceParticipants[activeChannel.id] ?? []}
+                  <DirectMessagesComponent />
+                )}
+              </YStack>
+
+              {/* Main content */}
+              <YStack flex={1}>
+                {activeServer ? (
+                  <ChannelBanner
+                    showMemberPane={showMemberPane}
+                    onToggleMemberPane={() => setShowMemberPane(p => !p)}
+                  />
+                ) : (
+                  <DirectMessagesBanner
+                    showMemberPane={showMemberPane}
+                    onToggleMemberPane={() => setShowMemberPane(p => !p)}
                   />
                 )}
-                {activeServer && showMemberPane && <MemberPane members={serverMembers} />}
-              </XStack>
 
-            </YStack>
+                <XStack p="$4" $sm={{ display: 'none' }} borderBottomWidth={1} borderColor="$borderColor" width="100%" jc="center">
+                  <Button icon={Menu} onPress={() => setShowMobileMenu(true)} />
+                </XStack>
 
-            {/* Mobile drawer */}
-            <Sheet open={showMobileMenu} onOpenChange={setShowMobileMenu} modal dismissOnSnapToBottom>
-              <Sheet.Frame p="$4">
-                {activeServer && (
-                  <Sidebar
-                    width="100%"
-                    nickname={identity.username}
-                    activeServer={activeServer}
-                    {...sidebarProps}
-                    onChannelSelect={(ch) => { handleChannelSelect(ch); setShowMobileMenu(false) }}
-                  />
-                )}
-              </Sheet.Frame>
-              <Sheet.Overlay />
-            </Sheet>
+                <XStack flex={1} bg="$background" gap="$2">
+                  {!activeServer ? (
+                    <DirectMessagePage />
+                  ) : activeChannel.type === 'text' ? (
+                    <ChatArea identity={identity} channelId={activeChannel.id} serverUrl={activeServer.url} />
+                  ) : (
+                    <VoiceChannelView
+                      channelId={activeChannel.id}
+                      participants={voiceParticipants[activeChannel.id] ?? []}
+                    />
+                  )}
+                  {activeServer && showMemberPane && <MemberPane members={serverMembers} />}
+                </XStack>
+              </YStack>
 
+              {/* Mobile drawer */}
+              <Sheet open={showMobileMenu} onOpenChange={setShowMobileMenu} modal dismissOnSnapToBottom>
+                <Sheet.Frame p="$4">
+                  {activeServer && (
+                    <Sidebar
+                      width="100%"
+                      nickname={identity.username}
+                      activeServer={activeServer}
+                      {...sidebarProps}
+                      onChannelSelect={(ch) => { handleChannelSelect(ch); setShowMobileMenu(false) }}
+                    />
+                  )}
+                </Sheet.Frame>
+                <Sheet.Overlay />
+              </Sheet>
 
-          </XStack>
+            </XStack>
 
-          {/* ── Edit username ── */}
-          <EditUsernameSheet
-            showEditUsername={showEditUsername}
-            setShowEditUsername={setShowEditUsername}
-            usernameInput={usernameInput}
-            setUsernameInput={setUsernameInput}
-            changeUsername={changeUsername}
-          />
+            <OverlayManager
+              serverUrl={activeServerUrl}
+              changeUsername={changeUsername}
+              identity={identity}
+              showEditUsername={showEditUsername}
+              setShowEditUsername={setShowEditUsername}
+              usernameInput={usernameInput}
+              setUsernameInput={setUsernameInput}
+              showSettings={showSettings}
+              setShowSettings={setShowSettings}
+              showCreateChannel={showCreateChannel}
+              setShowCreateChannel={setShowCreateChannel}
+              createChannelType={createChannelType}
+              newChannelName={newChannelName}
+              setNewChannelName={setNewChannelName}
+              appVersion={appVersion}
+            />
 
-          <CreateChannelSheet
-            showCreateChannel={showCreateChannel}
-            setShowCreateChannel={setShowCreateChannel}
-            createChannelType={createChannelType}
-            newChannelName={newChannelName}
-            setNewChannelName={setNewChannelName}
-            handleCreateChannel={handleCreateChannel}
-          />
-
-          <SettingsSheet
-            showSettings={showSettings}
-            setShowSettings={setShowSettings}
-            identity={identity}
-            appVersion={appVersion}
-          />
-
-        </YStack>
-      )}
+          </YStack>
+        )
+      }}
     </IdentityGate>
   )
 }
