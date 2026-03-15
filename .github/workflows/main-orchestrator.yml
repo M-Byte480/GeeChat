@@ -3,7 +3,7 @@ name: Main Orchestrator
 on:
   push:
     branches:
-      - main
+      - disabled
     paths-ignore:
       - 'chat4gamers/apps/next/package.json'
 
