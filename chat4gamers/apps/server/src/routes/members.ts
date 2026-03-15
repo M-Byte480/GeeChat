@@ -95,6 +95,23 @@ router.post('/join', async (c) => {
 })
 
 /**
+ * POST /leave
+ * Called when a user leaves the server. Sets their membership to 'inactive' so they can rejoin later if desired.
+ */
+router.post('/leave', async (c) => {
+  const body = await c.req.json()
+  const { publicKey } = body as { publicKey: string }
+
+  if (!publicKey) {
+    return c.json({ error: 'publicKey is required' }, 400)
+  }
+
+  await db.update(members).set({ status: 'inactive' }).where(eq(members.userPublicKey, publicKey))
+  return c.json({ ok: true })
+})
+
+
+/**
  * GET /members
  * Returns all active members — used by the client to populate the member pane.
  */

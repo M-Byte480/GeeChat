@@ -39,7 +39,7 @@ router.post('/messages', async (c) => {
 
     // Return shape the client expects: roomId + senderName
     const result = { ...newMessage, roomId: newMessage.channelId, senderName: senderName.trim().slice(0, 64) }
-    broadcast(JSON.stringify({ type: 'NEW_MESSAGE', channelId: roomId, ...result }))
+    broadcast(JSON.stringify({ type: 'NEW_MESSAGE', ...result }))
     return c.json(result)
   } catch (err: any) {
     console.error('POST /messages error:', err.stack || err)

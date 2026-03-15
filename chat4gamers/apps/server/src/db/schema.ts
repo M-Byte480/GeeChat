@@ -42,6 +42,15 @@ export const channels = sqliteTable('channels', {
   type: text('type').$type<ChannelTypeType>().notNull().default('text'),
 });
 
+export const directMessages = sqliteTable('direct_messages', {
+  id:          integer('id').primaryKey({ autoIncrement: true }),
+  senderId:    text('sender_id').notNull().references(() => users.publicKey),
+  recipientId: text('recipient_id').notNull().references(() => users.publicKey),
+  content:     text('content').notNull(),
+  timestamp:   integer('timestamp', { mode: 'timestamp' }).notNull(),
+  signature:   text('signature').notNull(),
+});
+
 export const messages = sqliteTable('messages', {
   id:        integer('id').primaryKey({ autoIncrement: true }),
   channelId: text('channel_id')
@@ -56,3 +65,10 @@ export const messages = sqliteTable('messages', {
 }, (table) => ({
   channelTimestampIdx: index('channel_timestamp_idx').on(table.channelId, table.timestamp),
 }));
+
+export const relaySubscriptions = sqliteTable('relay_subscriptions', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  relayId: text('relay_id').notNull(), // The URL of the relay node
+  userPublicKey: text('user_public_key').notNull(), // The user subscribing
+  topic: text('topic').notNull(), // The channelId or DM recipientKey
+});

@@ -1,5 +1,4 @@
 import { Hono } from 'hono';
-import { hash, compare } from 'bcrypt';
 import { db } from '../db/index.js'; // Import your db instance
 import { users } from '../db/schema.js';
 import { eq } from 'drizzle-orm';
@@ -7,14 +6,12 @@ import { eq } from 'drizzle-orm';
 const auth = new Hono();
 
 auth.post('/register', async (c) => {
-  const { username, password } = await c.req.json();
-  const passwordHash = await hash(password, 10);
+  const { username, publicKey } = await c.req.json();
 
   try {
     await db.insert(users).values({
-      id: crypto.randomUUID(),
+      publicKey,
       username,
-      passwordHash,
     });
     return c.json({ message: 'User created' }, 201);
   } catch (e) {
@@ -23,10 +20,10 @@ auth.post('/register', async (c) => {
 });
 
 auth.post('/login', async (c) => {
-  const { username, password } = await c.req.json();
+  const { username } = await c.req.json();
   const user = await db.select().from(users).where(eq(users.username, username)).get();
 
-  if (!user || !(await compare(password, user.passwordHash))) {
+  if (!user) {
     return c.json({ error: 'Invalid credentials' }, 401);
   }
 
