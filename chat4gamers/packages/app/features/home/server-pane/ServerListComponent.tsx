@@ -17,7 +17,7 @@ export function ServerListComponent({
                                       serverContextOptions
                                     }: Props) {
   return (
-    <YStack gap="$2" alignItems="center" paddingTop="$2">
+    <YStack>
       {servers.map((server) => (
         <ServerButton
           key={server.id}
