@@ -1,4 +1,5 @@
 import type {ClientConfig, SignChallengeFn} from './types';
+const authenticatingServers = new Map<string, Promise<string | null>>()
 
 let _publicKey: string | null = null;
 let _signChallenge: SignChallengeFn | null = null;
@@ -45,5 +46,15 @@ export async function authenticate(baseUrl: string): Promise<string | null> {
   const { getSessionToken } = getConfig()
   const existing = getSessionToken(baseUrl)
   if (existing) return existing
-  return refreshSession(baseUrl)
+
+  // If already authenticating for this server, wait for that instead
+  const inFlight = authenticatingServers.get(baseUrl)
+  if (inFlight) return inFlight
+
+  const promise = refreshSession(baseUrl).finally(() => {
+    authenticatingServers.delete(baseUrl)
+  })
+
+  authenticatingServers.set(baseUrl, promise)
+  return promise
 }
