@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { signMessage } from '../identity/crypto'
 import type { Identity } from '../identity/types'
-import type { Message } from '../types'
+import { apiFetch } from "@my/api-client"
+import {Message} from "app/features/home/types/types";
 
 function deriveWsBase(url: string): string {
   return url.replace(/^https:\/\//, 'wss://').replace(/^http:\/\//, 'ws://')
@@ -38,7 +39,7 @@ export function useMessages({ channelId, identity, serverUrl }: Params) {
 
   // Fetch history + open WebSocket
   useEffect(() => {
-    fetch(`${apiBase}/chat-history?channel=${channelId}`)
+    apiFetch(`${apiBase}`,`/chat-history?channel=${channelId}`)
       .then(res => {
         if (!res.ok) throw new Error('Server error')
         return res.json()
@@ -96,7 +97,7 @@ export function useMessages({ channelId, identity, serverUrl }: Params) {
 
     try {
       const signature = await signMessage(identity.privateKeyBytes, currentText, channelId, timestamp)
-      await fetch(`${apiBase}/messages`, {
+      await apiFetch(`${apiBase}`,`/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

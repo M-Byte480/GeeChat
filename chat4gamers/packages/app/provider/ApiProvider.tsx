@@ -1,8 +1,12 @@
 import { useEffect } from 'react'
-import { configureClient } from '@my/api-client'
+import { configureClient, configureAvatarStorage } from '@my/api-client'
 import {Identity} from "app/features/home/identity";
 import {signChallenge} from "app/features/home/identity/crypto";
 
+configureAvatarStorage({
+  getItem: async (key) => localStorage.getItem(key),
+  setItem: async (key, value) => localStorage.setItem(key, value),
+})
 
 interface ApiProviderProps {
   children: React.ReactNode
