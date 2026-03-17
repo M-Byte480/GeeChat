@@ -111,6 +111,8 @@ export function HomeScreen() {
                     label: 'Leave Server',
                     onPress: async () => {
                       try {
+                        deleteServer(server.url)
+
                         const res = await fetch(`${server.url}/leave`, {
                           method: 'POST',
                           headers: { 'Content-Type': 'application/json' },

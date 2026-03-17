@@ -43,6 +43,7 @@ export function AddServerDialog({ open, onClose, onAddServer, identity }: Props)
 
   const normalise = (raw: string) => {
     let url = raw.trim()
+    // todo: disable this in development mode if the user is likely to be connecting to a local server without https
     if (!url.startsWith('http://') && !url.startsWith('https://')) url = `https://${url}`
     return url.replace(/\/$/, '')
   }

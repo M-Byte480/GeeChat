@@ -11,3 +11,7 @@ export function verifyToken(token: string): { publicKey: string } | null {
   // Placeholder implementation — in a real app, verify the token properly
   return null;
 }
+
+export function challengeUser(publicKey: string): string{
+  return '';
+}

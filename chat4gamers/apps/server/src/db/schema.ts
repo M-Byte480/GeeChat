@@ -85,3 +85,10 @@ export const media = sqliteTable('media', {
     .notNull()
     .default(sql`(unixepoch())`),
 });
+
+export const sessions = sqliteTable('sessions', {
+  token:     text('token').primaryKey(),
+  publicKey: text('public_key').notNull().references(() => users.publicKey, { onDelete: 'cascade' }),
+  expiresAt: integer('expires_at', { mode: 'timestamp' }).notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp' }).default(sql`(unixepoch())`),
+});

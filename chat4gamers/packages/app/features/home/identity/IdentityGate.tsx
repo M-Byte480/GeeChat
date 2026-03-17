@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import type { Identity, Server } from './types'
 import { deserializeFromStorage, serializeForStorage } from './crypto'
 import { WelcomeScreen } from './WelcomeScreen'
+import {ApiProvider} from "app/provider/ApiProvider";
 
 type Props = {
   children: (
@@ -67,5 +68,23 @@ export function IdentityGate({ children }: Props) {
     return <WelcomeScreen onIdentityReady={setIdentity} />
   }
 
-  return <>{children(identity, changeUsername, identity.servers, addServer, deleteServer)}</>
+  return <ApiProvider
+    identity={identity}
+    onSessionExpired={(baseUrl) => {
+      // clear the token for that server from identity
+      persist({
+        ...identity,
+        sessionTokens: { ...identity.sessionTokens, [baseUrl]: undefined }
+      })
+    }}
+    persistSessionToken={(baseUrl, token) => {
+      persist({
+        ...identity,
+        sessionTokens: { ...identity.sessionTokens, [baseUrl]: token }
+      })
+    }}
+  >
+    {children(identity, changeUsername, identity.servers, addServer, deleteServer)}
+  </ApiProvider>
+
 }

@@ -1,20 +1,34 @@
 import {Context, Next} from "hono";
 import {db} from "../db/index.js";
 import {and, eq, inArray} from "drizzle-orm";
-import {members} from "../db/schema.js";
-import {verifyToken} from "./authentication.js";
+import {members, sessions, users} from "../db/schema.js";
 
-export async function requireAuth(c: Context, next: Next) {
-  // Todo: user has to exists
-  // todo: not banned or denied or inactive or awaiting_to_join // inactive = left server
-  const token = c.req.header('Authorization')?.replace('Bearer ', '')
-  if (!token) return c.json({ error: 'Unauthorized' }, 401)
+export async function requireAuth(c: Context, next: Next)  {
+  const token = c.req.header('Authorization')?.replace('Bearer ', '');
 
-  const user = await verifyToken(token)
-  if (!user) return c.json({ error: 'Unauthorized' }, 401)
+  if (!token) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
 
-  c.set('user', user) // attach to context for downstream use
-  await next()
+  const session = db
+    .select()
+    .from(sessions)
+    .where(eq(sessions.token, token))
+    .get();
+
+  if (!session || session.expiresAt < new Date()) {
+    return c.json({ error: 'Session expired' }, 401);
+  }
+
+  const user = db
+    .select()
+    .from(users)
+    .where(eq(users.publicKey, session.publicKey))
+    .get();
+
+  c.set('user', user);
+
+  await next();
 }
 
 export async function requireAdmin(c: Context, next: Next) {
