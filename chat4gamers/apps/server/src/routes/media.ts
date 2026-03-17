@@ -2,7 +2,7 @@ import { Hono } from 'hono'
 import { db } from '../db/index.js';
 import {authenticate, checkUserCanAccessMedia} from "../lib/authentication.js";
 import {eq} from "drizzle-orm";
-import {media} from "../db/schema.js"; // Import your db instance
+import {media, users, members} from "../db/schema.js"; // Import your db instance
 import { writeFile } from 'fs/promises'
 import { Buffer } from 'buffer'
 import { createReadStream } from 'fs'
@@ -62,6 +62,42 @@ app.get('/uploads/:filename',
   // Stream the file
   const stream = createReadStream(`./uploads/media/${url}`)
   return new Response(Readable.toWeb(stream) as ReadableStream)
+})
+
+app.get('/users/:publicKey/avatar', requireAuth, async (c) => {
+  const publicKey = c.req.param('publicKey')
+
+  const user = db
+    .select({ pfp: users.pfp })
+    .from(users)
+    .where(eq(users.publicKey, publicKey))
+    .get()
+
+  if (!user) return c.json({ error: 'User not found' }, 404)
+
+  return c.json({ pfp: user.pfp ?? null })
+})
+
+app.get('/users/:publicKey', requireAuth, async (c) => {
+  const publicKey = c.req.param('publicKey')
+
+  const result = db
+    .select({
+      publicKey: users.publicKey,
+      username: users.username,
+      pfp: users.pfp,
+      nickname: members.nickname,
+      role: members.role,
+      status: members.status,
+    })
+    .from(users)
+    .innerJoin(members, eq(members.userPublicKey, users.publicKey))
+    .where(eq(users.publicKey, publicKey))
+    .get()
+
+  if (!result) return c.json({ error: 'User not found' }, 404)
+
+  return c.json(result)
 })
 
 export default app

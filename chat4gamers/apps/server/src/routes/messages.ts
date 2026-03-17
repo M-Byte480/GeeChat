@@ -53,6 +53,7 @@ router.post('/messages',
 router.get('/chat-history',
   requireAuth,
   async (c) => {
+
   const channel = c.req.query('channel')
   if (!channel) return c.json({ error: 'channel query param required' }, 400)
   try {
