@@ -4,7 +4,7 @@ import { sql } from 'drizzle-orm';
 export const MemberStatus = ['active', 'banned', 'inactive', 'awaiting_to_join', 'denied'] as const;
 export type MemberStatusType = typeof MemberStatus[number];
 
-export const MemberRole = ['owner', 'member'] as const;
+export const MemberRole = ['owner', 'member', 'admin'] as const;
 export type MemberRoleType = typeof MemberRole[number];
 
 export const ChannelType = ['text', 'voice'] as const;
@@ -71,4 +71,17 @@ export const relaySubscriptions = sqliteTable('relay_subscriptions', {
   relayId: text('relay_id').notNull(), // The URL of the relay node
   userPublicKey: text('user_public_key').notNull(), // The user subscribing
   topic: text('topic').notNull(), // The channelId or DM recipientKey
+});
+
+export const media = sqliteTable('media', {
+  id:           integer('id').primaryKey({ autoIncrement: true }),
+  uploaderKey:  text('uploader_key').notNull().references(() => users.publicKey),
+  url:          text('url').notNull(),          // CDN or local URL
+  mimeType:     text('mime_type').notNull(),     // e.g. 'image/png'
+  sizeBytes:    integer('size_bytes').notNull(),
+  context:      text('context'),                // e.g. 'avatar', 'message', 'channel'
+  contextId:    text('context_id'),             // e.g. channelId or messageId
+  createdAt:    integer('created_at', { mode: 'timestamp' })
+    .notNull()
+    .default(sql`(unixepoch())`),
 });
