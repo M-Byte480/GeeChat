@@ -19,16 +19,17 @@ function parseContent(content: string): Array<{ type: 'text' | 'mention'; value:
   }))
 }
 
-function MentionChip({ publicKey, serverUrl, identity }: {
+function MentionChip({ publicKey, serverUrl, identity, isOwn }: {
   publicKey: string
   serverUrl: string
   identity: Identity
+  isOwn: boolean
 }) {
   const user = useUser(serverUrl, publicKey, identity)
   return (
     <Text
-      bg="$blue5"
-      color="$blue11"
+      bg={'$blue5'}
+      color={'$blue11'}
       borderRadius="$2"
       px="$1"
       fontWeight="600"
@@ -39,17 +40,34 @@ function MentionChip({ publicKey, serverUrl, identity }: {
   )
 }
 
+
+
 export function MentionText({ content, serverUrl, identity }: Props) {
   const parts = parseContent(content)
+  const isMentioned = parts.some(
+    p => p.type === 'mention' && p.value.slice(1) === identity.publicKey
+  )
+
   return (
-    <XStack flexWrap="wrap" alignItems="center" gap="$1">
+    <XStack
+      flexWrap="wrap"
+      alignItems="center"
+      gap="$1"
+      bg={isMentioned ? '$yellow2' : undefined}
+      borderRadius="$2"
+      px={isMentioned ? '$2' : undefined}
+      py={isMentioned ? '$1' : undefined}
+      borderLeftWidth={isMentioned ? 3 : 0}
+      borderLeftColor={isMentioned ? '$yellow8' : undefined}
+    >
       {parts.map((part, i) =>
         part.type === 'mention' ? (
           <MentionChip
             key={i}
-            publicKey={part.value.slice(1)} // strip the @
+            publicKey={part.value.slice(1)}
             serverUrl={serverUrl}
             identity={identity}
+            isOwn={part.value.slice(1) === identity.publicKey}
           />
         ) : (
           <Text key={i} fontSize="$3" color="$color">{part.value}</Text>
