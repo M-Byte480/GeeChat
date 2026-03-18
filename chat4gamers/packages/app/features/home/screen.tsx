@@ -62,13 +62,15 @@ export function HomeScreen() {
     setShowCreateChannel(true)
   }, [])
 
+
+
   useEffect(() => {
     (window as any).electronAPI?.getVersion().then((v: string) => setAppVersion(v))
   }, [])
 
   return (
     <IdentityGate>
-      {(identity: Identity, changeUsername, servers, addServer, deleteServer) => {
+      {(identity: Identity, changeUsername, servers, addServer, deleteServer, changePfp) => {
         const activeServer = servers.find(s => s.url === activeServerUrl) ?? null
 
         const sidebarProps = {
@@ -111,6 +113,8 @@ export function HomeScreen() {
                     label: 'Leave Server',
                     onPress: async () => {
                       try {
+                        deleteServer(server.url)
+
                         const res = await fetch(`${server.url}/leave`, {
                           method: 'POST',
                           headers: { 'Content-Type': 'application/json' },
@@ -184,7 +188,11 @@ export function HomeScreen() {
                       participants={voiceParticipants[activeChannel.id] ?? []}
                     />
                   )}
-                  {activeServer && showMemberPane && <MemberPane members={serverMembers} />}
+                  {activeServer && showMemberPane && <MemberPane
+                      members={serverMembers}
+                      serverUrl={activeServer.url}
+                      identity={identity}
+                  />}
                 </XStack>
               </YStack>
 
@@ -222,6 +230,7 @@ export function HomeScreen() {
               newChannelName={newChannelName}
               setNewChannelName={setNewChannelName}
               appVersion={appVersion}
+              changePfp={changePfp}
             />
 
           </YStack>

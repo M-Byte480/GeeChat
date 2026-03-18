@@ -8,6 +8,7 @@ import { sendToUser } from '../ws.js'
 
 const router = new Hono()
 
+// TODO: figure out rate limiting and abuse prevention for this endpoint. Maybe require a JWT with a short TTL that includes the senderId, and only allow 5 DMs per minute or something like that.
 router.post('/relay/dm', async (c) => {
   try {
     const body = await c.req.json()

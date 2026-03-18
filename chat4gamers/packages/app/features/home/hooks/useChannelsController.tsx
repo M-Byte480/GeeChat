@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { useAppStore } from 'app/features/home/hooks/useAppStore'
+import { apiFetch } from '@my/api-client'
 
 function deriveWsBase(url: string): string {
   return url.replace(/^https:\/\//, 'wss://').replace(/^http:\/\//, 'ws://')
@@ -10,7 +11,8 @@ export function useChannelsController(serverUrl: string | null) {
 
   useEffect(() => {
     if (!serverUrl) return
-    fetch(`${serverUrl}/channels`)
+
+    apiFetch(`${serverUrl}`, `/channels`)
       .then(r => r.json())
       .then(data => { if (Array.isArray(data)) setChannels(serverUrl, data) })
       .catch(() => {})
@@ -22,7 +24,7 @@ export function useChannelsController(serverUrl: string | null) {
     ws.onmessage = (event) => {
       const msg = JSON.parse(event.data)
       if (msg.type === 'CHANNEL_CREATED') {
-        fetch(`${serverUrl}/channels`)
+        apiFetch(`${serverUrl}`, `/channel`)
           .then(r => r.json())
           .then(data => { if (Array.isArray(data)) setChannels(serverUrl, data) })
           .catch(() => {})

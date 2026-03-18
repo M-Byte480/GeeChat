@@ -95,6 +95,7 @@ export async function generateIdentity(
     pfp,
     privateKeyBytes,
     servers: [],
+    sessionTokens: {},
   }
 
   return { file, identity }
@@ -124,6 +125,7 @@ export async function decryptIdentity(file: IdentityFile, passphrase: string): P
     pfp: file.pfp,
     privateKeyBytes: new Uint8Array(decryptedBuf),
     servers: file.servers ?? [],
+    sessionTokens: file.sessionTokens ?? {},
   }
 }
 
@@ -151,6 +153,25 @@ export async function signMessage(
   return toBase64url(new Uint8Array(signatureBuf))
 }
 
+export async function signChallenge(
+  privateKeyBytes: Uint8Array,
+  challenge: string,
+): Promise<string> {
+  const privateKey = await crypto.subtle.importKey(
+    'pkcs8',
+    privateKeyBytes,
+    { name: 'Ed25519' } as any,
+    false,
+    ['sign'],
+  )
+  const signatureBuf = await crypto.subtle.sign(
+    { name: 'Ed25519' } as any,
+    privateKey,
+    new TextEncoder().encode(challenge),
+  )
+  return toBase64url(new Uint8Array(signatureBuf))
+}
+
 // ── safeStorage helpers ───────────────────────────────────────────────────────
 
 /** Serialize an Identity to the compact StoredIdentity JSON for safeStorage */
@@ -162,6 +183,7 @@ export function serializeForStorage(identity: Identity): string {
     pfp: identity.pfp,
     privateKeyB64,
     servers: identity.servers,
+    sessionTokens: identity.sessionTokens ?? {},
   })
 }
 
@@ -175,5 +197,6 @@ export function deserializeFromStorage(json: string): Identity {
     pfp: stored.pfp,
     privateKeyBytes,
     servers: stored.servers ?? [],
+    sessionTokens: stored.sessionTokens ?? {},
   }
 }

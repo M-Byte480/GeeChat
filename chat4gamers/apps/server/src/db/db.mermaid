@@ -1,0 +1,99 @@
+erDiagram
+    users {
+        text public_key PK
+        text username
+        text pfp
+        int created_at
+    }
+
+    members {
+        text id PK
+        text user_public_key FK
+        text nickname
+        text role
+        text status
+        int joined_at
+    }
+
+    channels {
+        text id PK
+        text name
+        text type
+    }
+
+    messages {
+        int id PK
+        text channel_id FK
+        text sender_id FK
+        text content
+        int timestamp
+        text signature
+    }
+
+    direct_messages {
+        int id PK
+        text sender_id FK
+        text recipient_id FK
+        text content
+        int timestamp
+        text signature
+    }
+
+    relay_subscriptions {
+        int id PK
+        text relay_id
+        text user_public_key FK
+        text topic
+    }
+
+    permissions {
+        int id PK
+        text title
+    }
+
+    roles {
+        int id PK
+        text name
+        int color
+    }
+
+    role_to_permissions {
+        int id PK
+        text role_id FK
+        text permission_id FK
+    }
+
+    users_to_roles {
+        int id PK
+        text user_public_key FK
+        text role_id FK
+    }
+
+    relay_messages {
+        int id PK
+        text relay_id
+        text sender_id FK
+        text content
+        int timestamp
+        text signature
+    }
+
+    media {
+        int id PK
+        text url
+        text type
+        text uploaderPublicKey FK
+        int timestamp
+    }
+
+    users ||--o{ members : "has"
+    users ||--o{ messages : "sends"
+    users ||--o{ direct_messages : "sends"
+    users ||--o{ direct_messages : "receives"
+    users ||--o{ relay_subscriptions : "subscribes"
+    channels ||--o{ messages : "contains"
+    permissions ||--o{ role_to_permissions : "assigned to"
+    roles ||--o{ role_to_permissions : "has"
+    roles ||--o{ users_to_roles : "assigned to"
+    users ||--o{ users_to_roles : "has"
+    media ||--o{ users : "uploaded by"

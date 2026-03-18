@@ -1,7 +1,9 @@
-import {EditUsernameSheet} from "app/features/home/sheets/EditUsernameSheet";
+import {EditProfileSheet} from "app/features/home/sheets/EditUsernameSheet";
 import {CreateChannelSheet} from "app/features/home/sheets/CreateChannelSheet";
 import {SettingsSheet} from "app/features/home/sheets/SettingsSheet";
-import {useCallback, useState} from "react";
+import {useCallback} from "react";
+import { apiFetch } from "@my/api-client";
+import {persist} from "zustand/middleware/persist";
 
 
 export function OverlayManager({
@@ -19,7 +21,8 @@ export function OverlayManager({
                                  createChannelType,
                                  newChannelName,
                                  setNewChannelName,
-                                 appVersion
+                                 appVersion,
+  changePfp
                                }: any) {
 
 
@@ -27,9 +30,11 @@ export function OverlayManager({
     const name = newChannelName.trim();
     if (!name || !serverUrl) return;
     try {
-      await fetch(`${serverUrl}/channels`, {
+      await apiFetch(`${serverUrl}`, `/channels`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${localStorage.getItem('jwt')}`
+        },
         body: JSON.stringify({ name, type: createChannelType }),
       });
       setShowCreateChannel(false);
@@ -39,14 +44,18 @@ export function OverlayManager({
     }
   }, [newChannelName, createChannelType, serverUrl, setShowCreateChannel, setNewChannelName]);
 
+
+
   return (
     <>
-      <EditUsernameSheet
+      <EditProfileSheet
         showEditUsername={showEditUsername}
         setShowEditUsername={setShowEditUsername}
         usernameInput={usernameInput}
         setUsernameInput={setUsernameInput}
         changeUsername={changeUsername}
+        currentPfp={identity?.pfp}
+        changePfp={changePfp}
       />
 
       <CreateChannelSheet

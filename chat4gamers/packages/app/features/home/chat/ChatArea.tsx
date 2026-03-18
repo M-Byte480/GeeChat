@@ -7,6 +7,7 @@ import { MessageContent } from '../components/MessageContent'
 import { ImageLightbox } from '../components/ImageLightbox'
 import { ExternalLinkDialog } from '../components/ExternalLinkDialog'
 import { EmojiPicker } from '../components/EmojiPicker'
+import {MessageRow} from "app/features/home/components/MessageRow";
 
 type Props = {
   identity: Identity
@@ -85,18 +86,8 @@ export const ChatArea = ({ identity, channelId, serverUrl }: Props) => {
       <ScrollView ref={scrollViewRef} flex={1} mb="$2" onScroll={handleScroll} scrollEventThrottle={100}>
         <YStack gap="$2">
           {messages.map(msg => (
-            <XStack key={msg.id} gap="$3" alignItems="flex-start">
-              <Image src="favicon.ico" width={40} height={40} borderRadius="$10" />
-              <YStack flex={1} gap="$1">
-                <XStack gap="$2" alignItems="center">
-                  <Text fontWeight="bold" fontSize="$3">{msg.senderName || msg.senderId}</Text>
-                  <Text fontSize="$1" color="$gray10">
-                    {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </Text>
-                </XStack>
-                <MessageContent content={msg.content} onLinkPress={setPendingUrl} onImagePress={setLightboxUrl} />
-              </YStack>
-            </XStack>
+            <MessageRow key={msg.id}
+            message={msg} serverUrl={serverUrl} identity={identity}/>
           ))}
         </YStack>
         {typingUser && (

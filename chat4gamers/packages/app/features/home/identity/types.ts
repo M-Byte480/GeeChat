@@ -9,7 +9,8 @@ export type Identity = {
   username: string
   pfp?: string                // data URL, optional
   privateKeyBytes: Uint8Array // PKCS8 bytes, in-memory only
-  servers: Server[]
+  servers: Server[],
+  sessionTokens: { [serverId: string]: string | undefined }
 }
 
 export type IdentityFile = {
@@ -21,6 +22,7 @@ export type IdentityFile = {
   salt: string                // base64, 16-byte PBKDF2 salt
   iv: string                  // base64, 12-byte AES-GCM IV
   servers?: Server[]          // optional for backwards compat with v1 files
+  sessionTokens?: { [serverId: string]: string } // optional for backwards compat with v1 files
 }
 
 // Payload stored in safeStorage (JSON string)

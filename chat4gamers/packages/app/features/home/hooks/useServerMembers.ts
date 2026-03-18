@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react'
 import type { User } from 'app/features/home/types/User'
 import { UserStatus } from 'app/features/home/types/User'
+import { apiFetch } from '@my/api-client'
 
 export function useServerMembers(serverUrl: string | null): User[] {
   const [members, setMembers] = useState<User[]>([])
 
   useEffect(() => {
     if (!serverUrl) { setMembers([]); return }
-    fetch(`${serverUrl}/members`)
+    apiFetch(`${serverUrl}`, `/members`)
       .then(r => r.json())
       .then(data => {
         if (Array.isArray(data)) {

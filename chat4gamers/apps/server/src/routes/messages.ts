@@ -5,10 +5,13 @@ import { messages, users } from '../db/schema.js'
 import { verifyEd25519 } from '../lib/crypto.js'
 import { sanitize } from '../lib/sanitize.js'
 import { broadcast } from '../ws.js'
+import {requireAuth} from "../lib/middleware.js";
 
 const router = new Hono()
 
-router.post('/messages', async (c) => {
+router.post('/messages',
+  requireAuth,
+  async (c) => {
   const body = await c.req.json()
   try {
     // Client sends roomId — maps to channelId in the schema
@@ -47,7 +50,10 @@ router.post('/messages', async (c) => {
   }
 })
 
-router.get('/chat-history', async (c) => {
+router.get('/chat-history',
+  requireAuth,
+  async (c) => {
+
   const channel = c.req.query('channel')
   if (!channel) return c.json({ error: 'channel query param required' }, 400)
   try {

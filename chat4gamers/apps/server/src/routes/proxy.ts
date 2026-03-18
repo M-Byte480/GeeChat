@@ -1,4 +1,5 @@
 import { Hono } from 'hono'
+import {requireAuth} from "../lib/middleware.js";
 
 const router = new Hono()
 
@@ -9,7 +10,9 @@ function isBlockedHost(hostname: string): boolean {
   return false
 }
 
-router.get('/proxy-image', async (c) => {
+router.get('/proxy-image',
+  requireAuth,
+  async (c) => {
   const url = c.req.query('url')
   if (!url) return c.json({ error: 'Missing url' }, 400)
 

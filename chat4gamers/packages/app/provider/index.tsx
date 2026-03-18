@@ -11,12 +11,12 @@ export function Provider({
   const theme = defaultTheme || (colorScheme === 'dark' ? 'dark' : 'light')
 
   return (
-    <TamaguiProvider
-      config={config}
-      defaultTheme={theme}
-      {...rest}
-    >
-      {children}
-    </TamaguiProvider>
+      <TamaguiProvider
+        config={config}
+        defaultTheme={theme}
+        {...rest}
+      >
+        {children}
+      </TamaguiProvider>
   )
 }
