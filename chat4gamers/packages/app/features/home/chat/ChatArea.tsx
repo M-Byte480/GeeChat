@@ -3,11 +3,13 @@ import { Send, X } from '@tamagui/lucide-icons'
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import type { Identity } from '../identity/types'
 import { useMessages } from '../hooks/useMessages'
-import { MessageContent } from '../components/MessageContent'
 import { ImageLightbox } from '../components/ImageLightbox'
 import { ExternalLinkDialog } from '../components/ExternalLinkDialog'
 import { EmojiPicker } from '../components/EmojiPicker'
 import {MessageRow} from "app/features/home/components/MessageRow";
+import {useServerMembers} from "app/features/home/hooks/useServerMembers";
+import {User} from "app/features/home/types/User";
+import {useChatInput} from "app/features/home/hooks/useChatInput";
 
 type Props = {
   identity: Identity
@@ -16,8 +18,35 @@ type Props = {
 }
 
 export const ChatArea = ({ identity, channelId, serverUrl }: Props) => {
-  const { messages, inputText, typingUser, errorBanner, setErrorBanner, sendMessage, handleInputChange } =
-    useMessages({ channelId, identity, serverUrl })
+  const members = useServerMembers(serverUrl)
+
+  const {
+    inputText,
+    setInputText,
+    mentionQuery,
+    handleInputChange,
+    handleSend,
+    insertMention,
+    socketRef,
+  } = useChatInput({ channelId, identity, serverUrl, onSend: async (text) => {
+      await sendMessage(text)
+    }})
+
+  const {
+    messages,
+    typingUser,
+    errorBanner,
+    setErrorBanner,
+    sendMessage,
+  } = useMessages({ channelId, identity, serverUrl, socketRef })
+
+  const filteredMembers = mentionQuery !== null
+    ? members.filter(m =>
+      (m.nickname ?? m.username).toLowerCase().includes(mentionQuery.toLowerCase())
+    )
+    : []
+
+
   const selectionRef = useRef({ start: 0, end: 0 });
   const inputRef = useRef<any>(null)
   const inputTextRef = useRef(inputText)
@@ -71,6 +100,15 @@ export const ChatArea = ({ identity, channelId, serverUrl }: Props) => {
     }
   }, [messages, identity.publicKey, scrollToBottom])
 
+
+  const messageList = useMemo(() => (
+    messages.map(msg => (
+      <MessageRow key={msg.id}
+                  message={msg} serverUrl={serverUrl} identity={identity}/>
+    ))
+  ), [messages, serverUrl, identity?.publicKey])
+
+
   return (
     <YStack flex={1} pl={"$2"} pb="$4" bg="$background" height="100%" >
       {errorBanner && false && (
@@ -85,15 +123,39 @@ export const ChatArea = ({ identity, channelId, serverUrl }: Props) => {
 
       <ScrollView ref={scrollViewRef} flex={1} mb="$2" onScroll={handleScroll} scrollEventThrottle={100}>
         <YStack gap="$2">
-          {messages.map(msg => (
-            <MessageRow key={msg.id}
-            message={msg} serverUrl={serverUrl} identity={identity}/>
-          ))}
+          {messageList}
         </YStack>
         {typingUser && (
           <Paragraph size="$1" color="$gray10" mt="$2">{typingUser} is typing...</Paragraph>
         )}
       </ScrollView>
+
+      {filteredMembers.length > 0 && (
+        <YStack
+          position="absolute"
+          bottom={60}
+          left={0}
+          right={0}
+          bg="$background"
+          borderWidth={1}
+          borderColor="$borderColor"
+          borderRadius="$3"
+          elevation="$4"
+          zIndex={100}
+        >
+          {filteredMembers.map(member => (
+            <XStack
+              key={member.publicKey}
+              p="$2"
+              hoverStyle={{ bg: '$color3' }}
+              onPress={() => insertMention(member.publicKey)}
+              cursor="pointer"
+            >
+              <Text fontWeight="600">{member.nickname ?? member.username}</Text>
+            </XStack>
+          ))}
+        </YStack>
+      )}
 
       <XStack gap="$2" alignItems="center" position="relative">
         <Input
@@ -106,10 +168,10 @@ export const ChatArea = ({ identity, channelId, serverUrl }: Props) => {
           onSelectionChange={(e) => {
             selectionRef.current = e.nativeEvent.selection;
           }}
-          onSubmitEditing={sendMessage}
+          onSubmitEditing={handleSend}
         />
         <EmojiPicker onSelect={handleEmojiSelect} />
-        <Button size="$4" icon={Send} onPress={sendMessage} disabled={!inputText.trim()} theme="active" />
+        <Button size="$4" icon={Send} onPress={handleSend} disabled={!inputText.trim()} theme="active" />
       </XStack>
 
       <ImageLightbox url={lightboxUrl} onClose={() => setLightboxUrl(null)} />

@@ -13,11 +13,16 @@ router.post('/messages',
   requireAuth,
   async (c) => {
   const body = await c.req.json()
+    console.log('[Messages] body:', body)
   try {
     // Client sends roomId — maps to channelId in the schema
-    const { roomId, userId, senderName, signature, timestamp } = body
-    const content = sanitize(body.content ?? '')
+    const { roomId, userId, senderName, signature, timestamp, tempId } = body
+
+    const rawContent = body.content ?? ''
+    const content = sanitize(rawContent)
+
     if (!content) return c.json({ error: 'Empty message' }, 400)
+
     if (!userId || !senderName || !signature || !timestamp) {
       return c.json({ error: 'Missing required fields' }, 400)
     }
@@ -27,7 +32,7 @@ router.post('/messages',
       return c.json({ error: 'Timestamp out of range' }, 400)
     }
 
-    const payload = Buffer.from(`${roomId}:${timestamp}:${content}`, 'utf8')
+    const payload = Buffer.from(`${roomId}:${timestamp}:${rawContent}`, 'utf8')
     if (!verifyEd25519(userId, payload, signature)) {
       return c.json({ error: 'Invalid signature' }, 401)
     }
@@ -41,7 +46,7 @@ router.post('/messages',
     }).returning()
 
     // Return shape the client expects: roomId + senderName
-    const result = { ...newMessage, roomId: newMessage.channelId, senderName: senderName.trim().slice(0, 64) }
+    const result = { ...newMessage, roomId: newMessage.channelId, senderName: senderName.trim().slice(0, 64), tempId }
     broadcast(JSON.stringify({ type: 'NEW_MESSAGE', ...result }))
     return c.json(result)
   } catch (err: any) {

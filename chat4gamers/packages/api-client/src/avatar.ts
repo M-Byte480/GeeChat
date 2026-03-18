@@ -19,6 +19,7 @@ const TTL_MS = 1000 * 60 * 60 * 24 * 7 // 7 days
 
 let _storage: AvatarStorage | null = null
 const memoryCache = new Map<string, string>()
+const userMemoryCache = new Map<string, ServerUser>()
 
 export function configureAvatarStorage(storage: AvatarStorage) {
   _storage = storage
@@ -90,11 +91,19 @@ export async function getUser(
   serverUrl: string,
   publicKey: string
 ): Promise<ServerUser | null> {
+  if (userMemoryCache.has(publicKey)) return userMemoryCache.get(publicKey)!
+
   try {
     const res = await apiFetch(serverUrl, `/users/${publicKey}`)
     if (!res.ok) return null
-    return res.json()
+    const user = await res.json()
+    userMemoryCache.set(publicKey, user)
+    return user
   } catch {
     return null
   }
+}
+
+export function getCachedUser(publicKey: string): ServerUser | null {
+  return userMemoryCache.get(publicKey) ?? null
 }

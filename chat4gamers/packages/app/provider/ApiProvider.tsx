@@ -22,6 +22,12 @@ export function ApiProvider({
                               persistSessionToken,
                             }: ApiProviderProps) {
   useEffect(() => {
+    if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+      Notification.requestPermission().then(r => console.log(r))
+    }
+  }, [])
+
+  useEffect(() => {
     if (!identity) return
 
     configureClient({

@@ -3,6 +3,8 @@ import { Avatar, XStack, YStack, Text } from '@my/ui'
 import type { Identity } from '../identity'
 import {Message} from "app/features/home/types/types";
 import {MessageContent} from "app/features/home/components/MessageContent";
+import {MentionText} from "app/features/home/text/MentionText";
+import {memo} from "react";
 
 interface Props {
   message: Message
@@ -10,7 +12,7 @@ interface Props {
   identity: Identity
 }
 
-export function MessageRow({ message, serverUrl, identity }: Props) {
+export const MessageRow = memo(({ message, serverUrl, identity }: Props)=> {
   const user = useUser(serverUrl, message.senderId, identity)
 
   return (
@@ -29,14 +31,16 @@ export function MessageRow({ message, serverUrl, identity }: Props) {
               {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </Text>
           </XStack>
-          <Text fontSize="$3" color="$color">
-            {message.content}
-          </Text>
+          <MentionText
+            content={message.content}
+            serverUrl={serverUrl}
+            identity={identity}
+          />
         </YStack>
       </XStack>
     </>
   )
-}
+})
 
 /**           Previous design, kept here for reference and potential future use:
  *             <XStack key={msg.id} gap="$3" alignItems="flex-start">
