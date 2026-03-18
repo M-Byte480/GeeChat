@@ -1,10 +1,13 @@
 import { Hono } from 'hono'
 import { AccessToken } from 'livekit-server-sdk'
 import { broadcast } from '../ws.js'
+import {requireAuth} from "../lib/middleware.js";
 
 const router = new Hono()
 
-router.get('/get-voice-token', async (c) => {
+router.get('/get-voice-token',
+  requireAuth,
+  async (c) => {
   const roomName = c.req.query('room') || 'hideout'
   const participantName = c.req.query('identity') || 'user-' + Math.floor(Math.random() * 1000)
   const apiKey = process.env.LIVEKIT_API_KEY || 'devkey'

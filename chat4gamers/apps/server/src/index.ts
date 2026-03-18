@@ -14,6 +14,9 @@ import authRoutes from './routes/auth.js'
 import chatRoutes from './routes/chat.js'
 import membersRouter from './routes/members.js'
 import relayRouter from './routes/relay.js'
+import media from "./routes/media.js";
+import {initServerState} from "./server-state.js";
+import {db} from "./db/index.js";
 
 const app = new Hono()
 const { injectWebSocket, upgradeWebSocket } = createNodeWebSocket({ app })
@@ -34,8 +37,10 @@ app.route('/auth', authRoutes)
 app.route('/chat', chatRoutes)
 app.route('/', membersRouter)
 app.route('/', relayRouter)
+app.route('/', media)
 
 const server = serve({ fetch: app.fetch, port: 4000, hostname: '0.0.0.0' })
 injectWebSocket(server)
+await initServerState(db)
 
 console.log('Server is running on http://0.0.0.0:4000')

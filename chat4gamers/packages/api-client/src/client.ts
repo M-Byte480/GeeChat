@@ -1,0 +1,92 @@
+import {authenticate, getConfig, refreshSession} from './challenge';
+
+let sessionToken: string | null = null;
+let isRefreshing = false;
+let pendingQueue: Array<{
+  resolve: (token: string) => void;
+  reject: (err: Error) => void;
+}> = [];
+const refreshingServers = new Map<string, Promise<string>>()
+
+
+type SessionExpiredCallback = () => void;
+let _onSessionExpired: SessionExpiredCallback = () => {};
+
+export function setSessionToken(token: string) {
+  sessionToken = token;
+}
+
+export function clearSessionToken() {
+  sessionToken = null;
+}
+
+export function onSessionExpired(cb: SessionExpiredCallback) {
+  _onSessionExpired = cb;
+}
+
+function drainQueue(token: string) {
+  pendingQueue.forEach(p => p.resolve(token));
+  pendingQueue = [];
+}
+
+function rejectQueue(err: Error) {
+  pendingQueue.forEach(p => p.reject(err));
+  pendingQueue = [];
+}
+
+export async function apiFetch(
+  baseUrl: string,
+  path: string,
+  init: RequestInit = {}
+): Promise<Response> {
+  console.log('[apiFetch] called', baseUrl, path)
+  const { getSessionToken, onSessionExpired } = getConfig()
+
+  let token: string | null = getSessionToken(baseUrl)
+
+  console.log('[apiFetch] token:', token ? token.slice(0, 10) : 'NULL')
+  if (!token) {
+    token = await authenticate(baseUrl)
+  }
+  if (!token) {
+    throw new Error(`No session token for ${baseUrl} — authenticate first`)
+  }
+
+  const doRequest = (t: string) =>
+    fetch(`${baseUrl}${path}`, {
+      ...init,
+      headers: {
+        'Content-Type': 'application/json',
+        ...init.headers,
+        Authorization: `Bearer ${t}`,
+      },
+    })
+
+  const response = await doRequest(token)
+
+  if (response.status !== 401) {
+    return response
+  }
+
+  // 401 — check if a refresh is already in flight for this server
+  const existing = refreshingServers.get(baseUrl)
+  if (existing) {
+    const newToken = await existing
+    return doRequest(newToken)
+  }
+
+  // Kick off a single refresh and share the promise
+  const refreshPromise = refreshSession(baseUrl).finally(() => {
+    refreshingServers.delete(baseUrl)
+  })
+
+  refreshingServers.set(baseUrl, refreshPromise)
+
+  try {
+    const newToken = await refreshPromise
+    return doRequest(newToken)
+  } catch (err) {
+    onSessionExpired(baseUrl)
+    throw err
+  }
+}

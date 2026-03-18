@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 import { eq } from 'drizzle-orm'
 import { db } from '../db/index.js'
 import { users, members } from '../db/schema.js'
+import {requireAdmin, requireAuth} from "../lib/middleware.js";
 
 // ── Owner bootstrap token ────────────────────────────────────────────────────
 // Generated once when the server has no owner. Printed to the terminal so the
@@ -98,7 +99,9 @@ router.post('/join', async (c) => {
  * POST /leave
  * Called when a user leaves the server. Sets their membership to 'inactive' so they can rejoin later if desired.
  */
-router.post('/leave', async (c) => {
+router.post('/leave',
+  requireAuth,
+  async (c) => {
   const body = await c.req.json()
   const { publicKey } = body as { publicKey: string }
 
@@ -115,7 +118,11 @@ router.post('/leave', async (c) => {
  * GET /members
  * Returns all active members — used by the client to populate the member pane.
  */
-router.get('/members', async (c) => {
+router.get('/members',
+  requireAuth,
+  async (c) => {
+  // todo: pagination for large servers, and filter by status (active, pending, etc)
+
   const rows = await db
     .select({
       publicKey: users.publicKey,
@@ -135,7 +142,10 @@ router.get('/members', async (c) => {
  * GET /members/pending
  * Returns members awaiting owner approval.
  */
-router.get('/members/pending', async (c) => {
+router.get('/members/pending',
+  requireAuth,
+  requireAdmin,
+  async (c) => {
   const rows = await db
     .select({
       publicKey: users.publicKey,
@@ -153,11 +163,17 @@ router.get('/members/pending', async (c) => {
 /**
  * POST /members/:publicKey/approve
  */
-router.post('/members/:publicKey/approve', async (c) => {
-  const { publicKey } = c.req.param()
-  await db.update(members).set({ status: 'active' }).where(eq(members.userPublicKey, publicKey))
-  return c.json({ ok: true })
-})
+router.post('/members/:publicKey/approve',
+  requireAuth,
+  requireAdmin,
+  async (c) => {
+    const { publicKey } = c.req.param()
+    await db.update(members)
+      .set({ status: 'active' })
+      .where(eq(members.userPublicKey, publicKey))
+    return c.json({ ok: true })
+  }
+)
 
 /**
  * POST /members/:publicKey/deny

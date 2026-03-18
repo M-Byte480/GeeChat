@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Button, YStack, Text, XStack } from '@my/ui'
 import { Room, RoomEvent, Track, LocalAudioTrack } from 'livekit-client'
 import { Mic, MicOff, PhoneOff, TestTube, Volume2, VolumeX, Wand2 } from 'lucide-react'
+import { apiFetch } from '@my/api-client'
 
 type Props = {
   channelId: string
@@ -138,7 +139,7 @@ async function buildProcessedAudio(): Promise<ProcessedAudio> {
 
 export const VoiceRoom = ({ channelId, nickname, serverUrl, onParticipantsChange, onDisconnect }: Props) => {
   const livekitWs = serverUrl.replace(/^https:\/\//, 'wss://').replace(/^http:\/\//, 'ws://')
-
+  console.log("Rendered VoiceRoom for channelId:", channelId)
   const [room, setRoom]               = useState<Room | null>(null)
   const [isJoined, setIsJoined]       = useState(false)
   const [isMicEnabled, setIsMicEnabled] = useState(true)
@@ -149,7 +150,7 @@ export const VoiceRoom = ({ channelId, nickname, serverUrl, onParticipantsChange
   const audioRef                        = useRef<ProcessedAudio | null>(null)
 
   const broadcastToServer = (ch: string, participants: string[]) => {
-    fetch(`${serverUrl}/voice-state`, {
+    apiFetch(`${serverUrl}`, `/voice-state`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ channelId: ch, participants }),
@@ -194,9 +195,15 @@ export const VoiceRoom = ({ channelId, nickname, serverUrl, onParticipantsChange
 
   const joinRoom = async () => {
     try {
-      const resp = await fetch(
-        `${serverUrl}/get-voice-token?room=${channelId}&identity=${encodeURIComponent(nickname)}`
+      const resp = await apiFetch(
+        `${serverUrl}`,`/get-voice-token?room=${channelId}&identity=${encodeURIComponent(nickname)}`
       )
+
+      if (!resp.ok) {
+        console.error(`Voice token fetch failed: ${resp.status}`)
+        return  // stop here, don't proceed to buildProcessedAudio or connect
+      }
+
       const { token } = await resp.json()
 
       const audio = await buildProcessedAudio()
@@ -204,7 +211,30 @@ export const VoiceRoom = ({ channelId, nickname, serverUrl, onParticipantsChange
       setNativeAvailable(audio.nativeAvailable)
       setDenoiseOn(audio.nativeAvailable)
 
-      const newRoom = new Room({ adaptiveStream: true })
+      // Todo: figure out on room that doesn't exists why it permanently oscillating between calling and getting 404
+      /**
+       * <-- GET /rtc/validate?access_token=eyJhbGciOiJIUzI1NiJ9.eyJ2aWRlbyI6eyJyb29tSm9pbiI6dHJ1ZSwicm9vbSI6ImhpZGVvdXQiLCJjYW5QdWJsaXNoIjp0cnVlLCJjYW5TdWJzY3JpYmUiOnRydWUsInJvb21BZG1pbiI6dHJ1ZX0sImlzcyI6ImRldmtleSIsImV4cCI6MTc3MzgxMDEyMCwibmJmIjowLCJzdWIiOiJUaGVNZWxvbm5NYW5uIn0.7P_pLP8ZS-Ku_TxC6bd5aHVxq2DwDKwYyYvsmg6BzI4&auto_subscribe=1&sdk=js&version=2.17.1&protocol=16&adaptive_stream=1
+       * --> GET /rtc/validate?access_token=eyJhbGciOiJIUzI1NiJ9.eyJ2aWRlbyI6eyJyb29tSm9pbiI6dHJ1ZSwicm9vbSI6ImhpZGVvdXQiLCJjYW5QdWJsaXNoIjp0cnVlLCJjYW5TdWJzY3JpYmUiOnRydWUsInJvb21BZG1pbiI6dHJ1ZX0sImlzcyI6ImRldmtleSIsImV4cCI6MTc3MzgxMDEyMCwibmJmIjowLCJzdWIiOiJUaGVNZWxvbm5NYW5uIn0.7P_pLP8ZS-Ku_TxC6bd5aHVxq2DwDKwYyYvsmg6BzI4&auto_subscribe=1&sdk=js&version=2.17.1&protocol=16&adaptive_stream=1 404 0ms
+       */
+      const newRoom = new Room({
+        adaptiveStream: true,
+        reconnectPolicy: {
+          nextRetryDelayInMs: (context) => {
+            // Stop retrying after 2 attempts
+            if (context.retryCount >= 2) return null  // null = stop retrying
+            return 1000 * context.retryCount
+          }
+        }
+      })
+
+      newRoom.on(RoomEvent.Disconnected, (reason) => {
+        console.warn('[VoiceRoom] disconnected, reason:', reason)
+        audioRef.current?.cleanup()
+        audioRef.current = null
+        setRoom(null)
+        setIsJoined(false)
+      })
+
       await newRoom.connect(livekitWs, token, { autoSubscribe: true })
 
       const lkTrack = new LocalAudioTrack(audio.track)
@@ -212,6 +242,8 @@ export const VoiceRoom = ({ channelId, nickname, serverUrl, onParticipantsChange
         name: 'microphone',
         audioPreset: { maxBitrate: 48000 },
       })
+
+
 
       newRoom.remoteParticipants.forEach(participant => {
         participant.trackPublications.forEach(pub => {

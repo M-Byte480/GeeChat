@@ -2,10 +2,13 @@ import { Hono } from 'hono';
 import { db } from '../db/index.js';
 import { messages } from '../db/schema.js';
 import {desc, eq} from "drizzle-orm";
+import {requireAuth} from "../lib/middleware.js";
 
 const chat = new Hono();
 
-chat.get('/history/:roomId', async (c) => {
+chat.get('/history/:roomId',
+  requireAuth,
+  async (c) => {
   const roomId = c.req.param('roomId');
 
   const history = await db.select()
@@ -17,7 +20,9 @@ chat.get('/history/:roomId', async (c) => {
   return c.json(history.reverse()); // Reverse so they are in chronological order
 });
 
-chat.post('/send', async (c) => {
+chat.post('/send',
+  requireAuth,
+  async (c) => {
   const { content, roomId, userId, signature = '' } = await c.req.json();
 
   const result = await db.insert(messages).values({
