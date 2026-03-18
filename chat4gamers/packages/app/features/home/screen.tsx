@@ -188,7 +188,11 @@ export function HomeScreen() {
                       participants={voiceParticipants[activeChannel.id] ?? []}
                     />
                   )}
-                  {activeServer && showMemberPane && <MemberPane members={serverMembers} />}
+                  {activeServer && showMemberPane && <MemberPane
+                      members={serverMembers}
+                      serverUrl={activeServer.url}
+                      identity={identity}
+                  />}
                 </XStack>
               </YStack>
 
