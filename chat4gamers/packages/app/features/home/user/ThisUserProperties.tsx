@@ -1,7 +1,9 @@
-import { XStack, YStack, Text, Separator } from "@my/ui";
+import {XStack, YStack, Text, Separator, Avatar} from "@my/ui";
 import { VoiceRoom } from "app/features/home/VoiceRoom";
-import { UserMockItem } from "app/features/home/user/UserMockItem";
 import type { User } from "app/features/home/types/User";
+import {UserAvatar} from "app/features/home/components/UserAvatar";
+import {Identity} from "app/features/home/identity";
+import {StatusChip} from "app/features/home/components/StatusChip";
 
 export function ThisUserProperties({
                                      connectedVoiceChannelId,
@@ -9,15 +11,17 @@ export function ThisUserProperties({
                                      user,
                                      serverUrl,
                                      onParticipantsChange,
-                                     onVoiceDisconnect
-                                   }: {
+                                     onVoiceDisconnect,
+                                     passedIdentity,}: {
   connectedVoiceChannelId: string | null;
-  nickname: string | undefined;
+  nickname: string;
   user: User;
   serverUrl: string | null;
   onParticipantsChange: (channelId: string, participants: string[]) => void;
   onVoiceDisconnect: () => void;
+  passedIdentity: Identity | null;
 }) {
+
   return (
     <YStack
       width={295}
@@ -68,7 +72,24 @@ export function ThisUserProperties({
 
       {/* 1. Profile Header Section */}
       <YStack bg="$color3" p="$3" gap="$2">
-        <UserMockItem user={user} />
+        <XStack alignItems="center" gap="$3" paddingVertical="$2">
+          <YStack width={40} height={40} position="relative">
+            <Avatar circular size="$4">
+              <Avatar.Image
+                source={{ uri: passedIdentity?.pfp || 'https://placehold.co/100x100' }}
+              />
+              <Avatar.Fallback bc="$color8" />
+            </Avatar>
+            <XStack position="absolute" bottom={-5} right={-5} zIndex={10}>
+              <StatusChip status="online" />
+            </XStack>
+          </YStack>
+          <YStack jc="center">
+            <Text fontWeight="600" color="$color" fontSize="$4">
+              {nickname ?? passedIdentity?.username}
+            </Text>
+          </YStack>
+        </XStack>
       </YStack>
 
 

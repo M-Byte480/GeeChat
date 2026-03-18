@@ -18,6 +18,7 @@ export function UserPromptDialog({
   handleParticipantsChange,
   handleVoiceDisconnect
 }: Prompt){
+
   return (
     <XStack position="absolute" bottom={0} left={0}>
       <ThisUserProperties
@@ -27,6 +28,7 @@ export function UserPromptDialog({
         serverUrl={activeServer?.url ?? null}
         onParticipantsChange={handleParticipantsChange}
         onVoiceDisconnect={handleVoiceDisconnect}
+        passedIdentity={passedIdentity}
       />
     </XStack>
   )

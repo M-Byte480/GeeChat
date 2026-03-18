@@ -62,13 +62,15 @@ export function HomeScreen() {
     setShowCreateChannel(true)
   }, [])
 
+
+
   useEffect(() => {
     (window as any).electronAPI?.getVersion().then((v: string) => setAppVersion(v))
   }, [])
 
   return (
     <IdentityGate>
-      {(identity: Identity, changeUsername, servers, addServer, deleteServer) => {
+      {(identity: Identity, changeUsername, servers, addServer, deleteServer, changePfp) => {
         const activeServer = servers.find(s => s.url === activeServerUrl) ?? null
 
         const sidebarProps = {
@@ -224,6 +226,7 @@ export function HomeScreen() {
               newChannelName={newChannelName}
               setNewChannelName={setNewChannelName}
               appVersion={appVersion}
+              changePfp={changePfp}
             />
 
           </YStack>
