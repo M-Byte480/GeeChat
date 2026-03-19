@@ -2,25 +2,31 @@ import { useState, useEffect } from 'react'
 import type { User } from 'app/features/home/types/User'
 import { UserStatus } from 'app/features/home/types/User'
 import { apiFetch } from '@my/api-client'
+import {useAppStore} from "app/features/home/hooks/useAppStore";
+
+const EMPTY_MEMBERS = [];
 
 export function useServerMembers(serverUrl: string | null): User[] {
-  const [members, setMembers] = useState<User[]>([])
+  const members = useAppStore(s => serverUrl ? s.members[serverUrl] ?? EMPTY_MEMBERS : EMPTY_MEMBERS)
+  const setMembers = useAppStore(s => s.setMembers)
 
   useEffect(() => {
-    if (!serverUrl) { setMembers([]); return }
+    if (!serverUrl) return
+    if (useAppStore.getState().members[serverUrl]?.length) return
+
     apiFetch(`${serverUrl}`, `/members`)
       .then(r => r.json())
       .then(data => {
         if (Array.isArray(data)) {
-          setMembers(data.map((m: any) => ({
-            username: m.username ?? m.identity ?? 'Unknown',
-            publicKey: m.publicKey ?? m.identity ?? '',
-            status: (m.status as UserStatus) ?? UserStatus.ONLINE,
+          setMembers(serverUrl, data.map((m: any) => ({
+            username: m.username ?? 'Unknown',
+            publicKey: m.publicKey ?? '',
+            status: m.status ?? UserStatus.ONLINE,
             avatarUrl: m.avatarUrl,
           })))
         }
       })
-      .catch(() => setMembers([]))
+      .catch(() => ([]))
   }, [serverUrl])
 
   return members

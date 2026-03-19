@@ -5,19 +5,21 @@ import {Message} from "app/features/home/types/types";
 import {MessageContent} from "app/features/home/components/MessageContent";
 import {MentionText} from "app/features/home/text/MentionText";
 import {memo} from "react";
+import {useIdentity} from "app/features/home/identity/IdentityContext";
 
 interface Props {
   message: Message
   serverUrl: string
-  identity: Identity
+  onLayout?: (event: any) => void
 }
 
-export const MessageRow = memo(({ message, serverUrl, identity }: Props)=> {
+export const MessageRow = memo(({ message, serverUrl, onLayout  }: Props)=> {
+  const { identity } = useIdentity()
   const user = useUser(serverUrl, message.senderId, identity)
 
   return (
     <>
-      <XStack gap="$3" paddingVertical="$2" alignItems="flex-start">
+      <XStack gap="$3" paddingVertical="$2" alignItems="flex-start" onLayout={onLayout}>
         <Avatar circular size="$4">
           <Avatar.Image source={{ uri: user?.avatarUrl || 'https://placehold.co/100x100' }} />
           <Avatar.Fallback bc="$color8" />

@@ -12,7 +12,6 @@ interface Props {
 // Splits message content into plain text and mention tokens
 function parseContent(content: string): Array<{ type: 'text' | 'mention'; value: string }> {
   const parts = content.split(/(@[A-Za-z0-9_-]{32,})/g)
-  console.log('Parsed content parts:', parts) // Debug log to check the parsing result
   return parts.map(part => ({
     type: part.match(/^@[A-Za-z0-9_-]{32,}$/) ? 'mention' : 'text',
     value: part,

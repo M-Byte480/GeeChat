@@ -7,6 +7,7 @@ import { ServerBanner } from 'app/features/home/channel/ServerBanner'
 import { ChannelList } from 'app/features/home/channel/ChannelList'
 import { JoinRequestsSheet } from 'app/features/home/sheets/JoinRequestsSheet'
 import {Channel, ChannelType} from "app/features/home/types/types";
+import {useWhyDidYouRender} from "app/features/home/hooks/useWhyDidYouRender";
 
 type Props = {
   width?: number | string
@@ -34,7 +35,11 @@ export const Sidebar = ({
   onCreateChannel,
 }: Props) => {
   const [showJoinRequests, setShowJoinRequests] = useState(false)
-
+  useWhyDidYouRender('Sidebar', {
+    activeServer,
+    channels,
+    activeChannel,
+  })
   return (
     // @ts-ignore
     <YStack
