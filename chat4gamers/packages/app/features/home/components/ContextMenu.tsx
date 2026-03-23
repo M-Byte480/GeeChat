@@ -60,7 +60,7 @@ export function ContextMenu({ options, children }: Props) {
         borderRadius: 8,
         boxShadow:    '0 4px 20px rgba(0,0,0,0.4)',
         overflow:     'hidden',
-        padding:      '4px 0',
+        padding:      '4px',
       }}
     >
       {options.map((opt, i) => (
@@ -97,6 +97,7 @@ function ContextMenuItem({ option, onClose }: { option: ContextMenuOption; onClo
         height:         ITEM_HEIGHT,
         cursor:         'pointer',
         fontSize:       13,
+        fontFamily:     'Segeoe UI, sans-serif',
         color:          option.destructive ? 'var(--red10, #f44)' : 'var(--color, #eee)',
         background:     hovered
           ? option.destructive ? 'var(--red4, #3a1010)' : 'var(--color4, #2a2a2a)'

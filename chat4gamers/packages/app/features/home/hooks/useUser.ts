@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import {Identity} from "app/features/home/identity";
-import { getUser } from '@my/api-client'
+import { getUser, getCachedUser } from '@my/api-client'
 
 export interface UserProfile {
   publicKey: string
@@ -29,6 +29,19 @@ export function useUser(
         status: 'active',
       }
     }
+
+    const cached = getCachedUser(publicKey)
+    if (cached) {
+      return {
+        publicKey,
+        username: cached.username,
+        nickname: cached.nickname,
+        avatarUrl: cached.pfp,
+        role: cached.role as UserProfile['role'],
+        status: cached.status as UserProfile['status'],
+      }
+    }
+
     return null
   })
 

@@ -1,9 +1,9 @@
 import { Text } from '@my/ui'
 
-export function ChannelTitle() {
+export function ChannelTitle({ children }: { children: string }) {
   return (
     <Text>
-      #channel-name
+      # {children}
     </Text>
   )
 }

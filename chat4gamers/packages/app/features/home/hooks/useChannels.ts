@@ -1,29 +1,49 @@
-import { useState, useCallback } from 'react'
+import {useState, useCallback, useEffect, useMemo} from 'react'
 import { Channel } from '../types/types'
 import { useAppStore } from 'app/features/home/hooks/useAppStore'
 
+const EMPTY_CHANNELS: Channel[] = []
+const EMPTY_CHANNEL: Channel = {} as Channel
+
 export function useChannels(serverUrl: string | null) {
   const setVoiceParticipants = useAppStore(s => s.setVoiceParticipants)
+  const channels = useAppStore(s => s.cache[serverUrl ?? '']?.channels ?? EMPTY_CHANNELS)
 
-  const [activeChannel, setActiveChannel] = useState<Channel>({} as Channel)
+  const [activeChannelId, setActiveChannelId] = useState<string | null>(null)
   const [connectedVoiceChannelId, setConnectedVoiceChannelId] = useState<string | null>(null)
 
-  const handleParticipantsChange = useCallback((channelId: string, participants: string[]) => {
-    if (serverUrl) setVoiceParticipants(serverUrl, channelId, participants)
-  }, [serverUrl, setVoiceParticipants])
+  // Auto-select first channel when channels load and none is selected
+  useEffect(() => {
+    if (channels.length > 0 && !activeChannelId) {
+      setActiveChannelId(channels[0]!.id)
+    }
+  }, [channels, activeChannelId])
+
+  // Reset active channel when server changes
+  useEffect(() => {
+    setActiveChannelId(null)
+  }, [serverUrl])
+
+  const activeChannel = useMemo(() =>
+      channels.find(c => c.id === activeChannelId) ?? EMPTY_CHANNEL
+    , [channels, activeChannelId])
 
   const handleChannelSelect = useCallback((channel: Channel) => {
-    setActiveChannel(channel)
+    setActiveChannelId(channel.id)
   }, [])
 
   const handleVoiceJoin = useCallback((channel: Channel) => {
-    setActiveChannel(channel)
+    setActiveChannelId(channel.id)
     setConnectedVoiceChannelId(channel.id)
   }, [])
 
   const handleVoiceDisconnect = useCallback(() => {
     setConnectedVoiceChannelId(null)
   }, [])
+
+  const handleParticipantsChange = useCallback((channelId: string, participants: string[]) => {
+    if (serverUrl) setVoiceParticipants(serverUrl, channelId, participants)
+  }, [serverUrl, setVoiceParticipants])
 
   return {
     activeChannel,
@@ -32,7 +52,5 @@ export function useChannels(serverUrl: string | null) {
     handleVoiceJoin,
     handleVoiceDisconnect,
     handleParticipantsChange,
-    setActiveChannel,
-    setConnectedVoiceChannelId,
   }
 }
