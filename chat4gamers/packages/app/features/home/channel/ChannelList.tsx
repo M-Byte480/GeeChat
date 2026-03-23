@@ -1,9 +1,11 @@
 'use client'
 
-import { YStack, XStack, Text, Button } from '@my/ui'
-import { Hash, Volume2, Plus } from '@tamagui/lucide-icons'
-import { useRef } from 'react'
+import { YStack, XStack, Text, Button, Icon } from '@my/ui'
+import {Hash, Volume2, Plus, Menu, ChevronLeft, ChevronDown} from '@tamagui/lucide-icons'
+import {useEffect, useRef, useState} from 'react'
 import type { Channel, ChannelType } from './types'
+import {ContextMenu} from "app/features/home/components/ContextMenu";
+import {ChevronRight, ChevronUp} from "lucide-react";
 
 type Props = {
   channels: Channel[]
@@ -15,13 +17,20 @@ type Props = {
 }
 
 export function ChannelList({ channels, activeChannelId, onSelect, onJoinVoice, voiceParticipants, onCreateChannel }: Props) {
+  const [textExpanded, setTextExpanded] = useState(true)
+  const [voiceExpanded, setVoiceExpanded] = useState(true)
+
   const textChannels = channels.filter(c => c.type === 'text')
   const voiceChannels = channels.filter(c => c.type === 'voice')
 
   return (
     <YStack flex={1} gap="$1">
-      <SectionLabel label="Text Channels" onAdd={() => onCreateChannel('text')} />
-      {textChannels.map(ch => (
+      <SectionLabel
+        label="Text Channels"
+        expanded={textExpanded}
+        onToggle={() => setTextExpanded(p => !p)}
+        onAdd={() => onCreateChannel('text')} />
+      {textExpanded && textChannels.map(ch => (
         <ChannelRow
           key={ch.id}
           channel={ch}
@@ -30,8 +39,14 @@ export function ChannelList({ channels, activeChannelId, onSelect, onJoinVoice, 
         />
       ))}
 
-      <SectionLabel label="Voice Channels" onAdd={() => onCreateChannel('voice')} mt="$3" />
-      {voiceChannels.map(ch => (
+      <SectionLabel
+        label="Voice Channels"
+        expanded={voiceExpanded}
+        onToggle={() => setVoiceExpanded(p => !p)}
+        onAdd={() => onCreateChannel('voice')}
+        mt="$3"
+      />
+      {voiceExpanded && voiceChannels.map(ch => (
         <YStack key={ch.id}>
           <ChannelRow
             channel={ch}
@@ -48,19 +63,35 @@ export function ChannelList({ channels, activeChannelId, onSelect, onJoinVoice, 
   )
 }
 
-function SectionLabel({ label, onAdd, mt }: { label: string; onAdd: () => void; mt?: string }) {
+function SectionLabel({ label, expanded, onToggle, onAdd, mt }: {
+  label: string
+  expanded: boolean
+  onToggle: () => void
+  onAdd: () => void
+  mt?: string
+}) {
   return (
-    <XStack alignItems="center" px="$2" pb="$1" mt={mt as any}>
-      <Text
-        flex={1}
-        fontSize={10}
-        color="$color10"
-        fontWeight="700"
-        letterSpacing={1}
-        textTransform="uppercase"
-      >
-        {label}
-      </Text>
+    <XStack alignItems="center" px="$2" pb="$1" mt={mt as any} cursor="pointer" >
+      <XStack alignItems="center">
+        <Button
+          size="$1"
+          chromeless
+          icon={expanded ? ChevronDown : ChevronRight}
+          onPress ={onToggle}
+        />
+
+        <Text
+          flex={1}
+          fontSize={12}
+          color="$color10"
+          fontWeight="700"
+          letterSpacing={1}
+          textTransform="uppercase"
+          onPress ={onToggle}
+        >
+          {label}
+        </Text>
+
       <Button
         size="$1"
         chromeless
@@ -69,6 +100,7 @@ function SectionLabel({ label, onAdd, mt }: { label: string; onAdd: () => void; 
         color="$color10"
         hoverStyle={{  }}
       />
+      </XStack>
     </XStack>
   )
 }
@@ -83,6 +115,17 @@ function ChannelRow({ channel, isActive, onSelect, onJoinVoice }: {
 }) {
   const lastPressRef = useRef(0)
   const Icon = channel.type === 'text' ? Hash : Volume2
+  const options = [
+    {
+      label: 'Edit Channel',
+      onPress: () => alert('Edit channel ' + channel.name)
+    },
+    {
+      label: 'Delete Channel',
+      onPress: () => alert('Delete channel ' + channel.name),
+      destructive: true
+    }
+  ]
 
   const handlePress = () => {
     if (channel.type === 'voice' && onJoinVoice) {
@@ -98,31 +141,32 @@ function ChannelRow({ channel, isActive, onSelect, onJoinVoice }: {
       onSelect(channel)
     }
   }
-
+ //         hoverStyle={{ backgroundColor: isActive ? '$color4' : '$color3' }}
   return (
-    <XStack
-      px="$2"
-      py="$1"
-      borderRadius="$3"
-      gap="$2"
-      alignItems="center"
-      cursor="pointer"
-      onPress={handlePress}
-      backgroundColor={isActive ? '$color4' : 'transparent'}
-      hoverStyle={{ backgroundColor: isActive ? '$color4' : '$color3' }}
-      animation="quick"
-      pressStyle={{ scale: 0.98 }}
-    >
-      <Icon size={14} color={isActive ? '$color' : '$color10'} />
-      <Text
-        fontSize="$3"
-        color={isActive ? '$color' : '$color11'}
-        fontWeight={isActive ? '600' : '400'}
-        userSelect="none"
+    <ContextMenu options={options}>
+      <XStack
+        px="$2"
+        py="$2"
+        borderRadius="$3"
+        gap="$1"
+        alignItems="center"
+        cursor="pointer"
+        onPress={handlePress}
+        backgroundColor={isActive ? '$color4' : 'transparent'}
+        hoverStyle={{backgroundColor: '$color4'}}
+        animation="quick"
+        pressStyle={{ scale: 0.98 }}
       >
-        {channel.name}
-      </Text>
-    </XStack>
+        <Icon size={14} color={isActive ? '$color' : '$color10'} />
+        <Text
+          fontSize="$4"
+          color={isActive ? '$color' : '$color11'}
+          fontWeight={isActive ? '500' : '400'}
+        >
+          {channel.name}
+        </Text>
+      </XStack>
+    </ContextMenu>
   )
 }
 
@@ -146,5 +190,6 @@ function ParticipantRow({ identity }: { identity: string }) {
         {identity}
       </Text>
     </XStack>
+
   )
 }

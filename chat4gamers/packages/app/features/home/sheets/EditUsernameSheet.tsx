@@ -34,7 +34,7 @@ return (
       {/* Avatar picker */}
       <XStack alignItems="center" gap="$4">
         <Avatar circular size="$6">
-          <Avatar.Image source={{ uri: currentPfp || 'https://placehold.co/100x100' }} />
+          <Avatar.Image src={ currentPfp || 'https://placehold.co/100x100' } draggable={false} />
           <Avatar.Fallback bc="$color8" />
         </Avatar>
         <Button size="$3" variant="outlined" onPress={pickImage}>

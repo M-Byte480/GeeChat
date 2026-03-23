@@ -5,19 +5,9 @@ import type { Identity, Server } from './types'
 import { deserializeFromStorage, serializeForStorage } from './crypto'
 import { WelcomeScreen } from './WelcomeScreen'
 import {ApiProvider} from "app/provider/ApiProvider";
+import { IdentityContext } from "app/features/home/identity/IdentityContext";
 
-type Props = {
-  children: (
-    identity: Identity,
-    changeUsername: (name: string) => void,
-    servers: Server[],
-    addServer: (server: Server) => void,
-    deleteServer: (serverId: string) => void,
-    changePfp: (dataUrl: string) => void
-  ) => React.ReactNode
-}
-
-export function IdentityGate({ children }: Props) {
+export function IdentityGate({ children }: { children: React.ReactNode }) {
   const [identity, setIdentity] = useState<Identity | null>(null)
   const [mounted, setMounted] = useState(false)
 
@@ -31,7 +21,6 @@ export function IdentityGate({ children }: Props) {
       if (json) {
         try {
           setIdentity(deserializeFromStorage(json))
-          console.log(deserializeFromStorage(json))
         } catch {
           // Corrupted data — fall through to WelcomeScreen
         }
@@ -51,6 +40,11 @@ export function IdentityGate({ children }: Props) {
     persist({ ...identity, username: trimmed })
   }, [identity, persist])
 
+  const changePfp = useCallback((dataUrl: string) => {
+    if (!identity) return
+    persist({ ...identity, pfp: dataUrl })
+  }, [identity, persist])
+
   const addServer = useCallback((server: Server) => {
     if (!identity) return
     const already = identity.servers.some(s => s.id === server.id)
@@ -63,34 +57,35 @@ export function IdentityGate({ children }: Props) {
     persist({ ...identity, servers: identity.servers.filter(s => s.url !== serverUrl) })
   }, [identity, persist])
 
-  const changePfp = useCallback((dataUrl: string) => {
-    if (!identity) return
-    persist({ ...identity, pfp: dataUrl })
-  }, [identity, persist])
-
   if (!mounted) return null
+  if (!identity) return <WelcomeScreen onIdentityReady={setIdentity} />
 
-  if (!identity) {
-    return <WelcomeScreen onIdentityReady={setIdentity} />
-  }
-
-  return <ApiProvider
-    identity={identity}
-    onSessionExpired={(baseUrl) => {
-      // clear the token for that server from identity
-      persist({
-        ...identity,
-        sessionTokens: { ...identity.sessionTokens, [baseUrl]: undefined }
-      })
-    }}
-    persistSessionToken={(baseUrl, token) => {
-      persist({
-        ...identity,
-        sessionTokens: { ...identity.sessionTokens, [baseUrl]: token }
-      })
-    }}
-  >
-    {children(identity, changeUsername, identity.servers, addServer, deleteServer, changePfp)}
-  </ApiProvider>
-
+  return (
+    <IdentityContext.Provider value={{
+      identity,
+      changeUsername,
+      changePfp,
+      servers: identity.servers,
+      addServer,
+      deleteServer,
+    }}>
+      <ApiProvider
+        identity={identity}
+        onSessionExpired={(baseUrl) => {
+          persist({
+            ...identity,
+            sessionTokens: { ...identity.sessionTokens, [baseUrl]: undefined }
+          })
+        }}
+        persistSessionToken={(baseUrl, token) => {
+          persist({
+            ...identity,
+            sessionTokens: { ...identity.sessionTokens, [baseUrl]: token }
+          })
+        }}
+      >
+        {children}
+      </ApiProvider>
+    </IdentityContext.Provider>
+  )
 }
