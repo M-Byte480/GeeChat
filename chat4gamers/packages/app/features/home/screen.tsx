@@ -105,7 +105,7 @@ const HomeScreenInner = memo(function HomeScreenInner() {
   })
 
   return (
-    <YStack height="100vh" bg="$background" position="relative">
+    <YStack height="100vh" bg="$background" position="relative" userSelect="none" >
 
       <TopScreenStatusBar
         setUsernameInput={setUsernameInput}
@@ -188,6 +188,7 @@ const HomeScreenInner = memo(function HomeScreenInner() {
         <YStack flex={1}>
           {activeServer ? (
             <ChannelBanner
+              activeChannel={activeChannel}
               showMemberPane={showMemberPane}
               onToggleMemberPane={() => setShowMemberPane(p => !p)}
             />

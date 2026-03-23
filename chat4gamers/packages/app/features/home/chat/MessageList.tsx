@@ -90,7 +90,7 @@ export const MessageList = memo(({ messages, serverUrl, typingUser }: Props) => 
     , [visibleMessages, serverUrl])
 
   return (
-    <ScrollView ref={scrollViewRef} flex={1} mb="$2" onScroll={handleScroll} scrollEventThrottle={100}>
+    <ScrollView ref={scrollViewRef} flex={1} mb="$2" onScroll={handleScroll} scrollEventThrottle={100}  >
       <YStack gap="$2">
         {skeletons}
         {/* Render messages on top of skeletons, hidden until ready */}

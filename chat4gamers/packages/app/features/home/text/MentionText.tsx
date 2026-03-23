@@ -58,6 +58,7 @@ export function MentionText({ content, serverUrl, identity }: Props) {
       py={isMentioned ? '$1' : undefined}
       borderLeftWidth={isMentioned ? 3 : 0}
       borderLeftColor={isMentioned ? '$yellow8' : undefined}
+      userSelect="text"
     >
       {parts.map((part, i) =>
         part.type === 'mention' ? (

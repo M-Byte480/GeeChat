@@ -1,7 +1,6 @@
 import {XStack, YStack, Text, Separator, Avatar} from "@my/ui";
 import { VoiceRoom } from "app/features/home/VoiceRoom";
 import type { User } from "app/features/home/types/User";
-import {UserAvatar} from "app/features/home/components/UserAvatar";
 import {Identity} from "app/features/home/identity";
 import {StatusChip} from "app/features/home/components/StatusChip";
 
@@ -76,7 +75,7 @@ export function ThisUserProperties({
           <YStack width={40} height={40} position="relative">
             <Avatar circular size="$4">
               <Avatar.Image
-                source={{ uri: passedIdentity?.pfp || 'https://placehold.co/100x100' }}
+                src={ passedIdentity?.pfp || 'https://placehold.co/100x100' }
               />
               <Avatar.Fallback bc="$color8" />
             </Avatar>

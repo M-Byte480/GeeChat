@@ -19,17 +19,17 @@ export const MessageRow = memo(({ message, serverUrl, onLayout  }: Props)=> {
 
   return (
     <>
-      <XStack gap="$3" paddingVertical="$2" alignItems="flex-start" onLayout={onLayout}>
-        <Avatar circular size="$4">
-          <Avatar.Image source={{ uri: user?.avatarUrl || 'https://placehold.co/100x100' }} />
+      <XStack gap="$3" paddingVertical="$2" alignItems="flex-start" onLayout={onLayout} >
+        <Avatar circular size="$4" userSelect="none">
+          <Avatar.Image src={user?.avatarUrl || 'https://placehold.co/100x100'}  draggable={false} />
           <Avatar.Fallback bc="$color8" />
         </Avatar>
         <YStack flex={1} gap="$1">
           <XStack gap="$2" alignItems="center">
-            <Text fontWeight="bold" fontSize="$3">
+            <Text fontWeight="bold" fontSize="$3" userSelect="text" >
               {user?.nickname ?? user?.username ?? message.senderName}
             </Text>
-            <Text fontSize="$1" color="$gray10">
+            <Text fontSize="$1" color="$gray10" userSelect="none">
               {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </Text>
           </XStack>
@@ -37,6 +37,7 @@ export const MessageRow = memo(({ message, serverUrl, onLayout  }: Props)=> {
             content={message.content}
             serverUrl={serverUrl}
             identity={identity}
+
           />
         </YStack>
       </XStack>

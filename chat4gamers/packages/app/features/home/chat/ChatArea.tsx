@@ -66,7 +66,7 @@ export const ChatArea = ({ channelId, serverUrl, members }: Props) => {
     identity,
   })
   return (
-    <YStack flex={1} pl={"$2"} pb="$4" bg="$background" height="100%" >
+    <YStack flex={1} pl={"$2"} pb="$4" bg="$background" height="100%" userSelect="auto" >
       {errorBanner && false && (
         <XStack
           bg="$red9" px="$4" py="$2" mb="$3" borderRadius="$3"
