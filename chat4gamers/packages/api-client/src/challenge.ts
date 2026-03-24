@@ -1,8 +1,8 @@
-import type {ClientConfig, SignChallengeFn} from './types';
+import type { ClientConfig, SignChallengeFn } from './types'
 const authenticatingServers = new Map<string, Promise<string | null>>()
 
-let _publicKey: string | null = null;
-let _signChallenge: SignChallengeFn | null = null;
+const _publicKey: string | null = null
+const _signChallenge: SignChallengeFn | null = null
 let _config: ClientConfig | null = null
 
 export function configureClient(config: ClientConfig) {
@@ -17,8 +17,8 @@ export function getConfig(): ClientConfig {
 }
 
 export function getPublicKey(): string {
-  if (!_publicKey) throw new Error('api-client not configured');
-  return _publicKey;
+  if (!_publicKey) throw new Error('api-client not configured')
+  return _publicKey
 }
 
 export async function refreshSession(baseUrl: string): Promise<string> {
@@ -28,7 +28,7 @@ export async function refreshSession(baseUrl: string): Promise<string> {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ publicKey }),
-  }).then(r => r.json())
+  }).then((r) => r.json())
 
   const signature = await signChallenge(challenge)
 
@@ -36,7 +36,7 @@ export async function refreshSession(baseUrl: string): Promise<string> {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ publicKey, signature }),
-  }).then(r => r.json())
+  }).then((r) => r.json())
 
   setSessionToken(baseUrl, token)
   return token

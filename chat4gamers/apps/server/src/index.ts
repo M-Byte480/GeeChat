@@ -14,9 +14,9 @@ import authRoutes from './routes/auth.js'
 import chatRoutes from './routes/chat.js'
 import membersRouter from './routes/members.js'
 import relayRouter from './routes/relay.js'
-import media from "./routes/media.js";
-import {initServerState} from "./server-state.js";
-import {db} from "./db/index.js";
+import media from './routes/media.js'
+import { initServerState } from './server-state.js'
+import { db } from './db/index.js'
 
 const app = new Hono()
 const { injectWebSocket, upgradeWebSocket } = createNodeWebSocket({ app })
@@ -25,7 +25,9 @@ app.use('*', trimTrailingSlash())
 app.use('*', logger())
 app.use('*', cors({ origin: '*', allowMethods: ['GET', 'POST', 'OPTIONS'] }))
 
-app.get('/', (c) => c.json({ status: 'online', message: 'Private Server Instance Ready', version: '1.0.0' }))
+app.get('/', (c) =>
+  c.json({ status: 'online', message: 'Private Server Instance Ready', version: '1.0.0' })
+)
 
 registerWsRoute(app, upgradeWebSocket)
 

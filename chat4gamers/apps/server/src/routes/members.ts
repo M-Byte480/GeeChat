@@ -2,7 +2,7 @@ import { Hono } from 'hono'
 import { eq } from 'drizzle-orm'
 import { db } from '../db/index.js'
 import { users, members } from '../db/schema.js'
-import {requireAdmin, requireAuth} from "../lib/middleware.js";
+import { requireAdmin, requireAuth } from '../lib/middleware.js'
 
 // ── Owner bootstrap token ────────────────────────────────────────────────────
 // Generated once when the server has no owner. Printed to the terminal so the
@@ -11,8 +11,9 @@ let ownerToken: string | null = null
 
 function getOwnerToken(): string {
   if (!ownerToken) {
-    ownerToken = Math.random().toString(36).slice(2, 8).toUpperCase() +
-                 Math.random().toString(36).slice(2, 8).toUpperCase()
+    ownerToken =
+      Math.random().toString(36).slice(2, 8).toUpperCase() +
+      Math.random().toString(36).slice(2, 8).toUpperCase()
     console.log('\n┌─────────────────────────────────────────┐')
     console.log('│        NO OWNER REGISTERED              │')
     console.log('│                                         │')
@@ -35,8 +36,12 @@ const router = new Hono()
  */
 router.post('/join', async (c) => {
   const body = await c.req.json()
-  const { publicKey, username, pfp, ownerToken: providedToken } =
-    body as { publicKey: string; username: string; pfp?: string; ownerToken?: string }
+  const {
+    publicKey,
+    username,
+    pfp,
+    ownerToken: providedToken,
+  } = body as { publicKey: string; username: string; pfp?: string; ownerToken?: string }
 
   if (!publicKey || !username) {
     return c.json({ error: 'publicKey and username are required' }, 400)
@@ -51,7 +56,11 @@ router.post('/join', async (c) => {
   }
 
   // Check existing membership
-  const existingMember = await db.select().from(members).where(eq(members.userPublicKey, publicKey)).get()
+  const existingMember = await db
+    .select()
+    .from(members)
+    .where(eq(members.userPublicKey, publicKey))
+    .get()
   if (existingMember) {
     if (existingMember.status === 'denied') return c.json({ status: 'denied' }, 403)
     if (existingMember.status === 'banned') return c.json({ status: 'banned' }, 403)
@@ -59,8 +68,11 @@ router.post('/join', async (c) => {
   }
 
   // Check if any owner exists
-  const existingOwner = await db.select({ id: members.id })
-    .from(members).where(eq(members.role, 'owner')).get()
+  const existingOwner = await db
+    .select({ id: members.id })
+    .from(members)
+    .where(eq(members.role, 'owner'))
+    .get()
 
   if (!existingOwner) {
     // No owner yet — require the terminal token to claim ownership
@@ -99,9 +111,7 @@ router.post('/join', async (c) => {
  * POST /leave
  * Called when a user leaves the server. Sets their membership to 'inactive' so they can rejoin later if desired.
  */
-router.post('/leave',
-  requireAuth,
-  async (c) => {
+router.post('/leave', requireAuth, async (c) => {
   const body = await c.req.json()
   const { publicKey } = body as { publicKey: string }
 
@@ -113,24 +123,21 @@ router.post('/leave',
   return c.json({ ok: true })
 })
 
-
 /**
  * GET /members
  * Returns all active members — used by the client to populate the member pane.
  */
-router.get('/members',
-  requireAuth,
-  async (c) => {
+router.get('/members', requireAuth, async (c) => {
   // todo: pagination for large servers, and filter by status (active, pending, etc)
 
   const rows = await db
     .select({
       publicKey: users.publicKey,
-      username:  users.username,
-      pfp:       users.pfp,
-      nickname:  members.nickname,
-      role:      members.role,
-      status:    members.status,
+      username: users.username,
+      pfp: users.pfp,
+      nickname: members.nickname,
+      role: members.role,
+      status: members.status,
     })
     .from(members)
     .innerJoin(users, eq(members.userPublicKey, users.publicKey))
@@ -142,17 +149,14 @@ router.get('/members',
  * GET /members/pending
  * Returns members awaiting owner approval.
  */
-router.get('/members/pending',
-  requireAuth,
-  requireAdmin,
-  async (c) => {
+router.get('/members/pending', requireAuth, requireAdmin, async (c) => {
   const rows = await db
     .select({
       publicKey: users.publicKey,
-      username:  users.username,
-      pfp:       users.pfp,
-      nickname:  members.nickname,
-      joinedAt:  members.joinedAt,
+      username: users.username,
+      pfp: users.pfp,
+      nickname: members.nickname,
+      joinedAt: members.joinedAt,
     })
     .from(members)
     .innerJoin(users, eq(members.userPublicKey, users.publicKey))
@@ -163,17 +167,11 @@ router.get('/members/pending',
 /**
  * POST /members/:publicKey/approve
  */
-router.post('/members/:publicKey/approve',
-  requireAuth,
-  requireAdmin,
-  async (c) => {
-    const { publicKey } = c.req.param()
-    await db.update(members)
-      .set({ status: 'active' })
-      .where(eq(members.userPublicKey, publicKey))
-    return c.json({ ok: true })
-  }
-)
+router.post('/members/:publicKey/approve', requireAuth, requireAdmin, async (c) => {
+  const { publicKey } = c.req.param()
+  await db.update(members).set({ status: 'active' }).where(eq(members.userPublicKey, publicKey))
+  return c.json({ ok: true })
+})
 
 /**
  * POST /members/:publicKey/deny

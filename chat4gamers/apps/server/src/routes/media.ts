@@ -1,19 +1,17 @@
 import { Hono } from 'hono'
-import { db } from '../db/index.js';
-import {authenticate, checkUserCanAccessMedia} from "../lib/authentication.js";
-import {eq} from "drizzle-orm";
-import {media, users, members} from "../db/schema.js"; // Import your db instance
+import { db } from '../db/index.js'
+import { authenticate, checkUserCanAccessMedia } from '../lib/authentication.js'
+import { eq } from 'drizzle-orm'
+import { media, users, members } from '../db/schema.js' // Import your db instance
 import { writeFile } from 'fs/promises'
 import { Buffer } from 'buffer'
 import { createReadStream } from 'fs'
 import { Readable } from 'stream'
-import {requireAuth} from "../lib/middleware.js";
+import { requireAuth } from '../lib/middleware.js'
 
-const app = new Hono();
+const app = new Hono()
 
-app.post('/upload',
-  requireAuth,
-  async (c) => {
+app.post('/upload', requireAuth, async (c) => {
   const file = await c.req.formData()
   const image = file.get('file') as File
 
@@ -28,7 +26,7 @@ app.post('/upload',
   await writeFile(path, Buffer.from(await image.arrayBuffer()))
 
   const url = `${filename}`
-  const userPublicKey = '';
+  const userPublicKey = ''
 
   // Save to DB
   await db.insert(media).values({
@@ -42,16 +40,14 @@ app.post('/upload',
   return c.json({ url })
 })
 
-app.get('/uploads/:filename',
-  requireAuth,
-  async (c) => {
+app.get('/uploads/:filename', requireAuth, async (c) => {
   const user = await authenticate(c) // verify their session/token
 
   if (!user) return c.json({ error: 'Unauthorized' }, 401)
-  const url = c.req.param('filename');
+  const url = c.req.param('filename')
 
   const mediaRecord = await db.query.media.findFirst({
-    where: eq(media.url, url)
+    where: eq(media.url, url),
   })
 
   if (!mediaRecord) return c.json({ error: 'Not found' }, 404)
@@ -67,11 +63,7 @@ app.get('/uploads/:filename',
 app.get('/users/:publicKey/avatar', requireAuth, async (c) => {
   const publicKey = c.req.param('publicKey')
 
-  const user = db
-    .select({ pfp: users.pfp })
-    .from(users)
-    .where(eq(users.publicKey, publicKey))
-    .get()
+  const user = db.select({ pfp: users.pfp }).from(users).where(eq(users.publicKey, publicKey)).get()
 
   if (!user) return c.json({ error: 'User not found' }, 404)
 

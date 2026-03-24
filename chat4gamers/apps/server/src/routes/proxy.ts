@@ -1,25 +1,39 @@
 import { Hono } from 'hono'
-import {requireAuth} from "../lib/middleware.js";
+import { requireAuth } from '../lib/middleware.js'
 
 const router = new Hono()
 
 function isBlockedHost(hostname: string): boolean {
   const h = hostname.toLowerCase().replace(/^\[|\]$/g, '')
-  if (['localhost', '127.0.0.1', '0.0.0.0', '::1', '169.254.169.254', '100.100.100.200', 'metadata.google.internal'].includes(h)) return true
+  if (
+    [
+      'localhost',
+      '127.0.0.1',
+      '0.0.0.0',
+      '::1',
+      '169.254.169.254',
+      '100.100.100.200',
+      'metadata.google.internal',
+    ].includes(h)
+  )
+    return true
   if (/^10\./.test(h) || /^192\.168\./.test(h) || /^172\.(1[6-9]|2\d|3[01])\./.test(h)) return true
   return false
 }
 
-router.get('/proxy-image',
-  requireAuth,
-  async (c) => {
+router.get('/proxy-image', requireAuth, async (c) => {
   const url = c.req.query('url')
   if (!url) return c.json({ error: 'Missing url' }, 400)
 
   let parsed: URL
-  try { parsed = new URL(url) } catch { return c.json({ error: 'Invalid URL' }, 400) }
+  try {
+    parsed = new URL(url)
+  } catch {
+    return c.json({ error: 'Invalid URL' }, 400)
+  }
 
-  if (!['http:', 'https:'].includes(parsed.protocol)) return c.json({ error: 'Invalid protocol' }, 400)
+  if (!['http:', 'https:'].includes(parsed.protocol))
+    return c.json({ error: 'Invalid protocol' }, 400)
   if (isBlockedHost(parsed.hostname)) return c.json({ error: 'Blocked host' }, 403)
 
   try {

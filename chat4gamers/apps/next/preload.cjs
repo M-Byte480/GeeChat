@@ -5,7 +5,7 @@ const path = require('path')
 // Load the napi-rs .node addon.  The filename is platform-specific; we try the
 // packaged path (resources/) first, then the development path (apps/audio-native/).
 const { platform, arch } = process
-const abi      = platform === 'win32' ? '-msvc' : platform === 'linux' ? '-gnu' : ''
+const abi = platform === 'win32' ? '-msvc' : platform === 'linux' ? '-gnu' : ''
 const nodeName = `audio-native.${platform}-${arch}${abi}.node`
 
 let denoiser = null
@@ -62,7 +62,5 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Synchronous audio frame processing via native RNNoise (.node addon).
   // Called from ScriptProcessorNode.onaudioprocess — must be synchronous.
   // input: Float32Array(480), returns number[](480) or null if native unavailable.
-  processAudioFrame: denoiser
-    ? (input) => denoiser.processFrame(Array.from(input))
-    : null,
+  processAudioFrame: denoiser ? (input) => denoiser.processFrame(Array.from(input)) : null,
 })

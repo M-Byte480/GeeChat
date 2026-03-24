@@ -1,11 +1,11 @@
 'use client'
 
 import { YStack, XStack, Text, Button, Icon } from '@my/ui'
-import {Hash, Volume2, Plus, Menu, ChevronLeft, ChevronDown} from '@tamagui/lucide-icons'
-import {useEffect, useRef, useState} from 'react'
+import { Hash, Volume2, Plus, Menu, ChevronLeft, ChevronDown } from '@tamagui/lucide-icons'
+import { useEffect, useRef, useState } from 'react'
 import type { Channel, ChannelType } from './types'
-import {ContextMenu} from "app/features/home/components/ContextMenu";
-import {ChevronRight, ChevronUp} from "lucide-react";
+import { ContextMenu } from 'app/features/home/components/ContextMenu'
+import { ChevronRight, ChevronUp } from 'lucide-react'
 
 type Props = {
   channels: Channel[]
@@ -16,54 +16,70 @@ type Props = {
   onCreateChannel: (type: ChannelType) => void
 }
 
-export function ChannelList({ channels, activeChannelId, onSelect, onJoinVoice, voiceParticipants, onCreateChannel }: Props) {
+export function ChannelList({
+  channels,
+  activeChannelId,
+  onSelect,
+  onJoinVoice,
+  voiceParticipants,
+  onCreateChannel,
+}: Props) {
   const [textExpanded, setTextExpanded] = useState(true)
   const [voiceExpanded, setVoiceExpanded] = useState(true)
 
-  const textChannels = channels.filter(c => c.type === 'text')
-  const voiceChannels = channels.filter(c => c.type === 'voice')
+  const textChannels = channels.filter((c) => c.type === 'text')
+  const voiceChannels = channels.filter((c) => c.type === 'voice')
 
   return (
     <YStack flex={1} gap="$1">
       <SectionLabel
         label="Text Channels"
         expanded={textExpanded}
-        onToggle={() => setTextExpanded(p => !p)}
-        onAdd={() => onCreateChannel('text')} />
-      {textExpanded && textChannels.map(ch => (
-        <ChannelRow
-          key={ch.id}
-          channel={ch}
-          isActive={ch.id === activeChannelId}
-          onSelect={onSelect}
-        />
-      ))}
+        onToggle={() => setTextExpanded((p) => !p)}
+        onAdd={() => onCreateChannel('text')}
+      />
+      {textExpanded &&
+        textChannels.map((ch) => (
+          <ChannelRow
+            key={ch.id}
+            channel={ch}
+            isActive={ch.id === activeChannelId}
+            onSelect={onSelect}
+          />
+        ))}
 
       <SectionLabel
         label="Voice Channels"
         expanded={voiceExpanded}
-        onToggle={() => setVoiceExpanded(p => !p)}
+        onToggle={() => setVoiceExpanded((p) => !p)}
         onAdd={() => onCreateChannel('voice')}
         mt="$3"
       />
-      {voiceExpanded && voiceChannels.map(ch => (
-        <YStack key={ch.id}>
-          <ChannelRow
-            channel={ch}
-            isActive={ch.id === activeChannelId}
-            onSelect={onSelect}
-            onJoinVoice={onJoinVoice}
-          />
-          {(voiceParticipants[ch.id] ?? []).map(identity => (
-            <ParticipantRow key={identity} identity={identity} />
-          ))}
-        </YStack>
-      ))}
+      {voiceExpanded &&
+        voiceChannels.map((ch) => (
+          <YStack key={ch.id}>
+            <ChannelRow
+              channel={ch}
+              isActive={ch.id === activeChannelId}
+              onSelect={onSelect}
+              onJoinVoice={onJoinVoice}
+            />
+            {(voiceParticipants[ch.id] ?? []).map((identity) => (
+              <ParticipantRow key={identity} identity={identity} />
+            ))}
+          </YStack>
+        ))}
     </YStack>
   )
 }
 
-function SectionLabel({ label, expanded, onToggle, onAdd, mt }: {
+function SectionLabel({
+  label,
+  expanded,
+  onToggle,
+  onAdd,
+  mt,
+}: {
   label: string
   expanded: boolean
   onToggle: () => void
@@ -71,13 +87,13 @@ function SectionLabel({ label, expanded, onToggle, onAdd, mt }: {
   mt?: string
 }) {
   return (
-    <XStack alignItems="center" px="$2" pb="$1" mt={mt as any} cursor="pointer" >
+    <XStack alignItems="center" px="$2" pb="$1" mt={mt as any} cursor="pointer">
       <XStack alignItems="center">
         <Button
           size="$1"
           chromeless
           icon={expanded ? ChevronDown : ChevronRight}
-          onPress ={onToggle}
+          onPress={onToggle}
         />
 
         <Text
@@ -87,19 +103,12 @@ function SectionLabel({ label, expanded, onToggle, onAdd, mt }: {
           fontWeight="700"
           letterSpacing={1}
           textTransform="uppercase"
-          onPress ={onToggle}
+          onPress={onToggle}
         >
           {label}
         </Text>
 
-      <Button
-        size="$1"
-        chromeless
-        icon={Plus}
-        onPress={onAdd}
-        color="$color10"
-        hoverStyle={{  }}
-      />
+        <Button size="$1" chromeless icon={Plus} onPress={onAdd} color="$color10" hoverStyle={{}} />
       </XStack>
     </XStack>
   )
@@ -107,7 +116,12 @@ function SectionLabel({ label, expanded, onToggle, onAdd, mt }: {
 
 const DOUBLE_CLICK_MS = 350
 
-function ChannelRow({ channel, isActive, onSelect, onJoinVoice }: {
+function ChannelRow({
+  channel,
+  isActive,
+  onSelect,
+  onJoinVoice,
+}: {
   channel: Channel
   isActive: boolean
   onSelect: (ch: Channel) => void
@@ -118,13 +132,13 @@ function ChannelRow({ channel, isActive, onSelect, onJoinVoice }: {
   const options = [
     {
       label: 'Edit Channel',
-      onPress: () => alert('Edit channel ' + channel.name)
+      onPress: () => alert('Edit channel ' + channel.name),
     },
     {
       label: 'Delete Channel',
       onPress: () => alert('Delete channel ' + channel.name),
-      destructive: true
-    }
+      destructive: true,
+    },
   ]
 
   const handlePress = () => {
@@ -141,7 +155,7 @@ function ChannelRow({ channel, isActive, onSelect, onJoinVoice }: {
       onSelect(channel)
     }
   }
- //         hoverStyle={{ backgroundColor: isActive ? '$color4' : '$color3' }}
+  //         hoverStyle={{ backgroundColor: isActive ? '$color4' : '$color3' }}
   return (
     <ContextMenu options={options}>
       <XStack
@@ -153,7 +167,7 @@ function ChannelRow({ channel, isActive, onSelect, onJoinVoice }: {
         cursor="pointer"
         onPress={handlePress}
         backgroundColor={isActive ? '$color4' : 'transparent'}
-        hoverStyle={{backgroundColor: '$color4'}}
+        hoverStyle={{ backgroundColor: '$color4' }}
         animation="quick"
         pressStyle={{ scale: 0.98 }}
       >
@@ -190,6 +204,5 @@ function ParticipantRow({ identity }: { identity: string }) {
         {identity}
       </Text>
     </XStack>
-
   )
 }

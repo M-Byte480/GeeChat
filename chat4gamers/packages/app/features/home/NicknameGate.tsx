@@ -66,12 +66,7 @@ export function NicknameGate({ children }: Props) {
             autoCapitalize="none"
             autoCorrect={false}
           />
-          <Button
-            size="$5"
-            theme="active"
-            onPress={handleSubmit}
-            disabled={!input.trim()}
-          >
+          <Button size="$5" theme="active" onPress={handleSubmit} disabled={!input.trim()}>
             Let me in
           </Button>
         </YStack>

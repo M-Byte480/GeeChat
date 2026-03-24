@@ -1,7 +1,7 @@
 import { create } from 'zustand'
-import {Channel, Message} from 'app/features/home/types/types'
+import { Channel, Message } from 'app/features/home/types/types'
 import { Server } from 'app/features/home/identity/types'
-import {User} from "app/features/home/types/User";
+import { User } from 'app/features/home/types/User'
 
 interface ServerCache {
   [url: string]: {
@@ -40,14 +40,13 @@ export const useAppStore = create<AppState>((set) => ({
 
   setChannelMessages: (channelId, messages) => {
     console.log('[store] setChannelMessages called', channelId, messages.length)
-    set(state => ({
+    set((state) => ({
       messageCache: {
         ...state.messageCache,
-        [channelId]: { messages, lastFetched: Date.now() }
-      }
+        [channelId]: { messages, lastFetched: Date.now() },
+      },
     }))
   },
-
 
   setActiveServerUrl: (url) => set({ activeServerUrl: url }),
 
@@ -61,16 +60,15 @@ export const useAppStore = create<AppState>((set) => ({
       },
     })),
   initChannel: (channelId: string) =>
-    set(state => {
+    set((state) => {
       if (state.messageCache[channelId]) return state // already exists, no-op
       return {
         messageCache: {
           ...state.messageCache,
-          [channelId]: { messages: [], lastFetched: 0 }
-        }
+          [channelId]: { messages: [], lastFetched: 0 },
+        },
       }
     }),
-
 
   setVoiceParticipants: (url, channelId, participants) =>
     set((s) => ({
@@ -86,34 +84,34 @@ export const useAppStore = create<AppState>((set) => ({
       },
     })),
   appendMessage: (channelId: string, message: Message) =>
-    set(state => {
+    set((state) => {
       const existing = state.messageCache[channelId]?.messages ?? []
       return {
         messageCache: {
           ...state.messageCache,
           [channelId]: {
             messages: [...existing, message],
-            lastFetched: state.messageCache[channelId]?.lastFetched ?? Date.now()
-          }
-        }
+            lastFetched: state.messageCache[channelId]?.lastFetched ?? Date.now(),
+          },
+        },
       }
     }),
 
   updateMessage: (channelId: string, tempId: number, confirmed: Message) =>
-    set(state => {
+    set((state) => {
       const existing = state.messageCache[channelId]?.messages ?? []
       return {
         messageCache: {
           ...state.messageCache,
           [channelId]: {
             ...state.messageCache[channelId],
-            messages: existing.map(m => m.id === tempId ? confirmed : m)
-          }
-        }
+            messages: existing.map((m) => (m.id === tempId ? confirmed : m)),
+          },
+        },
       }
     }),
   setMembers: (serverUrl: string, members: User[]) =>
-    set(state => ({
-      members: { ...state.members, [serverUrl]: members }
+    set((state) => ({
+      members: { ...state.members, [serverUrl]: members },
     })),
 }))

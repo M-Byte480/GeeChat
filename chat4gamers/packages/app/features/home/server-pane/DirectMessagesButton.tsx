@@ -1,4 +1,4 @@
-import {Button, Text, Tooltip} from "@my/ui";
+import { Button, Text, Tooltip } from '@my/ui'
 
 type Props = {
   isActive: boolean
@@ -41,5 +41,5 @@ export function DirectMessagesButton({ isActive, onPress }: Props) {
         <Text fontSize="$2">Direct Messages</Text>
       </Tooltip.Content>
     </Tooltip>
-  );
+  )
 }

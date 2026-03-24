@@ -1,21 +1,21 @@
 // src/db/index.ts
-import { drizzle } from 'drizzle-orm/better-sqlite3';
-import Database from 'better-sqlite3-multiple-ciphers';
-import { mkdirSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
-import * as schema from './schema.js';
+import { drizzle } from 'drizzle-orm/better-sqlite3'
+import Database from 'better-sqlite3-multiple-ciphers'
+import { mkdirSync } from 'node:fs'
+import { dirname, resolve } from 'node:path'
+import * as schema from './schema.js'
 
-const isProd = process.env.NODE_ENV === 'production';
-const dbPath = isProd ? '/app/data/chat.db' : resolve('./data/chat.db');
+const isProd = process.env.NODE_ENV === 'production'
+const dbPath = isProd ? '/app/data/chat.db' : resolve('./data/chat.db')
 
 // Auto-create the directory if it doesn't exist
-mkdirSync(dirname(dbPath), { recursive: true });
+mkdirSync(dirname(dbPath), { recursive: true })
 
-const sqlite = new Database(dbPath);
+const sqlite = new Database(dbPath)
 
 // Apply encryption key before any queries (SQLCipher)
 if (process.env.DB_KEY) {
-  sqlite.pragma(`key = '${process.env.DB_KEY}'`);
+  sqlite.pragma(`key = '${process.env.DB_KEY}'`)
 }
 
 // Bootstrap schema — safe to run on every startup
@@ -63,13 +63,15 @@ sqlite.exec(`
         );
 
     CREATE INDEX IF NOT EXISTS dm_idx ON direct_messages (sender_id, recipient_id, timestamp);
-`);
+`)
 
 // Migration guards for databases predating this schema
-try { sqlite.exec(`ALTER TABLE messages ADD COLUMN signature TEXT NOT NULL DEFAULT ''`) } catch {}
+try {
+  sqlite.exec(`ALTER TABLE messages ADD COLUMN signature TEXT NOT NULL DEFAULT ''`)
+} catch {}
 
 // Seed default channels if the table is empty
-const channelCount = (sqlite.prepare('SELECT COUNT(*) as cnt FROM channels').get() as any).cnt;
+const channelCount = (sqlite.prepare('SELECT COUNT(*) as cnt FROM channels').get() as any).cnt
 if (channelCount === 0) {
   sqlite.exec(`
       INSERT INTO channels (id, name, type) VALUES
@@ -77,7 +79,7 @@ if (channelCount === 0) {
                                                 ('off-topic', 'off-topic', 'text'),
                                                 ('hideout',   'hideout',   'voice'),
                                                 ('gaming',    'gaming',    'voice');
-  `);
+  `)
 }
 
-export const db = drizzle(sqlite, { schema });
+export const db = drizzle(sqlite, { schema })

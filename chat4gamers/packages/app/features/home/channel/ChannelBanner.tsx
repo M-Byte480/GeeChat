@@ -11,13 +11,9 @@ type Props = {
 export function ChannelBanner({ activeChannel, showMemberPane, onToggleMemberPane }: Props) {
   return (
     <MainContentBanner showMemberPane={showMemberPane} onToggleMemberPane={onToggleMemberPane}>
-      <ChannelTitle>
-        {activeChannel.name}
-      </ChannelTitle>
+      <ChannelTitle>{activeChannel.name}</ChannelTitle>
 
-      <ChannelDescription>
-        {activeChannel.description ?? 'No description'}
-      </ChannelDescription>
+      <ChannelDescription>{activeChannel.description ?? 'No description'}</ChannelDescription>
     </MainContentBanner>
   )
 }

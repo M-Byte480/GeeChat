@@ -1,10 +1,10 @@
-import {useCallback, useEffect, useRef, useState} from 'react'
-import {signMessage} from '../identity/crypto'
-import type {Identity} from '../identity/types'
-import {apiFetch} from '@my/api-client'
-import type {Message} from '../types/types'
-import {fireDesktopNotification} from '../utils/Notification'
-import {useAppStore} from "app/features/home/hooks/useAppStore";
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { signMessage } from '../identity/crypto'
+import type { Identity } from '../identity/types'
+import { apiFetch } from '@my/api-client'
+import type { Message } from '../types/types'
+import { fireDesktopNotification } from '../utils/Notification'
+import { useAppStore } from 'app/features/home/hooks/useAppStore'
 
 function deriveWsBase(url: string): string {
   return url.replace(/^https:\/\//, 'wss://').replace(/^http:\/\//, 'ws://')
@@ -21,7 +21,7 @@ export function useMessages({ channelId, identity, serverUrl, socketRef }: Param
   const apiBase = serverUrl
   const wsBase = deriveWsBase(serverUrl)
 
-  const cachedMessages = useAppStore(s => {
+  const cachedMessages = useAppStore((s) => {
     return s.messageCache[channelId]?.messages ?? EMPTY_MESSAGES
   })
 
@@ -43,7 +43,7 @@ export function useMessages({ channelId, identity, serverUrl, socketRef }: Param
     if (cached.length > 0) {
       // Background fetch — silent
       apiFetch(apiBase, `/chat-history?channel=${channelId}${since}`)
-        .then(res => res.ok ? res.json() : [])
+        .then((res) => (res.ok ? res.json() : []))
         .then((data: Message[]) => {
           if (!Array.isArray(data) || data.length === 0) return
           const existingIds = new Set(cached.map((m: Message) => m.id))
@@ -56,7 +56,7 @@ export function useMessages({ channelId, identity, serverUrl, socketRef }: Param
     } else {
       // No cache — full blocking fetch
       apiFetch(apiBase, `/chat-history?channel=${channelId}`)
-        .then(res => {
+        .then((res) => {
           if (!res.ok) throw new Error('Server error')
           return res.json()
         })
@@ -99,40 +99,46 @@ export function useMessages({ channelId, identity, serverUrl, socketRef }: Param
     return () => ws.close()
   }, [channelId, identity.username, showError, apiBase, wsBase])
 
-  const sendMessage = useCallback(async (text: string) => {
-    const timestamp = new Date().toISOString()
-    const tempId = Date.now()
+  const sendMessage = useCallback(
+    async (text: string) => {
+      const timestamp = new Date().toISOString()
+      const tempId = Date.now()
 
-    useAppStore.getState().appendMessage(channelId, {
-      id: tempId,
-      content: text,
-      roomId: channelId,
-      senderId: identity.publicKey,
-      senderName: identity.username,
-      timestamp,
-    })
-
-    try {
-      const signature = await signMessage(identity.privateKeyBytes, text, channelId, timestamp)
-      await apiFetch(apiBase, `/messages`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          roomId: channelId,
-          content: text,
-          userId: identity.publicKey,
-          senderName: identity.username,
-          signature,
-          timestamp,
-          tempId,
-        }),
+      useAppStore.getState().appendMessage(channelId, {
+        id: tempId,
+        content: text,
+        roomId: channelId,
+        senderId: identity.publicKey,
+        senderName: identity.username,
+        timestamp,
       })
-    } catch {
-      showError('Failed to send message. Check your connection.')
-      const current = useAppStore.getState().messageCache[channelId]?.messages ?? []
-      useAppStore.getState().setChannelMessages(channelId, current.filter((m: Message) => m.id !== tempId))
-    }
-  }, [channelId, identity, apiBase, showError])
+
+      try {
+        const signature = await signMessage(identity.privateKeyBytes, text, channelId, timestamp)
+        await apiFetch(apiBase, `/messages`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            roomId: channelId,
+            content: text,
+            userId: identity.publicKey,
+            senderName: identity.username,
+            signature,
+            timestamp,
+            tempId,
+          }),
+        })
+      } catch {
+        showError('Failed to send message. Check your connection.')
+        const current = useAppStore.getState().messageCache[channelId]?.messages ?? []
+        useAppStore.getState().setChannelMessages(
+          channelId,
+          current.filter((m: Message) => m.id !== tempId)
+        )
+      }
+    },
+    [channelId, identity, apiBase, showError]
+  )
 
   return {
     messages: cachedMessages,

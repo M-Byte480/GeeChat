@@ -1,11 +1,11 @@
-import {members} from "./db/schema.js";
-import {eq} from "drizzle-orm";
+import { members } from './db/schema.js'
+import { eq } from 'drizzle-orm'
 
 let ownerPublicKey: string | null = null
 
 export async function initServerState(db: any) {
   const owner = await db.query.members.findFirst({
-    where: eq(members.role, 'owner')
+    where: eq(members.role, 'owner'),
   })
   ownerPublicKey = owner?.userPublicKey ?? null
 }

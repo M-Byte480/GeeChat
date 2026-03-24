@@ -17,8 +17,8 @@ export type Channel = {
 }
 
 export const CHANNELS: Channel[] = [
-  { id: 'general',   name: 'general',   type: 'text'  },
-  { id: 'off-topic', name: 'off-topic', type: 'text'  },
-  { id: 'hideout',   name: 'hideout',   type: 'voice' },
-  { id: 'gaming',    name: 'gaming',    type: 'voice' },
+  { id: 'general', name: 'general', type: 'text' },
+  { id: 'off-topic', name: 'off-topic', type: 'text' },
+  { id: 'hideout', name: 'hideout', type: 'voice' },
+  { id: 'gaming', name: 'gaming', type: 'voice' },
 ]

@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import {XStack, Text, Button, YStack} from '@my/ui'
+import { XStack, Text, Button, YStack } from '@my/ui'
 import { Download, RotateCcw } from '@tamagui/lucide-icons'
 
 export function UpdateBanner() {

@@ -5,12 +5,7 @@ export function MessageRowSkeleton() {
   return (
     <XStack gap="$3" paddingVertical="$2" alignItems="flex-start" opacity={0.4}>
       {/* Avatar placeholder */}
-      <YStack
-        width={40}
-        height={40}
-        borderRadius={20}
-        bg="$color6"
-      />
+      <YStack width={40} height={40} borderRadius={20} bg="$color6" />
       <YStack flex={1} gap="$2">
         {/* Username + timestamp */}
         <XStack gap="$2">

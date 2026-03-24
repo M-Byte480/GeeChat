@@ -10,14 +10,7 @@ type Props = {
 
 export function MainContentBanner({ children, showMemberPane, onToggleMemberPane }: Props) {
   return (
-    <XStack
-      bg="$gray2"
-      px="$4"
-      py="$2"
-      borderRadius="$3"
-      alignItems="center"
-      gap="$3"
-    >
+    <XStack bg="$gray2" px="$4" py="$2" borderRadius="$3" alignItems="center" gap="$3">
       {children}
       <Spacer flex={1} />
       <Button

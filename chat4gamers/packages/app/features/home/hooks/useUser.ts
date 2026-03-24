@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import {Identity} from "app/features/home/identity";
+import { Identity } from 'app/features/home/identity'
 import { getUser, getCachedUser } from '@my/api-client'
 
 export interface UserProfile {
@@ -25,7 +25,7 @@ export function useUser(
         username: identity.username,
         nickname: null, // Same as below
         avatarUrl: identity.pfp ?? null,
-        role: 'member',// Todo: This is not accurate, but we don't have the role info in identity for now. We can add role to identity in the future to make it accurate.
+        role: 'member', // Todo: This is not accurate, but we don't have the role info in identity for now. We can add role to identity in the future to make it accurate.
         status: 'active',
       }
     }

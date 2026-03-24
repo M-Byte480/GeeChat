@@ -13,12 +13,12 @@ type Props = {
 }
 
 export function AddServerDialog({ open, onClose, onAddServer, identity }: Props) {
-  const [step, setStep]           = useState<Step>('details')
+  const [step, setStep] = useState<Step>('details')
   const [serverName, setServerName] = useState('')
-  const [serverUrl, setServerUrl]   = useState('')
+  const [serverUrl, setServerUrl] = useState('')
   const [ownerToken, setOwnerToken] = useState('')
-  const [error, setError]           = useState('')
-  const [loading, setLoading]       = useState(false)
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
 
   // Holds the validated server so we can add it after the token step
   const [pendingServer, setPendingServer] = useState<Server | null>(null)
@@ -33,10 +33,13 @@ export function AddServerDialog({ open, onClose, onAddServer, identity }: Props)
     setPendingServer(null)
   }
 
-  const handleClose = () => { reset(); onClose() }
+  const handleClose = () => {
+    reset()
+    onClose()
+  }
 
   const buildServer = (url: string): Server => ({
-    id:   crypto.randomUUID(),
+    id: crypto.randomUUID(),
     name: serverName.trim(),
     url,
   })
@@ -51,18 +54,28 @@ export function AddServerDialog({ open, onClose, onAddServer, identity }: Props)
   /** Step 1 — validate URL and call /join */
   const handleAdd = async () => {
     const name = serverName.trim()
-    const raw  = serverUrl.trim()
+    const raw = serverUrl.trim()
     if (!name || !raw) return
     let url: string
-    try { url = normalise(raw); new URL(url) } catch { setError('Invalid server address.'); return }
+    try {
+      url = normalise(raw)
+      new URL(url)
+    } catch {
+      setError('Invalid server address.')
+      return
+    }
 
     setLoading(true)
     setError('')
     try {
-      const res  = await fetch(`${url}/join`, {
-        method:  'POST',
+      const res = await fetch(`${url}/join`, {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ publicKey: identity.publicKey, username: identity.username, pfp: identity.pfp }),
+        body: JSON.stringify({
+          publicKey: identity.publicKey,
+          username: identity.username,
+          pfp: identity.pfp,
+        }),
       })
       const data = await res.json()
 
@@ -71,7 +84,10 @@ export function AddServerDialog({ open, onClose, onAddServer, identity }: Props)
         setStep('token')
         return
       }
-      if (!res.ok) { setError(data.error ?? 'Could not join server.'); return }
+      if (!res.ok) {
+        setError(data.error ?? 'Could not join server.')
+        return
+      }
 
       const server = buildServer(url)
       onAddServer(server)
@@ -95,18 +111,21 @@ export function AddServerDialog({ open, onClose, onAddServer, identity }: Props)
     setLoading(true)
     setError('')
     try {
-      const res  = await fetch(`${pendingServer.url}/join`, {
-        method:  'POST',
+      const res = await fetch(`${pendingServer.url}/join`, {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({
+        body: JSON.stringify({
           publicKey: identity.publicKey,
-          username:  identity.username,
-          pfp:       identity.pfp,
+          username: identity.username,
+          pfp: identity.pfp,
           ownerToken: ownerToken.trim(),
         }),
       })
       const data = await res.json()
-      if (!res.ok) { setError(data.error ?? 'Invalid token.'); return }
+      if (!res.ok) {
+        setError(data.error ?? 'Invalid token.')
+        return
+      }
       onAddServer(pendingServer)
       handleClose()
     } catch {
@@ -118,10 +137,16 @@ export function AddServerDialog({ open, onClose, onAddServer, identity }: Props)
 
   if (step === 'pending') {
     return (
-      <AppDialog open={open} onClose={handleClose} title="Request Sent"
-        description={`You've been added to the waiting list for ${serverName}. An owner must approve your request.`}>
+      <AppDialog
+        open={open}
+        onClose={handleClose}
+        title="Request Sent"
+        description={`You've been added to the waiting list for ${serverName}. An owner must approve your request.`}
+      >
         <XStack justifyContent="flex-end">
-          <Button size="$4" theme="active" onPress={handleClose}>Got it</Button>
+          <Button size="$4" theme="active" onPress={handleClose}>
+            Got it
+          </Button>
         </XStack>
       </AppDialog>
     )
@@ -129,22 +154,38 @@ export function AddServerDialog({ open, onClose, onAddServer, identity }: Props)
 
   if (step === 'token') {
     return (
-      <AppDialog open={open} onClose={handleClose} title="Owner Token Required"
-        description="This server has no registered owner. Enter the token printed in the server terminal to claim ownership.">
+      <AppDialog
+        open={open}
+        onClose={handleClose}
+        title="Owner Token Required"
+        description="This server has no registered owner. Enter the token printed in the server terminal to claim ownership."
+      >
         <Input
           placeholder="Owner token..."
           size="$4"
           value={ownerToken}
-          onChangeText={(v) => { setOwnerToken(v); setError('') }}
+          onChangeText={(v) => {
+            setOwnerToken(v)
+            setError('')
+          }}
           onSubmitEditing={handleToken}
           autoCapitalize="characters"
           autoFocus
         />
-        {error ? <Text color="$red10" fontSize="$2">{error}</Text> : null}
+        {error ? (
+          <Text color="$red10" fontSize="$2">
+            {error}
+          </Text>
+        ) : null}
         <XStack gap="$3" justifyContent="flex-end">
           <AppDialog.Cancel onPress={handleClose} />
-          <Button size="$4" theme="active" disabled={!ownerToken.trim() || loading} onPress={handleToken}
-            icon={loading ? <Spinner /> : undefined}>
+          <Button
+            size="$4"
+            theme="active"
+            disabled={!ownerToken.trim() || loading}
+            onPress={handleToken}
+            icon={loading ? <Spinner /> : undefined}
+          >
             Claim Ownership
           </Button>
         </XStack>
@@ -153,24 +194,45 @@ export function AddServerDialog({ open, onClose, onAddServer, identity }: Props)
   }
 
   return (
-    <AppDialog open={open} onClose={handleClose} title="Add a Server"
-      description="Enter a name and the server address to connect.">
-      <Input placeholder="Server name..." size="$4" value={serverName}
-        onChangeText={setServerName} autoFocus />
+    <AppDialog
+      open={open}
+      onClose={handleClose}
+      title="Add a Server"
+      description="Enter a name and the server address to connect."
+    >
+      <Input
+        placeholder="Server name..."
+        size="$4"
+        value={serverName}
+        onChangeText={setServerName}
+        autoFocus
+      />
       <Input
         placeholder="Address (e.g. chat.example.com or 192.168.1.10:4000)"
-        size="$4" value={serverUrl}
-        onChangeText={(v) => { setServerUrl(v); setError('') }}
+        size="$4"
+        value={serverUrl}
+        onChangeText={(v) => {
+          setServerUrl(v)
+          setError('')
+        }}
         onSubmitEditing={handleAdd}
-        autoCapitalize="none" autoCorrect={false}
+        autoCapitalize="none"
+        autoCorrect={false}
       />
-      {error ? <Text color="$red10" fontSize="$2">{error}</Text> : null}
+      {error ? (
+        <Text color="$red10" fontSize="$2">
+          {error}
+        </Text>
+      ) : null}
       <XStack gap="$3" justifyContent="flex-end">
         <AppDialog.Cancel onPress={handleClose} />
-        <Button size="$4" theme="active"
+        <Button
+          size="$4"
+          theme="active"
           disabled={!serverName.trim() || !serverUrl.trim() || loading}
           onPress={handleAdd}
-          icon={loading ? <Spinner /> : undefined}>
+          icon={loading ? <Spinner /> : undefined}
+        >
           Add Server
         </Button>
       </XStack>

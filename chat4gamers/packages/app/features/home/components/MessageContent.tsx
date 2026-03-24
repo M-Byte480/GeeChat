@@ -13,9 +13,10 @@ type Props = {
 
 export function MessageContent({ content, onLinkPress, onImagePress }: Props) {
   const parts = content.split(URL_PATTERN)
-  const mediaUrls = parts.filter(p =>
-    (p.startsWith('http://') || p.startsWith('https://')) &&
-    (IMAGE_EXT.test(p) || VIDEO_EXT.test(p))
+  const mediaUrls = parts.filter(
+    (p) =>
+      (p.startsWith('http://') || p.startsWith('https://')) &&
+      (IMAGE_EXT.test(p) || VIDEO_EXT.test(p))
   )
 
   // Native HTML elements — safe in web/Electron, cast to avoid TS errors in RN types
@@ -38,7 +39,9 @@ export function MessageContent({ content, onLinkPress, onImagePress }: Props) {
               {part}
             </Text>
           ) : (
-            <Text key={i} fontSize="$3">{part}</Text>
+            <Text key={i} fontSize="$3">
+              {part}
+            </Text>
           )
         )}
       </Paragraph>
@@ -54,7 +57,14 @@ export function MessageContent({ content, onLinkPress, onImagePress }: Props) {
           <Img
             key={i}
             src={`${API_BASE}/proxy-image?url=${encodeURIComponent(url)}`}
-            style={{ maxWidth: '100%', maxHeight: 300, borderRadius: 8, marginTop: 4, objectFit: 'contain', cursor: 'zoom-in' }}
+            style={{
+              maxWidth: '100%',
+              maxHeight: 300,
+              borderRadius: 8,
+              marginTop: 4,
+              objectFit: 'contain',
+              cursor: 'zoom-in',
+            }}
             onClick={() => onImagePress(url)}
           />
         )

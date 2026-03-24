@@ -13,8 +13,8 @@ function fromBase64url(str: string): Uint8Array {
   const padded = str
     .replace(/-/g, '+')
     .replace(/_/g, '/')
-    .padEnd(str.length + (4 - (str.length % 4)) % 4, '=')
-  return Uint8Array.from(atob(padded), c => c.charCodeAt(0))
+    .padEnd(str.length + ((4 - (str.length % 4)) % 4), '=')
+  return Uint8Array.from(atob(padded), (c) => c.charCodeAt(0))
 }
 
 function toBase64(bytes: Uint8Array): string {
@@ -22,7 +22,7 @@ function toBase64(bytes: Uint8Array): string {
 }
 
 function fromBase64(str: string): Uint8Array {
-  return Uint8Array.from(atob(str), c => c.charCodeAt(0))
+  return Uint8Array.from(atob(str), (c) => c.charCodeAt(0))
 }
 
 // ── Key derivation ────────────────────────────────────────────────────────────
@@ -34,14 +34,14 @@ async function deriveAesKey(passphrase: string, salt: Uint8Array): Promise<Crypt
     enc.encode(passphrase),
     'PBKDF2',
     false,
-    ['deriveKey'],
+    ['deriveKey']
   )
   return crypto.subtle.deriveKey(
     { name: 'PBKDF2', salt, iterations: 310_000, hash: 'SHA-256' },
     keyMaterial,
     { name: 'AES-GCM', length: 256 },
     false,
-    ['encrypt', 'decrypt'],
+    ['encrypt', 'decrypt']
   )
 }
 
@@ -50,14 +50,13 @@ async function deriveAesKey(passphrase: string, salt: Uint8Array): Promise<Crypt
 export async function generateIdentity(
   username: string,
   pfp: string | undefined,
-  passphrase: string,
+  passphrase: string
 ): Promise<{ file: IdentityFile; identity: Identity }> {
   // Generate Ed25519 key pair
-  const keyPair = await crypto.subtle.generateKey(
-    { name: 'Ed25519' } as any,
-    true,
-    ['sign', 'verify'],
-  )
+  const keyPair = await crypto.subtle.generateKey({ name: 'Ed25519' } as any, true, [
+    'sign',
+    'verify',
+  ])
 
   // Export public key as raw bytes (32 bytes)
   const publicKeyRaw = await crypto.subtle.exportKey('raw', keyPair.publicKey)
@@ -73,11 +72,7 @@ export async function generateIdentity(
   const aesKey = await deriveAesKey(passphrase, salt)
 
   // Encrypt PKCS8 private key
-  const encryptedBuf = await crypto.subtle.encrypt(
-    { name: 'AES-GCM', iv },
-    aesKey,
-    privateKeyBytes,
-  )
+  const encryptedBuf = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, aesKey, privateKeyBytes)
 
   const file: IdentityFile = {
     version: 1,
@@ -110,11 +105,7 @@ export async function decryptIdentity(file: IdentityFile, passphrase: string): P
 
   let decryptedBuf: ArrayBuffer
   try {
-    decryptedBuf = await crypto.subtle.decrypt(
-      { name: 'AES-GCM', iv },
-      aesKey,
-      encryptedPrivateKey,
-    )
+    decryptedBuf = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, aesKey, encryptedPrivateKey)
   } catch {
     throw new Error('Wrong passphrase or corrupted identity file')
   }
@@ -133,41 +124,37 @@ export async function signMessage(
   privateKeyBytes: Uint8Array,
   content: string,
   channelId: string,
-  timestamp: string,
+  timestamp: string
 ): Promise<string> {
   const privateKey = await crypto.subtle.importKey(
     'pkcs8',
     privateKeyBytes,
     { name: 'Ed25519' } as any,
     false,
-    ['sign'],
+    ['sign']
   )
 
   const payload = new TextEncoder().encode(`${channelId}:${timestamp}:${content}`)
-  const signatureBuf = await crypto.subtle.sign(
-    { name: 'Ed25519' } as any,
-    privateKey,
-    payload,
-  )
+  const signatureBuf = await crypto.subtle.sign({ name: 'Ed25519' } as any, privateKey, payload)
 
   return toBase64url(new Uint8Array(signatureBuf))
 }
 
 export async function signChallenge(
   privateKeyBytes: Uint8Array,
-  challenge: string,
+  challenge: string
 ): Promise<string> {
   const privateKey = await crypto.subtle.importKey(
     'pkcs8',
     privateKeyBytes,
     { name: 'Ed25519' } as any,
     false,
-    ['sign'],
+    ['sign']
   )
   const signatureBuf = await crypto.subtle.sign(
     { name: 'Ed25519' } as any,
     privateKey,
-    new TextEncoder().encode(challenge),
+    new TextEncoder().encode(challenge)
   )
   return toBase64url(new Uint8Array(signatureBuf))
 }
@@ -190,7 +177,7 @@ export function serializeForStorage(identity: Identity): string {
 /** Deserialize a StoredIdentity JSON string back to an Identity */
 export function deserializeFromStorage(json: string): Identity {
   const stored = JSON.parse(json)
-  const privateKeyBytes = Uint8Array.from(atob(stored.privateKeyB64), c => c.charCodeAt(0))
+  const privateKeyBytes = Uint8Array.from(atob(stored.privateKeyB64), (c) => c.charCodeAt(0))
   return {
     publicKey: stored.publicKey,
     username: stored.username,

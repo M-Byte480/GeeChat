@@ -1,8 +1,7 @@
-import { Avatar, Text, XStack, YStack, Separator } from '@my/ui'
 import { PopoverMenu } from './PopoverMenu'
 import type { UserProfile } from '../hooks/useUser'
 import type { ReactNode } from 'react'
-import {StatusChip} from "app/features/home/components/StatusChip";
+import { StatusChip } from 'app/features/home/components/StatusChip'
 
 interface Props {
   user: UserProfile
@@ -33,7 +32,6 @@ export function ViewUserPopover({ user, trigger }: Props) {
           </div>
         </div>
 
-
         {/* Name */}
         <div style={{ marginTop: 8, marginBottom: 12 }}>
           <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--color)' }}>
@@ -46,36 +44,64 @@ export function ViewUserPopover({ user, trigger }: Props) {
           )}
         </div>
 
-        <hr style={{ border: 'none', borderTop: '1px solid var(--borderColor)', margin: '0 0 12px' }} />
+        <hr
+          style={{ border: 'none', borderTop: '1px solid var(--borderColor)', margin: '0 0 12px' }}
+        />
 
         {/* Role */}
         <div style={{ marginBottom: 12 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--color9)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>
+          <div
+            style={{
+              fontSize: 11,
+              fontWeight: 700,
+              color: 'var(--color9)',
+              textTransform: 'uppercase',
+              letterSpacing: 1,
+              marginBottom: 6,
+            }}
+          >
             Role
           </div>
-          <div style={{
-            display: 'inline-block',
-            background: 'var(--color4)',
-            borderRadius: 4,
-            padding: '2px 8px',
-            fontSize: 12,
-            fontWeight: 600,
-            color: 'var(--color)',
-          }}>
+          <div
+            style={{
+              display: 'inline-block',
+              background: 'var(--color4)',
+              borderRadius: 4,
+              padding: '2px 8px',
+              fontSize: 12,
+              fontWeight: 600,
+              color: 'var(--color)',
+            }}
+          >
             {user.role}
           </div>
         </div>
 
-        <hr style={{ border: 'none', borderTop: '1px solid var(--borderColor)', margin: '0 0 12px' }} />
+        <hr
+          style={{ border: 'none', borderTop: '1px solid var(--borderColor)', margin: '0 0 12px' }}
+        />
 
         {/* Member since */}
         <div style={{ marginBottom: 16 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--color9)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>
+          <div
+            style={{
+              fontSize: 11,
+              fontWeight: 700,
+              color: 'var(--color9)',
+              textTransform: 'uppercase',
+              letterSpacing: 1,
+              marginBottom: 4,
+            }}
+          >
             Member Since
           </div>
           <div style={{ fontSize: 13, color: 'var(--color)' }}>
             {user.joinedAt
-              ? new Date(user.joinedAt).toLocaleDateString([], { year: 'numeric', month: 'long', day: 'numeric' })
+              ? new Date(user.joinedAt).toLocaleDateString([], {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                })
               : 'Unknown'}
           </div>
         </div>

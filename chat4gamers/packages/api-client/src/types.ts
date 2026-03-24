@@ -1,7 +1,7 @@
 export interface User {
-  publicKey: string;
-  username: string;
-  status: 'pending' | 'member' | 'banned';
+  publicKey: string
+  username: string
+  status: 'pending' | 'member' | 'banned'
 }
 
 export interface ClientConfig {
@@ -12,4 +12,4 @@ export interface ClientConfig {
   onSessionExpired: (baseUrl: string) => void
 }
 
-export type SignChallengeFn = (challenge: string) => Promise<string>;
+export type SignChallengeFn = (challenge: string) => Promise<string>

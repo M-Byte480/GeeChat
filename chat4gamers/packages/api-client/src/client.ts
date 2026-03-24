@@ -1,37 +1,36 @@
-import {authenticate, getConfig, refreshSession} from './challenge';
+import { authenticate, getConfig, refreshSession } from './challenge'
 
-let sessionToken: string | null = null;
-let isRefreshing = false;
+let sessionToken: string | null = null
+const isRefreshing = false
 let pendingQueue: Array<{
-  resolve: (token: string) => void;
-  reject: (err: Error) => void;
-}> = [];
+  resolve: (token: string) => void
+  reject: (err: Error) => void
+}> = []
 const refreshingServers = new Map<string, Promise<string>>()
 
-
-type SessionExpiredCallback = () => void;
-let _onSessionExpired: SessionExpiredCallback = () => {};
+type SessionExpiredCallback = () => void
+let _onSessionExpired: SessionExpiredCallback = () => {}
 
 export function setSessionToken(token: string) {
-  sessionToken = token;
+  sessionToken = token
 }
 
 export function clearSessionToken() {
-  sessionToken = null;
+  sessionToken = null
 }
 
 export function onSessionExpired(cb: SessionExpiredCallback) {
-  _onSessionExpired = cb;
+  _onSessionExpired = cb
 }
 
 function drainQueue(token: string) {
-  pendingQueue.forEach(p => p.resolve(token));
-  pendingQueue = [];
+  pendingQueue.forEach((p) => p.resolve(token))
+  pendingQueue = []
 }
 
 function rejectQueue(err: Error) {
-  pendingQueue.forEach(p => p.reject(err));
-  pendingQueue = [];
+  pendingQueue.forEach((p) => p.reject(err))
+  pendingQueue = []
 }
 
 export async function apiFetch(

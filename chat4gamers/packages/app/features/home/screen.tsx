@@ -2,7 +2,7 @@
 
 import { XStack, YStack, Sheet, Button } from '@my/ui'
 import { Menu } from '@tamagui/lucide-icons'
-import {useState, useEffect, useCallback, memo, Profiler} from 'react'
+import { useState, useEffect, useCallback, memo, Profiler } from 'react'
 import { Sidebar } from './Sidebar'
 import { ChatArea } from './chat/ChatArea'
 import { IdentityGate } from './identity'
@@ -22,15 +22,14 @@ import { useAppStore } from 'app/features/home/hooks/useAppStore'
 import { UserPromptDialog } from 'app/features/home/components/UserPromptDialog'
 import { OverlayManager } from 'app/features/home/managers/OverlayManager'
 import { useChannelsController } from 'app/features/home/hooks/useChannelsController'
-import {Channel, ChannelType} from 'app/features/home/types/types'
-import {useIdentity} from "app/features/home/identity/IdentityContext";
-import {useWhyDidYouRender} from "app/features/home/hooks/useWhyDidYouRender";
+import { Channel, ChannelType } from 'app/features/home/types/types'
+import { useIdentity } from 'app/features/home/identity/IdentityContext'
+import { useWhyDidYouRender } from 'app/features/home/hooks/useWhyDidYouRender'
 
 const EMPTY_CHANNELS: Channel[] = []
 const EMPTY_VOICE_PARTICIPANTS: Record<string, string[]> = {}
 
 export function HomeScreen() {
-
   return (
     <IdentityGate>
       <HomeScreenInner />
@@ -43,12 +42,14 @@ export function onRender(id, phase, actualDuration, baseDuration, startTime, com
 }
 
 const HomeScreenInner = memo(function HomeScreenInner() {
-  const {identity, changeUsername, changePfp, servers, addServer, deleteServer} = useIdentity()
+  const { identity, changeUsername, changePfp, servers, addServer, deleteServer } = useIdentity()
 
   const activeServerUrl = useAppStore((s) => s.activeServerUrl)
   const setActiveServerUrl = useAppStore((s) => s.setActiveServerUrl)
   const channels = useAppStore((s) => s.cache[activeServerUrl ?? '']?.channels ?? EMPTY_CHANNELS)
-  const voiceParticipants = useAppStore((s) => s.cache[activeServerUrl ?? '']?.voiceParticipants ?? EMPTY_VOICE_PARTICIPANTS)
+  const voiceParticipants = useAppStore(
+    (s) => s.cache[activeServerUrl ?? '']?.voiceParticipants ?? EMPTY_VOICE_PARTICIPANTS
+  )
 
   const {
     activeChannel,
@@ -79,12 +80,11 @@ const HomeScreenInner = memo(function HomeScreenInner() {
     setShowCreateChannel(true)
   }, [])
 
-
   useEffect(() => {
-    (window as any).electronAPI?.getVersion().then((v: string) => setAppVersion(v))
+    ;(window as any).electronAPI?.getVersion().then((v: string) => setAppVersion(v))
   }, [])
 
-  const activeServer = servers.find(s => s.url === activeServerUrl) ?? null
+  const activeServer = servers.find((s) => s.url === activeServerUrl) ?? null
 
   const sidebarProps = {
     channels,
@@ -105,8 +105,7 @@ const HomeScreenInner = memo(function HomeScreenInner() {
   })
 
   return (
-    <YStack height="100vh" bg="$background" position="relative" userSelect="none" >
-
+    <YStack height="100vh" bg="$background" position="relative" userSelect="none">
       <TopScreenStatusBar
         setUsernameInput={setUsernameInput}
         setShowEditUsername={setShowEditUsername}
@@ -114,7 +113,7 @@ const HomeScreenInner = memo(function HomeScreenInner() {
         identity={identity}
       />
 
-      <NotificationBanner/>
+      <NotificationBanner />
 
       <XStack flex={1} bg="$background">
         <ServerPane
@@ -127,13 +126,17 @@ const HomeScreenInner = memo(function HomeScreenInner() {
             setActiveServerUrl(null)
             if (channels.length > 0) handleChannelSelect(channels[0])
           }}
-          identity={{publicKey: identity.publicKey, username: identity.username, pfp: identity.pfp}}
+          identity={{
+            publicKey: identity.publicKey,
+            username: identity.username,
+            pfp: identity.pfp,
+          }}
           serverContextOptions={(server) => [
             {
-              label: 'Mark as Read', onPress: () => {
-              }
+              label: 'Mark as Read',
+              onPress: () => {},
             },
-            {label: 'Copy URL', onPress: () => navigator.clipboard.writeText(server.url)},
+            { label: 'Copy URL', onPress: () => navigator.clipboard.writeText(server.url) },
             {
               label: 'Leave Server',
               onPress: async () => {
@@ -142,8 +145,8 @@ const HomeScreenInner = memo(function HomeScreenInner() {
 
                   const res = await fetch(`${server.url}/leave`, {
                     method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({publicKey: identity.publicKey}),
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ publicKey: identity.publicKey }),
                   })
                   const data = await res.json()
                   if (!res.ok) {
@@ -177,10 +180,10 @@ const HomeScreenInner = memo(function HomeScreenInner() {
             // {
             //   visitedServer.map(id => (
             <Sidebar width={250} activeServer={activeServer} {...sidebarProps} />
+          ) : (
             //   ))
             // }
-          ) : (
-            <DirectMessagesComponent/>
+            <DirectMessagesComponent />
           )}
         </YStack>
 
@@ -190,26 +193,36 @@ const HomeScreenInner = memo(function HomeScreenInner() {
             <ChannelBanner
               activeChannel={activeChannel}
               showMemberPane={showMemberPane}
-              onToggleMemberPane={() => setShowMemberPane(p => !p)}
+              onToggleMemberPane={() => setShowMemberPane((p) => !p)}
             />
           ) : (
             <DirectMessagesBanner
               showMemberPane={showMemberPane}
-              onToggleMemberPane={() => setShowMemberPane(p => !p)}
+              onToggleMemberPane={() => setShowMemberPane((p) => !p)}
             />
           )}
 
-          <XStack p="$4" $sm={{display: 'none'}} borderBottomWidth={1} borderColor="$borderColor" width="100%"
-                  jc="center">
-            <Button icon={Menu} onPress={() => setShowMobileMenu(true)}/>
+          <XStack
+            p="$4"
+            $sm={{ display: 'none' }}
+            borderBottomWidth={1}
+            borderColor="$borderColor"
+            width="100%"
+            jc="center"
+          >
+            <Button icon={Menu} onPress={() => setShowMobileMenu(true)} />
           </XStack>
 
           <XStack flex={1} bg="$background" gap="$2">
             {!activeServer ? (
-              <DirectMessagePage/>
+              <DirectMessagePage />
             ) : activeChannel.type === 'text' ? (
               <Profiler id="ChatArea" onRender={onRender}>
-                <ChatArea channelId={activeChannel.id} serverUrl={activeServer.url} members={serverMembers}/>
+                <ChatArea
+                  channelId={activeChannel.id}
+                  serverUrl={activeServer.url}
+                  members={serverMembers}
+                />
               </Profiler>
             ) : (
               <Profiler id="VoiceChannelView" onRender={onRender}>
@@ -219,11 +232,13 @@ const HomeScreenInner = memo(function HomeScreenInner() {
                 />
               </Profiler>
             )}
-            {activeServer && showMemberPane && <MemberPane
+            {activeServer && showMemberPane && (
+              <MemberPane
                 members={serverMembers}
                 serverUrl={activeServer.url}
                 identity={identity}
-            />}
+              />
+            )}
           </XStack>
         </YStack>
 
@@ -245,32 +260,28 @@ const HomeScreenInner = memo(function HomeScreenInner() {
         {/*  </Sheet.Frame>*/}
         {/*  <Sheet.Overlay/>*/}
         {/*</Sheet>*/}
-
       </XStack>
 
       <Profiler id="OverlayManager" onRender={onRender}>
-
-      <OverlayManager
-        serverUrl={activeServerUrl}
-        changeUsername={changeUsername}
-        identity={identity}
-        showEditUsername={showEditUsername}
-        setShowEditUsername={setShowEditUsername}
-        usernameInput={usernameInput}
-        setUsernameInput={setUsernameInput}
-        showSettings={showSettings}
-        setShowSettings={setShowSettings}
-        showCreateChannel={showCreateChannel}
-        setShowCreateChannel={setShowCreateChannel}
-        createChannelType={createChannelType}
-        newChannelName={newChannelName}
-        setNewChannelName={setNewChannelName}
-        appVersion={appVersion}
-        changePfp={changePfp}
-      />
+        <OverlayManager
+          serverUrl={activeServerUrl}
+          changeUsername={changeUsername}
+          identity={identity}
+          showEditUsername={showEditUsername}
+          setShowEditUsername={setShowEditUsername}
+          usernameInput={usernameInput}
+          setUsernameInput={setUsernameInput}
+          showSettings={showSettings}
+          setShowSettings={setShowSettings}
+          showCreateChannel={showCreateChannel}
+          setShowCreateChannel={setShowCreateChannel}
+          createChannelType={createChannelType}
+          newChannelName={newChannelName}
+          setNewChannelName={setNewChannelName}
+          appVersion={appVersion}
+          changePfp={changePfp}
+        />
       </Profiler>
-
     </YStack>
   )
 })
-

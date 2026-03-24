@@ -17,11 +17,21 @@ type Props = {
 
 export function ExternalLinkDialog({ url, onClose }: Props) {
   return (
-    <Sheet open={!!url} onOpenChange={(open) => { if (!open) onClose() }} modal dismissOnSnapToBottom snapPoints={[32]}>
+    <Sheet
+      open={!!url}
+      onOpenChange={(open) => {
+        if (!open) onClose()
+      }}
+      modal
+      dismissOnSnapToBottom
+      snapPoints={[32]}
+    >
       <Sheet.Frame p="$5" gap="$4">
         <XStack gap="$2" alignItems="center">
           <ExternalLink size={18} color="$color10" />
-          <Text fontWeight="700" fontSize="$5">Open external link?</Text>
+          <Text fontWeight="700" fontSize="$5">
+            Open external link?
+          </Text>
         </XStack>
         <Text
           fontSize="$3"
@@ -33,12 +43,17 @@ export function ExternalLinkDialog({ url, onClose }: Props) {
           {url}
         </Text>
         <XStack gap="$3">
-          <Button flex={1} size="$4" onPress={onClose}>Cancel</Button>
+          <Button flex={1} size="$4" onPress={onClose}>
+            Cancel
+          </Button>
           <Button
             flex={1}
             size="$4"
             theme="active"
-            onPress={() => { openExternal(url!); onClose() }}
+            onPress={() => {
+              openExternal(url!)
+              onClose()
+            }}
           >
             Open
           </Button>

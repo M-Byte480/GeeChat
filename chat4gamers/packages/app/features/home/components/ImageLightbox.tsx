@@ -9,7 +9,15 @@ type Props = {
 
 export function ImageLightbox({ url, onClose }: Props) {
   return (
-    <Sheet open={!!url} onOpenChange={(open) => { if (!open) onClose() }} modal dismissOnSnapToBottom snapPoints={[92]}>
+    <Sheet
+      open={!!url}
+      onOpenChange={(open) => {
+        if (!open) onClose()
+      }}
+      modal
+      dismissOnSnapToBottom
+      snapPoints={[92]}
+    >
       <Sheet.Frame padding={0}>
         <XStack px="$3" pt="$3" justifyContent="flex-end">
           <Button size="$2" chromeless icon={X} onPress={onClose} />

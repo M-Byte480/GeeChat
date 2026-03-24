@@ -29,13 +29,16 @@ router.post('/relay/dm', async (c) => {
       return c.json({ error: 'Invalid signature' }, 401)
     }
 
-    const [dm] = await db.insert(directMessages).values({
-      senderId,
-      recipientId,
-      content,
-      timestamp: new Date(timestamp),
-      signature,
-    }).returning()
+    const [dm] = await db
+      .insert(directMessages)
+      .values({
+        senderId,
+        recipientId,
+        content,
+        timestamp: new Date(timestamp),
+        signature,
+      })
+      .returning()
 
     const envelope = JSON.stringify({ type: 'DIRECT_MESSAGE', ...dm })
     sendToUser(recipientId, envelope)
@@ -60,7 +63,7 @@ router.get('/relay/dm-history', async (c) => {
       .where(
         or(
           and(eq(directMessages.senderId, me), eq(directMessages.recipientId, other)),
-          and(eq(directMessages.senderId, other), eq(directMessages.recipientId, me)),
+          and(eq(directMessages.senderId, other), eq(directMessages.recipientId, me))
         )
       )
       .orderBy(desc(directMessages.timestamp))

@@ -6,8 +6,8 @@ import type { Server } from 'app/features/home/identity/types'
 import { ServerBanner } from 'app/features/home/channel/ServerBanner'
 import { ChannelList } from 'app/features/home/channel/ChannelList'
 import { JoinRequestsSheet } from 'app/features/home/sheets/JoinRequestsSheet'
-import {Channel, ChannelType} from "app/features/home/types/types";
-import {useWhyDidYouRender} from "app/features/home/hooks/useWhyDidYouRender";
+import { Channel, ChannelType } from 'app/features/home/types/types'
+import { useWhyDidYouRender } from 'app/features/home/hooks/useWhyDidYouRender'
 
 type Props = {
   width?: number | string

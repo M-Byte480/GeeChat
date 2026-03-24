@@ -1,39 +1,39 @@
-import { Hono } from 'hono';
-import { db } from '../db/index.js';
-import { messages } from '../db/schema.js';
-import {desc, eq} from "drizzle-orm";
-import {requireAuth} from "../lib/middleware.js";
+import { Hono } from 'hono'
+import { db } from '../db/index.js'
+import { messages } from '../db/schema.js'
+import { desc, eq } from 'drizzle-orm'
+import { requireAuth } from '../lib/middleware.js'
 
-const chat = new Hono();
+const chat = new Hono()
 
-chat.get('/history/:roomId',
-  requireAuth,
-  async (c) => {
-  const roomId = c.req.param('roomId');
+chat.get('/history/:roomId', requireAuth, async (c) => {
+  const roomId = c.req.param('roomId')
 
-  const history = await db.select()
+  const history = await db
+    .select()
     .from(messages)
     .where(eq(messages.channelId, roomId))
     .orderBy(desc(messages.timestamp))
-    .limit(50); // Only get last 50
+    .limit(50) // Only get last 50
 
-  return c.json(history.reverse()); // Reverse so they are in chronological order
-});
+  return c.json(history.reverse()) // Reverse so they are in chronological order
+})
 
-chat.post('/send',
-  requireAuth,
-  async (c) => {
-  const { content, roomId, userId, signature = '' } = await c.req.json();
+chat.post('/send', requireAuth, async (c) => {
+  const { content, roomId, userId, signature = '' } = await c.req.json()
 
-  const result = await db.insert(messages).values({
-    channelId: roomId,
-    senderId: userId,
-    content,
-    timestamp: new Date(),
-    signature,
-  }).returning();
+  const result = await db
+    .insert(messages)
+    .values({
+      channelId: roomId,
+      senderId: userId,
+      content,
+      timestamp: new Date(),
+      signature,
+    })
+    .returning()
 
-  return c.json(result[0]);
-});
+  return c.json(result[0])
+})
 
-export default chat;
+export default chat

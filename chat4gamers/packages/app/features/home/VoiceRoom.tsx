@@ -54,15 +54,15 @@ async function buildProcessedAudio(): Promise<ProcessedAudio> {
   const processAudioFrame: ((input: Float32Array) => number[]) | null =
     (window as any).electronAPI?.processAudioFrame ?? null
 
-  const BLOCK     = 512  // ScriptProcessorNode buffer size (power-of-2 closest to 480)
-  const FRAME     = 480  // RNNoise frame size
-  const inRing    = new Float32Array(BLOCK + FRAME) // 992 samples — fits max inFill
-  const outRing   = new Float32Array(BLOCK + FRAME) // 992 samples — fits max outLen
-  let   inFill    = 0
-  let   outLen    = FRAME // pre-buffer 1 silent frame so queue never drains cold
-  let   denoiseEnabled = !!processAudioFrame   // mutable flag — toggled at runtime
+  const BLOCK = 512 // ScriptProcessorNode buffer size (power-of-2 closest to 480)
+  const FRAME = 480 // RNNoise frame size
+  const inRing = new Float32Array(BLOCK + FRAME) // 992 samples — fits max inFill
+  const outRing = new Float32Array(BLOCK + FRAME) // 992 samples — fits max outLen
+  let inFill = 0
+  let outLen = FRAME // pre-buffer 1 silent frame so queue never drains cold
+  let denoiseEnabled = !!processAudioFrame // mutable flag — toggled at runtime
 
-  // eslint-disable-next-line @typescript-eslint/no-deprecated
+   
   const scriptNode = ctx.createScriptProcessor(BLOCK, 1, 1)
 
   scriptNode.onaudioprocess = (e: AudioProcessingEvent) => {
@@ -101,7 +101,7 @@ async function buildProcessedAudio(): Promise<ProcessedAudio> {
   }
 
   const source = ctx.createMediaStreamSource(rawStream)
-  const dest   = ctx.createMediaStreamDestination()
+  const dest = ctx.createMediaStreamDestination()
 
   source.connect(scriptNode)
   scriptNode.connect(dest)
@@ -112,8 +112,12 @@ async function buildProcessedAudio(): Promise<ProcessedAudio> {
   monitorGain.gain.value = 0.5
   monitorGain.connect(ctx.destination)
 
-  const enableMonitor  = () => scriptNode.connect(monitorGain)
-  const disableMonitor = () => { try { scriptNode.disconnect(monitorGain) } catch {} }
+  const enableMonitor = () => scriptNode.connect(monitorGain)
+  const disableMonitor = () => {
+    try {
+      scriptNode.disconnect(monitorGain)
+    } catch {}
+  }
 
   const processedTrack = dest.stream.getAudioTracks()[0]!
 
@@ -121,11 +125,13 @@ async function buildProcessedAudio(): Promise<ProcessedAudio> {
     disableMonitor()
     source.disconnect()
     scriptNode.disconnect()
-    rawStream.getTracks().forEach(t => t.stop())
+    rawStream.getTracks().forEach((t) => t.stop())
     ctx.close()
   }
 
-  const setDenoise = (enabled: boolean) => { denoiseEnabled = enabled }
+  const setDenoise = (enabled: boolean) => {
+    denoiseEnabled = enabled
+  }
 
   return {
     track: processedTrack,
@@ -137,17 +143,23 @@ async function buildProcessedAudio(): Promise<ProcessedAudio> {
   }
 }
 
-export const VoiceRoom = ({ channelId, nickname, serverUrl, onParticipantsChange, onDisconnect }: Props) => {
+export const VoiceRoom = ({
+  channelId,
+  nickname,
+  serverUrl,
+  onParticipantsChange,
+  onDisconnect,
+}: Props) => {
   const livekitWs = serverUrl.replace(/^https:\/\//, 'wss://').replace(/^http:\/\//, 'ws://')
-  console.log("Rendered VoiceRoom for channelId:", channelId)
-  const [room, setRoom]               = useState<Room | null>(null)
-  const [isJoined, setIsJoined]       = useState(false)
+  console.log('Rendered VoiceRoom for channelId:', channelId)
+  const [room, setRoom] = useState<Room | null>(null)
+  const [isJoined, setIsJoined] = useState(false)
   const [isMicEnabled, setIsMicEnabled] = useState(true)
-  const [isDeafened, setIsDeafened]   = useState(false)
-  const [testMic, setTestMic]           = useState(false)
-  const [denoiseOn, setDenoiseOn]       = useState(true)
+  const [isDeafened, setIsDeafened] = useState(false)
+  const [testMic, setTestMic] = useState(false)
+  const [denoiseOn, setDenoiseOn] = useState(true)
   const [nativeAvailable, setNativeAvailable] = useState(false)
-  const audioRef                        = useRef<ProcessedAudio | null>(null)
+  const audioRef = useRef<ProcessedAudio | null>(null)
 
   const broadcastToServer = (ch: string, participants: string[]) => {
     apiFetch(`${serverUrl}`, `/voice-state`, {
@@ -161,7 +173,7 @@ export const VoiceRoom = ({ channelId, nickname, serverUrl, onParticipantsChange
     if (!room) return
     const getParticipants = () => [
       nickname,
-      ...Array.from(room.remoteParticipants.values()).map(p => p.identity),
+      ...Array.from(room.remoteParticipants.values()).map((p) => p.identity),
     ]
     const onParticipantEvent = () => {
       const participants = getParticipants()
@@ -174,13 +186,15 @@ export const VoiceRoom = ({ channelId, nickname, serverUrl, onParticipantsChange
       if (track.kind === Track.Kind.Audio) {
         const el = track.attach()
         document.body.appendChild(el)
-        el.play().catch(err => console.warn('Autoplay blocked:', err))
+        el.play().catch((err) => console.warn('Autoplay blocked:', err))
       }
     })
     room.on(RoomEvent.TrackUnsubscribed, (track) => {
-      track.detach().forEach(el => el.remove())
+      track.detach().forEach((el) => el.remove())
     })
-    return () => { room.removeAllListeners() }
+    return () => {
+      room.removeAllListeners()
+    }
   }, [room, channelId, nickname, onParticipantsChange])
 
   useEffect(() => {
@@ -196,12 +210,13 @@ export const VoiceRoom = ({ channelId, nickname, serverUrl, onParticipantsChange
   const joinRoom = async () => {
     try {
       const resp = await apiFetch(
-        `${serverUrl}`,`/get-voice-token?room=${channelId}&identity=${encodeURIComponent(nickname)}`
+        `${serverUrl}`,
+        `/get-voice-token?room=${channelId}&identity=${encodeURIComponent(nickname)}`
       )
 
       if (!resp.ok) {
         console.error(`Voice token fetch failed: ${resp.status}`)
-        return  // stop here, don't proceed to buildProcessedAudio or connect
+        return // stop here, don't proceed to buildProcessedAudio or connect
       }
 
       const { token } = await resp.json()
@@ -221,10 +236,10 @@ export const VoiceRoom = ({ channelId, nickname, serverUrl, onParticipantsChange
         reconnectPolicy: {
           nextRetryDelayInMs: (context) => {
             // Stop retrying after 2 attempts
-            if (context.retryCount >= 2) return null  // null = stop retrying
+            if (context.retryCount >= 2) return null // null = stop retrying
             return 1000 * context.retryCount
-          }
-        }
+          },
+        },
       })
 
       newRoom.on(RoomEvent.Disconnected, (reason) => {
@@ -243,10 +258,8 @@ export const VoiceRoom = ({ channelId, nickname, serverUrl, onParticipantsChange
         audioPreset: { maxBitrate: 48000 },
       })
 
-
-
-      newRoom.remoteParticipants.forEach(participant => {
-        participant.trackPublications.forEach(pub => {
+      newRoom.remoteParticipants.forEach((participant) => {
+        participant.trackPublications.forEach((pub) => {
           if (pub.track && pub.kind === Track.Kind.Audio) {
             const el = pub.track.attach()
             document.body.appendChild(el)
@@ -258,7 +271,7 @@ export const VoiceRoom = ({ channelId, nickname, serverUrl, onParticipantsChange
       setRoom(newRoom)
       setIsJoined(true)
 
-      const remoteIds = Array.from(newRoom.remoteParticipants.values()).map(p => p.identity)
+      const remoteIds = Array.from(newRoom.remoteParticipants.values()).map((p) => p.identity)
       onParticipantsChange(channelId, [nickname, ...remoteIds])
       broadcastToServer(channelId, [nickname, ...remoteIds])
     } catch (err) {
@@ -276,7 +289,7 @@ export const VoiceRoom = ({ channelId, nickname, serverUrl, onParticipantsChange
   const toggleDeafen = () => {
     if (!room) return
     const next = !isDeafened
-    room.remoteParticipants.forEach(p => p.setVolume(next ? 0 : 1))
+    room.remoteParticipants.forEach((p) => p.setVolume(next ? 0 : 1))
     setIsDeafened(next)
   }
 
@@ -326,13 +339,36 @@ export const VoiceRoom = ({ channelId, nickname, serverUrl, onParticipantsChange
           </Button>
         ) : (
           <>
-            <Button size="$3" theme={isMicEnabled ? 'blue' : 'red'} onPress={toggleMic} icon={isMicEnabled ? Mic : MicOff} circular />
-            <Button size="$3" theme={isDeafened ? 'red' : 'blue'} onPress={toggleDeafen} icon={isDeafened ? VolumeX : Volume2} circular />
-            <Button size="$3" chromeless={!testMic} theme={testMic ? 'yellow' : 'gray'} onPress={onMicTest} icon={TestTube}>
+            <Button
+              size="$3"
+              theme={isMicEnabled ? 'blue' : 'red'}
+              onPress={toggleMic}
+              icon={isMicEnabled ? Mic : MicOff}
+              circular
+            />
+            <Button
+              size="$3"
+              theme={isDeafened ? 'red' : 'blue'}
+              onPress={toggleDeafen}
+              icon={isDeafened ? VolumeX : Volume2}
+              circular
+            />
+            <Button
+              size="$3"
+              chromeless={!testMic}
+              theme={testMic ? 'yellow' : 'gray'}
+              onPress={onMicTest}
+              icon={TestTube}
+            >
               {testMic ? 'Hearing Self' : 'Test Mic'}
             </Button>
             {nativeAvailable && (
-              <Button size="$3" theme={denoiseOn ? 'green' : 'gray'} onPress={toggleDenoise} icon={Wand2}>
+              <Button
+                size="$3"
+                theme={denoiseOn ? 'green' : 'gray'}
+                onPress={toggleDenoise}
+                icon={Wand2}
+              >
                 {denoiseOn ? 'RNNoise On' : 'RNNoise Off'}
               </Button>
             )}

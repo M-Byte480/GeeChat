@@ -1,5 +1,5 @@
 import { Button, Text, Tooltip } from '@my/ui'
-import {ContextMenu} from "app/features/home/components/ContextMenu";
+import { ContextMenu } from 'app/features/home/components/ContextMenu'
 
 type ServerButtonProps = {
   server: any

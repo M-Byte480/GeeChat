@@ -7,45 +7,171 @@ const EMOJI_CATEGORIES: { label: string; emojis: string[] }[] = [
   {
     label: 'Smileys',
     emojis: [
-      '😀','😁','😂','🤣','😃','😄','😅','😆','😉','😊',
-      '😋','😎','😍','🥰','😘','😗','😙','😚','🙂','🤗',
-      '🤩','🤔','🤨','😐','😑','😶','🙄','😏','😣','😥',
-      '😮','🤐','😯','😪','😫','😴','😌','😛','😜','😝',
+      '😀',
+      '😁',
+      '😂',
+      '🤣',
+      '😃',
+      '😄',
+      '😅',
+      '😆',
+      '😉',
+      '😊',
+      '😋',
+      '😎',
+      '😍',
+      '🥰',
+      '😘',
+      '😗',
+      '😙',
+      '😚',
+      '🙂',
+      '🤗',
+      '🤩',
+      '🤔',
+      '🤨',
+      '😐',
+      '😑',
+      '😶',
+      '🙄',
+      '😏',
+      '😣',
+      '😥',
+      '😮',
+      '🤐',
+      '😯',
+      '😪',
+      '😫',
+      '😴',
+      '😌',
+      '😛',
+      '😜',
+      '😝',
     ],
   },
   {
     label: 'Gestures',
     emojis: [
-      '👍','👎','👌','✌️','🤞','🤙','👋','🤚','🖐️','✋',
-      '🖖','👏','🙌','🤜','🤛','🤝','🙏','💪','🦾','🫶',
+      '👍',
+      '👎',
+      '👌',
+      '✌️',
+      '🤞',
+      '🤙',
+      '👋',
+      '🤚',
+      '🖐️',
+      '✋',
+      '🖖',
+      '👏',
+      '🙌',
+      '🤜',
+      '🤛',
+      '🤝',
+      '🙏',
+      '💪',
+      '🦾',
+      '🫶',
     ],
   },
   {
     label: 'Hearts',
     emojis: [
-      '❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💔',
-      '❣️','💕','💞','💓','💗','💖','💘','💝','💟','♥️',
+      '❤️',
+      '🧡',
+      '💛',
+      '💚',
+      '💙',
+      '💜',
+      '🖤',
+      '🤍',
+      '🤎',
+      '💔',
+      '❣️',
+      '💕',
+      '💞',
+      '💓',
+      '💗',
+      '💖',
+      '💘',
+      '💝',
+      '💟',
+      '♥️',
     ],
   },
   {
     label: 'Gaming',
     emojis: [
-      '🎮','🕹️','🎯','🏆','🥇','🎖️','🎲','🃏','♟️','🎰',
-      '👾','🤖','💀','☠️','👊','💥','⚔️','🛡️','🔫','💣',
+      '🎮',
+      '🕹️',
+      '🎯',
+      '🏆',
+      '🥇',
+      '🎖️',
+      '🎲',
+      '🃏',
+      '♟️',
+      '🎰',
+      '👾',
+      '🤖',
+      '💀',
+      '☠️',
+      '👊',
+      '💥',
+      '⚔️',
+      '🛡️',
+      '🔫',
+      '💣',
     ],
   },
   {
     label: 'Animals',
     emojis: [
-      '🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯',
-      '🦁','🐮','🐷','🐸','🐵','🙈','🙉','🙊','🐔','🦄',
+      '🐶',
+      '🐱',
+      '🐭',
+      '🐹',
+      '🐰',
+      '🦊',
+      '🐻',
+      '🐼',
+      '🐨',
+      '🐯',
+      '🦁',
+      '🐮',
+      '🐷',
+      '🐸',
+      '🐵',
+      '🙈',
+      '🙉',
+      '🙊',
+      '🐔',
+      '🦄',
     ],
   },
   {
     label: 'Objects',
     emojis: [
-      '🔥','⭐','🌟','✨','💫','🎉','🎊','🎈','🎁','🔔',
-      '💡','🔑','🗝️','💎','💰','📱','💻','🖥️','⌨️','🖱️',
+      '🔥',
+      '⭐',
+      '🌟',
+      '✨',
+      '💫',
+      '🎉',
+      '🎊',
+      '🎈',
+      '🎁',
+      '🔔',
+      '💡',
+      '🔑',
+      '🗝️',
+      '💎',
+      '💰',
+      '📱',
+      '💻',
+      '🖥️',
+      '⌨️',
+      '🖱️',
     ],
   },
 ]
@@ -91,7 +217,9 @@ export const EmojiPicker = memo(({ onSelect }: Props) => {
             borderBottomWidth={1}
             borderBottomColor="$borderColor"
           >
-            <Text fontSize="$2" color="$gray10">Emoji</Text>
+            <Text fontSize="$2" color="$gray10">
+              Emoji
+            </Text>
             <Button size="$2" chromeless icon={X} onPress={() => setOpen(false)} />
           </XStack>
 
@@ -99,13 +227,20 @@ export const EmojiPicker = memo(({ onSelect }: Props) => {
             <YStack padding="$2" gap="$2">
               {EMOJI_CATEGORIES.map((cat) => (
                 <YStack key={cat.label} gap="$1">
-                  <Text fontSize="$1" color="$gray9" paddingLeft="$1">{cat.label}</Text>
+                  <Text fontSize="$1" color="$gray9" paddingLeft="$1">
+                    {cat.label}
+                  </Text>
                   <XStack flexWrap="wrap">
                     {cat.emojis.map((emoji) => (
                       <Pressable
                         key={emoji}
                         onPress={(e) => handleSelect(emoji, e)}
-                        style={{ width: 36, height: 36, alignItems: 'center', justifyContent: 'center' }}
+                        style={{
+                          width: 36,
+                          height: 36,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
                       >
                         <Text fontSize="$5">{emoji}</Text>
                       </Pressable>
@@ -118,12 +253,7 @@ export const EmojiPicker = memo(({ onSelect }: Props) => {
         </YStack>
       )}
 
-      <Button
-        size="$4"
-        icon={Smile}
-        onPress={() => setOpen((v) => !v)}
-        theme="active"
-      />
+      <Button size="$4" icon={Smile} onPress={() => setOpen((v) => !v)} theme="active" />
     </YStack>
   )
 })

@@ -1,4 +1,4 @@
-import { Circle } from "@my/ui";
+import { Circle } from '@my/ui'
 
 export function StatusChip({ status }: { status: string }) {
   const statusColors = {
@@ -7,7 +7,7 @@ export function StatusChip({ status }: { status: string }) {
     away: '$yellow10',
     do_not_disturb: '$red10',
     invisible: 'transparent',
-  };
+  }
 
   return (
     <Circle
@@ -16,5 +16,5 @@ export function StatusChip({ status }: { status: string }) {
       borderWidth={2}
       borderColor="$background" // This creates the "cutout" look against the avatar
     />
-  );
+  )
 }

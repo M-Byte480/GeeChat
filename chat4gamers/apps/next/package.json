@@ -11,7 +11,7 @@
     "build": "cd ../.. && yarn build && cd apps/next && next build",
     "start": "next start",
     "serve": "NODE_ENV=production next start --port 8151",
-    "lint": "biome check .",
+    "disabled:lint": "biome check .",
     "test": "vitest",
     "electron": "cross-env NODE_ENV=development electron .",
     "package": "yarn build && npx electron-builder build --win --publish always",

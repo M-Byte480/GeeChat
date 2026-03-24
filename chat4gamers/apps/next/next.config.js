@@ -11,7 +11,7 @@ const nextConfig = {
     'solito',
     'react-native-web',
     'tamagui', // Make sure tamagui is here
-    '@my/ui',   // Make sure your UI package is here
+    '@my/ui', // Make sure your UI package is here
     '@tamagui/react-native-svg',
     '@tamagui/next-theme',
     '@tamagui/lucide-icons',
@@ -29,8 +29,15 @@ const nextConfig = {
       'react-native-safe-area-context': './shims/react-native-safe-area-context.js',
     },
     resolveExtensions: [
-      '.web.tsx', '.web.ts', '.web.js', '.web.jsx',
-      '.tsx', '.ts', '.js', '.jsx', '.json',
+      '.web.tsx',
+      '.web.ts',
+      '.web.js',
+      '.web.jsx',
+      '.tsx',
+      '.ts',
+      '.js',
+      '.jsx',
+      '.json',
     ],
   },
   webpack: (config) => {
@@ -39,7 +46,10 @@ const nextConfig = {
       'react-native$': 'react-native-web',
     }
     config.resolve.extensions = [
-      '.web.tsx', '.web.ts', '.web.js', '.web.jsx',
+      '.web.tsx',
+      '.web.ts',
+      '.web.js',
+      '.web.jsx',
       ...config.resolve.extensions,
     ]
     return config

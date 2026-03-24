@@ -1,50 +1,46 @@
-import {EditProfileSheet} from "app/features/home/sheets/EditUsernameSheet";
-import {CreateChannelSheet} from "app/features/home/sheets/CreateChannelSheet";
-import {SettingsSheet} from "app/features/home/sheets/SettingsSheet";
-import {useCallback} from "react";
-import { apiFetch } from "@my/api-client";
-import {persist} from "zustand/middleware/persist";
-
+import { EditProfileSheet } from 'app/features/home/sheets/EditUsernameSheet'
+import { CreateChannelSheet } from 'app/features/home/sheets/CreateChannelSheet'
+import { SettingsSheet } from 'app/features/home/sheets/SettingsSheet'
+import { useCallback } from 'react'
+import { apiFetch } from '@my/api-client'
+import { persist } from 'zustand/middleware/persist'
 
 export function OverlayManager({
-                                 serverUrl,
-                                 changeUsername,
-                                 identity,
-                                 showEditUsername,
-                                 setShowEditUsername,
-                                 usernameInput,
-                                 setUsernameInput,
-                                 showSettings,
-                                 setShowSettings,
-                                 showCreateChannel,
-                                 setShowCreateChannel,
-                                 createChannelType,
-                                 newChannelName,
-                                 setNewChannelName,
-                                 appVersion,
-  changePfp
-                               }: any) {
-
-
+  serverUrl,
+  changeUsername,
+  identity,
+  showEditUsername,
+  setShowEditUsername,
+  usernameInput,
+  setUsernameInput,
+  showSettings,
+  setShowSettings,
+  showCreateChannel,
+  setShowCreateChannel,
+  createChannelType,
+  newChannelName,
+  setNewChannelName,
+  appVersion,
+  changePfp,
+}: any) {
   const handleCreateChannel = useCallback(async () => {
-    const name = newChannelName.trim();
-    if (!name || !serverUrl) return;
+    const name = newChannelName.trim()
+    if (!name || !serverUrl) return
     try {
       await apiFetch(`${serverUrl}`, `/channels`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${localStorage.getItem('jwt')}`
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('jwt')}`,
         },
         body: JSON.stringify({ name, type: createChannelType }),
-      });
-      setShowCreateChannel(false);
-      setNewChannelName('');
+      })
+      setShowCreateChannel(false)
+      setNewChannelName('')
     } catch (e) {
-      console.error("Failed to create channel", e);
+      console.error('Failed to create channel', e)
     }
-  }, [newChannelName, createChannelType, serverUrl, setShowCreateChannel, setNewChannelName]);
-
-
+  }, [newChannelName, createChannelType, serverUrl, setShowCreateChannel, setNewChannelName])
 
   return (
     <>

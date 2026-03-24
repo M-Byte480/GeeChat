@@ -24,7 +24,9 @@ export function PopoverMenu({ trigger, children, width = 280 }: Props) {
 
   useEffect(() => {
     if (!pos) return
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') close() }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') close()
+    }
     const timer = setTimeout(() => window.addEventListener('click', close), 0)
     window.addEventListener('keydown', onKey)
     return () => {
@@ -34,26 +36,29 @@ export function PopoverMenu({ trigger, children, width = 280 }: Props) {
     }
   }, [pos, close])
 
-  const menu = pos && typeof document !== 'undefined' && createPortal(
-    <div
-      onClick={e => e.stopPropagation()}
-      style={{
-        position:     'fixed',
-        top:          pos.y,
-        left:         pos.x,
-        zIndex:       9999,
-        width,
-        background:   'var(--color2, #1e1e1e)',
-        border:       '1px solid var(--borderColor, #333)',
-        borderRadius: 8,
-        boxShadow:    '0 4px 20px rgba(0,0,0,0.4)',
-        overflow:     'hidden',
-      }}
-    >
-      {children}
-    </div>,
-    document.body,
-  )
+  const menu =
+    pos &&
+    typeof document !== 'undefined' &&
+    createPortal(
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          position: 'fixed',
+          top: pos.y,
+          left: pos.x,
+          zIndex: 9999,
+          width,
+          background: 'var(--color2, #1e1e1e)',
+          border: '1px solid var(--borderColor, #333)',
+          borderRadius: 8,
+          boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
+          overflow: 'hidden',
+        }}
+      >
+        {children}
+      </div>,
+      document.body
+    )
 
   return (
     <>

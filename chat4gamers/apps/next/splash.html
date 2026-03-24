@@ -1,82 +1,104 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>GeeChat</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GeeChat</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
 
-    body {
-      background: #0a0a0a;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-      color: #fff;
-      overflow: hidden;
-      user-select: none;
-      -webkit-app-region: drag;
-    }
+      body {
+        background: #0a0a0a;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+        color: #fff;
+        overflow: hidden;
+        user-select: none;
+        -webkit-app-region: drag;
+      }
 
-    .logo {
-      font-size: 2.8rem;
-      font-weight: 800;
-      letter-spacing: -0.04em;
-      color: #ffffff;
-      opacity: 0;
-      animation: fadeUp 0.5s ease forwards 0.1s;
-    }
+      .logo {
+        font-size: 2.8rem;
+        font-weight: 800;
+        letter-spacing: -0.04em;
+        color: #ffffff;
+        opacity: 0;
+        animation: fadeUp 0.5s ease forwards 0.1s;
+      }
 
-    .tagline {
-      margin-top: 0.4rem;
-      font-size: 0.85rem;
-      color: #555;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-      opacity: 0;
-      animation: fadeUp 0.5s ease forwards 0.25s;
-    }
+      .tagline {
+        margin-top: 0.4rem;
+        font-size: 0.85rem;
+        color: #555;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        opacity: 0;
+        animation: fadeUp 0.5s ease forwards 0.25s;
+      }
 
-    .loader {
-      margin-top: 2.5rem;
-      display: flex;
-      gap: 6px;
-      opacity: 0;
-      animation: fadeUp 0.5s ease forwards 0.4s;
-    }
+      .loader {
+        margin-top: 2.5rem;
+        display: flex;
+        gap: 6px;
+        opacity: 0;
+        animation: fadeUp 0.5s ease forwards 0.4s;
+      }
 
-    .dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: #444;
-      animation: bounce 1.2s ease-in-out infinite;
-    }
+      .dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: #444;
+        animation: bounce 1.2s ease-in-out infinite;
+      }
 
-    .dot:nth-child(2) { animation-delay: 0.2s; }
-    .dot:nth-child(3) { animation-delay: 0.4s; }
+      .dot:nth-child(2) {
+        animation-delay: 0.2s;
+      }
+      .dot:nth-child(3) {
+        animation-delay: 0.4s;
+      }
 
-    @keyframes bounce {
-      0%, 80%, 100% { transform: translateY(0); background: #333; }
-      40% { transform: translateY(-8px); background: #888; }
-    }
+      @keyframes bounce {
+        0%,
+        80%,
+        100% {
+          transform: translateY(0);
+          background: #333;
+        }
+        40% {
+          transform: translateY(-8px);
+          background: #888;
+        }
+      }
 
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(10px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-  </style>
-</head>
-<body>
-  <div class="logo">GeeChat</div>
-  <div class="tagline">Loading</div>
-  <div class="loader">
-    <div class="dot"></div>
-    <div class="dot"></div>
-    <div class="dot"></div>
-  </div>
-</body>
+      @keyframes fadeUp {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="logo">GeeChat</div>
+    <div class="tagline">Loading</div>
+    <div class="loader">
+      <div class="dot"></div>
+      <div class="dot"></div>
+      <div class="dot"></div>
+    </div>
+  </body>
 </html>

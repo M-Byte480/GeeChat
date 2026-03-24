@@ -1,19 +1,17 @@
 import { Hono } from 'hono'
-import {eq, desc, and, gt} from 'drizzle-orm'
+import { eq, desc, and, gt } from 'drizzle-orm'
 import { db } from '../db/index.js'
 import { messages, users } from '../db/schema.js'
 import { verifyEd25519 } from '../lib/crypto.js'
 import { sanitize } from '../lib/sanitize.js'
 import { broadcast } from '../ws.js'
-import {requireAuth} from "../lib/middleware.js";
+import { requireAuth } from '../lib/middleware.js'
 
 const router = new Hono()
 
-router.post('/messages',
-  requireAuth,
-  async (c) => {
+router.post('/messages', requireAuth, async (c) => {
   const body = await c.req.json()
-    console.log('[Messages] body:', body)
+  console.log('[Messages] body:', body)
   try {
     // Client sends roomId — maps to channelId in the schema
     const { roomId, userId, senderName, signature, timestamp, tempId } = body
@@ -37,16 +35,24 @@ router.post('/messages',
       return c.json({ error: 'Invalid signature' }, 401)
     }
 
-    const [newMessage] = await db.insert(messages).values({
-      channelId: roomId,
-      senderId: userId,
-      content,
-      timestamp: new Date(),
-      signature,
-    }).returning()
+    const [newMessage] = await db
+      .insert(messages)
+      .values({
+        channelId: roomId,
+        senderId: userId,
+        content,
+        timestamp: new Date(),
+        signature,
+      })
+      .returning()
 
     // Return shape the client expects: roomId + senderName
-    const result = { ...newMessage, roomId: newMessage.channelId, senderName: senderName.trim().slice(0, 64), tempId }
+    const result = {
+      ...newMessage,
+      roomId: newMessage.channelId,
+      senderName: senderName.trim().slice(0, 64),
+      tempId,
+    }
     broadcast(JSON.stringify({ type: 'NEW_MESSAGE', ...result }))
     return c.json(result)
   } catch (err: any) {
@@ -71,12 +77,7 @@ router.get('/chat-history', requireAuth, async (c) => {
     query = db
       .select()
       .from(messages)
-      .where(
-        and(
-          eq(messages.channelId, channelId),
-          gt(messages.timestamp, new Date(since))
-        )
-      )
+      .where(and(eq(messages.channelId, channelId), gt(messages.timestamp, new Date(since))))
       .orderBy(messages.timestamp)
       .limit(100)
   }

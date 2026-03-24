@@ -1,10 +1,9 @@
-// packages/app/features/home/chat/MentionText.tsx
-import {Text, XStack, YStack} from '@my/ui'
+import { Text, XStack, YStack } from '@my/ui'
 import { useUser } from '../hooks/useUser'
 import type { Identity } from '../identity'
 import ReactMarkdown from 'react-markdown'
-import {ExternalLinkDialog} from "app/features/home/components/ExternalLinkDialog";
-import {useState} from "react";
+import { ExternalLinkDialog } from 'app/features/home/components/ExternalLinkDialog'
+import { useState } from 'react'
 import remarkGfm from 'remark-gfm'
 
 interface Props {
@@ -16,28 +15,24 @@ interface Props {
 // Splits message content into plain text and mention tokens
 function parseContent(content: string): Array<{ type: 'text' | 'mention'; value: string }> {
   const parts = content.split(/(@[A-Za-z0-9_-]{32,})/g)
-  return parts.map(part => ({
+  return parts.map((part) => ({
     type: part.match(/^@[A-Za-z0-9_-]{32,}$/) ? 'mention' : 'text',
     value: part,
   }))
 }
 
-function MentionChip({ publicKey, serverUrl, identity, isOwn }: {
+function MentionChip({
+  publicKey,
+  serverUrl,
+  identity,
+}: {
   publicKey: string
   serverUrl: string
   identity: Identity
-  isOwn: boolean
 }) {
   const user = useUser(serverUrl, publicKey, identity)
   return (
-    <Text
-      bg={'$blue5'}
-      color={'$blue11'}
-      borderRadius="$2"
-      px="$1"
-      fontWeight="600"
-      fontSize="$3"
-    >
+    <Text bg={'$blue5'} color={'$blue11'} borderRadius="$2" px="$1" fontWeight="600" fontSize="$3">
       @{user?.nickname ?? user?.username ?? publicKey.slice(0, 8)}
     </Text>
   )
@@ -55,7 +50,7 @@ function isSafeUrl(href: string): boolean {
 export function MentionText({ content, serverUrl, identity }: Props) {
   const parts = parseContent(content)
   const isMentioned = parts.some(
-    p => p.type === 'mention' && p.value.slice(1) === identity.publicKey
+    (p) => p.type === 'mention' && p.value.slice(1) === identity.publicKey
   )
   const [pendingUrl, setPendingUrl] = useState<string | null>(null)
 
@@ -119,11 +114,12 @@ export function MentionText({ content, serverUrl, identity }: Props) {
                 </YStack>
               ),
               a: ({ href, children }) => {
-                if (!href || !isSafeUrl(href)) return (
-                  <Text fontSize="$3" color="$color9" userSelect="text">
-                    {children}
-                  </Text>
-                )
+                if (!href || !isSafeUrl(href))
+                  return (
+                    <Text fontSize="$3" color="$color9" userSelect="text">
+                      {children}
+                    </Text>
+                  )
                 return (
                   <Text
                     fontSize="$3"

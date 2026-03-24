@@ -1,5 +1,4 @@
-import {Paragraph, Sheet, XStack, YStack, Text, Input, Button, Avatar} from "@my/ui"
-
+import { Paragraph, Sheet, XStack, YStack, Text, Input, Button, Avatar } from '@my/ui'
 
 export function EditProfileSheet({
   showEditUsername,
@@ -8,8 +7,8 @@ export function EditProfileSheet({
   setUsernameInput,
   changeUsername,
   currentPfp,
-  changePfp
- }) {
+  changePfp,
+}) {
   const pickImage = async () => {
     const input = document.createElement('input')
     input.type = 'file'
@@ -26,49 +25,64 @@ export function EditProfileSheet({
     input.click()
   }
 
-return (
-  <Sheet open={showEditUsername} onOpenChange={setShowEditUsername} modal dismissOnSnapToBottom snapPoints={[50]}>
-    <Sheet.Frame p="$5" gap="$4">
-      <Text fontWeight="700" fontSize="$6">Edit Profile</Text>
+  return (
+    <Sheet
+      open={showEditUsername}
+      onOpenChange={setShowEditUsername}
+      modal
+      dismissOnSnapToBottom
+      snapPoints={[50]}
+    >
+      <Sheet.Frame p="$5" gap="$4">
+        <Text fontWeight="700" fontSize="$6">
+          Edit Profile
+        </Text>
 
-      {/* Avatar picker */}
-      <XStack alignItems="center" gap="$4">
-        <Avatar circular size="$6">
-          <Avatar.Image src={ currentPfp || 'https://placehold.co/100x100' } draggable={false} />
-          <Avatar.Fallback bc="$color8" />
-        </Avatar>
-        <Button size="$3" variant="outlined" onPress={pickImage}>
-          Change Photo
+        {/* Avatar picker */}
+        <XStack alignItems="center" gap="$4">
+          <Avatar circular size="$6">
+            <Avatar.Image src={currentPfp || 'https://placehold.co/100x100'} draggable={false} />
+            <Avatar.Fallback bc="$color8" />
+          </Avatar>
+          <Button size="$3" variant="outlined" onPress={pickImage}>
+            Change Photo
+          </Button>
+        </XStack>
+
+        {/* Username */}
+        <Input
+          value={usernameInput}
+          onChangeText={setUsernameInput}
+          placeholder="New username..."
+          size="$4"
+          autoFocus
+          autoCapitalize="none"
+          autoCorrect={false}
+          onSubmitEditing={() => {
+            const t = usernameInput.trim()
+            if (t) {
+              changeUsername(t)
+              setShowEditUsername(false)
+            }
+          }}
+        />
+
+        <Button
+          theme="active"
+          size="$4"
+          disabled={!usernameInput.trim()}
+          onPress={() => {
+            const t = usernameInput.trim()
+            if (t) {
+              changeUsername(t)
+              setShowEditUsername(false)
+            }
+          }}
+        >
+          Save
         </Button>
-      </XStack>
-
-      {/* Username */}
-      <Input
-        value={usernameInput}
-        onChangeText={setUsernameInput}
-        placeholder="New username..."
-        size="$4"
-        autoFocus
-        autoCapitalize="none"
-        autoCorrect={false}
-        onSubmitEditing={() => {
-          const t = usernameInput.trim()
-          if (t) { changeUsername(t); setShowEditUsername(false) }
-        }}
-      />
-
-      <Button
-        theme="active"
-        size="$4"
-        disabled={!usernameInput.trim()}
-        onPress={() => {
-          const t = usernameInput.trim()
-          if (t) { changeUsername(t); setShowEditUsername(false) }
-        }}
-      >
-        Save
-      </Button>
-    </Sheet.Frame>
-    <Sheet.Overlay />
-  </Sheet>
-)}
+      </Sheet.Frame>
+      <Sheet.Overlay />
+    </Sheet>
+  )
+}

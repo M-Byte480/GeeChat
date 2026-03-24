@@ -2,15 +2,14 @@ import { app, BrowserWindow, Menu, ipcMain, shell, dialog, safeStorage } from 'e
 import path from 'node:path'
 import fs from 'node:fs'
 import { fileURLToPath } from 'node:url'
-import electronUpdater from 'electron-updater';
-import { createRequire } from 'module';
-const require = createRequire(import.meta.url);
+import electronUpdater from 'electron-updater'
+import { createRequire } from 'module'
+const require = createRequire(import.meta.url)
 
-const { autoUpdater } = electronUpdater;
+const { autoUpdater } = electronUpdater
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
-
 
 const createSplash = () => {
   const splash = new BrowserWindow({
@@ -42,7 +41,7 @@ const createWindow = () => {
       nodeIntegration: false,
       contextIsolation: true,
       webSecurity: true,
-      sandbox: false,  // preload needs Node built-ins (path, require) to load .node addon
+      sandbox: false, // preload needs Node built-ins (path, require) to load .node addon
       preload: path.join(__dirname, 'preload.cjs'),
     },
   })
@@ -62,10 +61,10 @@ const createWindow = () => {
 
 let mainWindow = null
 
-const authHeader = Buffer.from('gclient:encryptedSecret_2026_jarv1s').toString('base64');
+const authHeader = Buffer.from('gclient:encryptedSecret_2026_jarv1s').toString('base64')
 autoUpdater.requestHeaders = {
-  "Authorization": `Basic ${authHeader}`
-};
+  Authorization: `Basic ${authHeader}`,
+}
 
 autoUpdater.on('update-available', () => {
   console.log('Update available. Downloading...')
@@ -129,7 +128,7 @@ ipcMain.handle('safestore-set', (_, plaintext) => {
 
 ipcMain.handle('safestore-get', () => {
   const p = getSafeStorePath()
-    console.log(p)
+  console.log(p)
   if (!fs.existsSync(p)) return null
   if (!safeStorage.isEncryptionAvailable()) return null
   const encrypted = fs.readFileSync(p)
@@ -157,7 +156,7 @@ ipcMain.handle('open-external', (_, url) => {
 //    file handle is still open, instead of failing silently with exit code 2.
 ipcMain.on('install-update', () => {
   app.removeAllListeners('window-all-closed')
-  BrowserWindow.getAllWindows().forEach(w => w.destroy())
+  BrowserWindow.getAllWindows().forEach((w) => w.destroy())
   setImmediate(() => autoUpdater.quitAndInstall(false, true))
 })
 
@@ -171,7 +170,8 @@ app.whenReady().then(() => {
 
   // Prevent renderer from navigating away from the app (e.g. link clicks bypassing our dialog)
   win.webContents.on('will-navigate', (event, navigationUrl) => {
-    const isLocal = navigationUrl.startsWith('http://localhost') || navigationUrl.startsWith('file://')
+    const isLocal =
+      navigationUrl.startsWith('http://localhost') || navigationUrl.startsWith('file://')
     if (!isLocal) event.preventDefault()
   })
   // Block window.open() from spawning new browser windows
@@ -187,11 +187,11 @@ app.whenReady().then(() => {
     }, remaining)
   })
 
-  console.log("App is packaged:", app.isPackaged)
+  console.log('App is packaged:', app.isPackaged)
 
   if (app.isPackaged) {
-    console.log("Looking for updates...")
-    autoUpdater.checkForUpdatesAndNotify().then(r => console.log(r))
+    console.log('Looking for updates...')
+    autoUpdater.checkForUpdatesAndNotify().then((r) => console.log(r))
     autoUpdater.logger = console
   }
 })

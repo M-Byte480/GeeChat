@@ -1,5 +1,4 @@
-import {useEffect, useRef} from 'react'
-
+import { useEffect, useRef } from 'react'
 
 export function useWhyDidYouRender(name: string, props: Record<string, any>) {
   const prev = useRef(props)

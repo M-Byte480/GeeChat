@@ -1,6 +1,6 @@
-import {Avatar, Button} from "@my/ui";
+import { Avatar, Button } from '@my/ui'
 
-export function AvatarButton({onClickCallback}: {onClickCallback?: () => void}) {
+export function AvatarButton({ onClickCallback }: { onClickCallback?: () => void }) {
   return (
     <Button
       circular
@@ -17,11 +17,11 @@ export function AvatarButton({onClickCallback}: {onClickCallback?: () => void}) 
           source={{
             uri: 'https://placehold.co/100x100', // Placeholder image
             width: 50,
-            height: 50
+            height: 50,
           }}
         />
         <Avatar.Fallback bc="$color8" />
       </Avatar>
     </Button>
-  );
+  )
 }

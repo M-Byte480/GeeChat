@@ -106,7 +106,14 @@ export function WelcomeScreen({ onIdentityReady }: Props) {
 
       {step === 'choose' && (
         <YStack width={320} gap="$3">
-          <Button size="$5" theme="active" onPress={() => { setError(null); setStep('create-info') }}>
+          <Button
+            size="$5"
+            theme="active"
+            onPress={() => {
+              setError(null)
+              setStep('create-info')
+            }}
+          >
             Create New Identity
           </Button>
           <Button size="$5" onPress={handleImportClick}>
@@ -142,7 +149,12 @@ export function WelcomeScreen({ onIdentityReady }: Props) {
             size="$5"
             theme="active"
             disabled={!username.trim()}
-            onPress={() => { setError(null); setPassphrase(''); setConfirmPassphrase(''); setStep('create-passphrase') }}
+            onPress={() => {
+              setError(null)
+              setPassphrase('')
+              setConfirmPassphrase('')
+              setStep('create-passphrase')
+            }}
           >
             Next
           </Button>
@@ -175,14 +187,10 @@ export function WelcomeScreen({ onIdentityReady }: Props) {
             onSubmitEditing={handleCreate}
           />
           <Paragraph color="$color10" fontSize="$2">
-            Your passphrase encrypts your private key. Store your identity file safely — you'll need both to recover access on another device.
+            Your passphrase encrypts your private key. Store your identity file safely — you'll need
+            both to recover access on another device.
           </Paragraph>
-          <Button
-            size="$5"
-            theme="active"
-            disabled={!passphrase || loading}
-            onPress={handleCreate}
-          >
+          <Button size="$5" theme="active" disabled={!passphrase || loading} onPress={handleCreate}>
             {loading ? 'Creating...' : 'Create Identity'}
           </Button>
           <Button size="$4" chromeless onPress={() => setStep('create-info')}>
@@ -209,12 +217,7 @@ export function WelcomeScreen({ onIdentityReady }: Props) {
             autoCorrect={false}
             onSubmitEditing={handleImport}
           />
-          <Button
-            size="$5"
-            theme="active"
-            disabled={!passphrase || loading}
-            onPress={handleImport}
-          >
+          <Button size="$5" theme="active" disabled={!passphrase || loading} onPress={handleImport}>
             {loading ? 'Unlocking...' : 'Unlock'}
           </Button>
           <Button size="$4" chromeless onPress={() => setStep('choose')}>

@@ -7,14 +7,14 @@ function base64urlToBuffer(str: string): Buffer {
   const padded = str
     .replace(/-/g, '+')
     .replace(/_/g, '/')
-    .padEnd(str.length + (4 - (str.length % 4)) % 4, '=')
+    .padEnd(str.length + ((4 - (str.length % 4)) % 4), '=')
   return Buffer.from(padded, 'base64')
 }
 
 export function verifyEd25519(
   publicKeyB64url: string,
   message: Buffer,
-  signatureB64url: string,
+  signatureB64url: string
 ): boolean {
   try {
     const keyBytes = base64urlToBuffer(publicKeyB64url)

@@ -1,5 +1,5 @@
 // packages/api-client/src/avatar.ts
-import {apiFetch} from "./client";
+import { apiFetch } from './client'
 
 type AvatarStorage = {
   getItem: (key: string) => Promise<string | null>
@@ -53,10 +53,7 @@ async function writeToStorage(publicKey: string, pfp: string) {
   }
 }
 
-export async function getAvatar(
-  serverUrl: string,
-  publicKey: string
-): Promise<string | null> {
+export async function getAvatar(serverUrl: string, publicKey: string): Promise<string | null> {
   // 1. Memory cache — fastest
   if (memoryCache.has(publicKey)) return memoryCache.get(publicKey)!
 
@@ -87,10 +84,7 @@ export function invalidateAvatar(publicKey: string) {
   _storage?.setItem(`avatar:${publicKey}`, '') // clear persisted too
 }
 
-export async function getUser(
-  serverUrl: string,
-  publicKey: string
-): Promise<ServerUser | null> {
+export async function getUser(serverUrl: string, publicKey: string): Promise<ServerUser | null> {
   if (userMemoryCache.has(publicKey)) return userMemoryCache.get(publicKey)!
 
   try {

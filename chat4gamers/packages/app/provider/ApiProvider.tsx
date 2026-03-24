@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { configureClient, configureAvatarStorage } from '@my/api-client'
-import {Identity} from "app/features/home/identity";
-import {signChallenge} from "app/features/home/identity/crypto";
+import { Identity } from 'app/features/home/identity'
+import { signChallenge } from 'app/features/home/identity/crypto'
 
 configureAvatarStorage({
   getItem: async (key) => localStorage.getItem(key),
@@ -16,14 +16,14 @@ interface ApiProviderProps {
 }
 
 export function ApiProvider({
-                              children,
-                              identity,
-                              onSessionExpired,
-                              persistSessionToken,
-                            }: ApiProviderProps) {
+  children,
+  identity,
+  onSessionExpired,
+  persistSessionToken,
+}: ApiProviderProps) {
   useEffect(() => {
     if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
-      Notification.requestPermission().then(r => console.log(r))
+      Notification.requestPermission().then((r) => console.log(r))
     }
   }, [])
 
