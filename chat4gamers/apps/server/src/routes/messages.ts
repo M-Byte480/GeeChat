@@ -1,5 +1,5 @@
 import {Hono} from 'hono'
-import {and, eq, gt} from 'drizzle-orm'
+import {and, asc, desc, eq, gt} from 'drizzle-orm'
 import {db} from '../db/index.js'
 import {messages} from '../db/schema.js'
 import {verifyEd25519} from '../lib/crypto.js'
@@ -68,24 +68,31 @@ router.get('/chat-history', requireAuth, async (c) => {
     const since = c.req.query('since')
     if (!channelId) return c.json({error: 'channel is required'}, 400)
 
-    let query = db
+    if (since) {
+        const result = await db
+            .select()
+            .from(messages)
+            .where(
+                and(
+                    eq(messages.channelId, channelId),
+                    gt(messages.timestamp, new Date(since))
+                )
+            )
+            .orderBy(asc(messages.timestamp))
+            .limit(100)
+
+        return c.json(result)
+    }
+
+    const query = db
         .select()
         .from(messages)
         .where(eq(messages.channelId, channelId))
-        .orderBy(messages.timestamp)
+        .orderBy(desc(messages.timestamp))
         .limit(100)
 
-    if (since) {
-        query = db
-            .select()
-            .from(messages)
-            .where(and(eq(messages.channelId, channelId), gt(messages.timestamp, new Date(since))))
-            .orderBy(messages.timestamp)
-            .limit(100)
-    }
-
     const result = await query
-    return c.json(result)
+    return c.json(result.reverse())
 })
 
 export default router
