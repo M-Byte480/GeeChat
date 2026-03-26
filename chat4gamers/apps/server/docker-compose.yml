@@ -3,12 +3,12 @@ services:
     image: livekit/livekit-server
     container_name: livekit-server
     restart: always
-    network_mode: "host"
+    network_mode: 'host'
     ports:
-      - "7880:7880"   # HTTP API & Signal
-      - "7881:7881"   # WebRTC TCP
-      - "7882:7882"   # Turn TCP
-      - "50000-60000:50000-60000/udp" # Media traffic (crucial for voice)
+      - '7880:7880' # HTTP API & Signal
+      - '7881:7881' # WebRTC TCP
+      - '7882:7882' # Turn TCP
+      - '50000-60000:50000-60000/udp' # Media traffic (crucial for voice)
     volumes:
       - ./livekit.yaml:/livekit.yaml
     command: --config /livekit.yaml
@@ -19,7 +19,7 @@ services:
     container_name: hono-backend
     restart: always
     ports:
-      - "4000:4000"
+      - '4000:4000'
     env_file:
       - .env
     volumes:

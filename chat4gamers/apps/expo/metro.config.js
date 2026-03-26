@@ -16,14 +16,16 @@ config.resolver.nodeModulesPaths = [
   path.resolve(workspaceRoot, 'node_modules'),
 ]
 
-
 // enable package exports - required for tamagui v2 subpath imports
 config.resolver.unstable_enablePackageExports = true
 
 // ensure native conditions are resolved for packages using exports
 config.resolver.unstable_conditionNames = ['require', 'react-native', 'import']
 
-config.transformer = { ...config.transformer, unstable_allowRequireContext: true }
+config.transformer = {
+  ...config.transformer,
+  unstable_allowRequireContext: true,
+}
 config.transformer.minifierPath = require.resolve('metro-minify-terser')
 
 module.exports = config

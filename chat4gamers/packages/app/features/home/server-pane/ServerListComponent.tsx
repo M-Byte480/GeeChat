@@ -1,7 +1,7 @@
 import { YStack } from '@my/ui'
 import type { Server } from 'app/features/home/identity/types'
 import type { ContextMenuOption } from 'app/features/home/components/ContextMenu'
-import {ServerButton} from "app/features/home/server-pane/ServerButton";
+import { ServerButton } from 'app/features/home/server-pane/ServerButton'
 
 type Props = {
   servers: Server[]
@@ -11,11 +11,11 @@ type Props = {
 }
 
 export function ServerListComponent({
-                                      servers,
-                                      activeServerId,
-                                      onSelectServer,
-                                      serverContextOptions
-                                    }: Props) {
+  servers,
+  activeServerId,
+  onSelectServer,
+  serverContextOptions,
+}: Props) {
   return (
     <YStack>
       {servers.map((server) => (

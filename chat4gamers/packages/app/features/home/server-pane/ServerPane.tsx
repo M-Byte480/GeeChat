@@ -1,6 +1,5 @@
 import { YStack } from '@my/ui'
 import { useState } from 'react'
-import { ServerCollapseHamburger } from './ServerCollapseHamburger'
 import { DirectMessagesButton } from './DirectMessagesButton'
 import { AddServerButton } from './AddServerButton'
 import { ServerListComponent } from './ServerListComponent'
@@ -19,26 +18,32 @@ type Props = {
   identity: { publicKey: string; username: string; pfp?: string }
 }
 
-export function ServerPane({ servers, activeServerId, onSelectServer, onAddServer, isDMsActive, onSelectDMs, serverContextOptions, identity }: Props) {
-  const [isCollapsed, setIsCollapsed] = useState(true)
+export function ServerPane({
+  servers,
+  activeServerId,
+  onSelectServer,
+  onAddServer,
+  isDMsActive,
+  onSelectDMs,
+  serverContextOptions,
+  identity,
+}: Props) {
   const [showAddServer, setShowAddServer] = useState(false)
 
   return (
     <>
       <YStack
-        width={isCollapsed ? 60 : 250}
+        width={60}
         bg="$color2"
         borderRightWidth={1}
         borderColor="$borderColor"
         transition="slow"
         $md={{ display: 'flex' }}
         $max-md={{ display: 'none' }}
-        gap="$2" alignItems="center" paddingTop="$2"
+        gap="$2"
+        alignItems="center"
+        paddingTop="$2"
       >
-        {/*<ServerCollapseHamburger*/}
-        {/*  isCollapsed={isCollapsed}*/}
-        {/*  onToggle={() => setIsCollapsed(prev => !prev)}*/}
-        {/*/>*/}
         <DirectMessagesButton isActive={isDMsActive} onPress={onSelectDMs} />
         <ServerListComponent
           servers={servers}
@@ -52,7 +57,10 @@ export function ServerPane({ servers, activeServerId, onSelectServer, onAddServe
       <AddServerDialog
         open={showAddServer}
         onClose={() => setShowAddServer(false)}
-        onAddServer={(server) => { onAddServer(server); setShowAddServer(false) }}
+        onAddServer={(server) => {
+          onAddServer(server)
+          setShowAddServer(false)
+        }}
         identity={identity}
       />
     </>

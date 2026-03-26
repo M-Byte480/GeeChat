@@ -1,6 +1,5 @@
-import {createContext, useContext} from 'react'
-import type {Identity, Server} from './types'
-
+import { createContext, useContext } from 'react'
+import type { Identity, Server } from './types'
 
 interface IdentityContextValue {
   identity: Identity

@@ -1,11 +1,11 @@
 port: 7880
 bind_addresses:
-  - "127.0.0.1"
+  - '127.0.0.1'
 rtc:
   tcp_port: 7881
   port_range_start: 50000
   port_range_end: 60000
   use_external_ip: true
-  node_ip: "91.99.145.131"
+  node_ip: '91.99.145.131'
 keys:
   milan_test_key: milan_super_secret_key_32_characters_long_12345

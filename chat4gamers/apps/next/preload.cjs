@@ -5,7 +5,7 @@ const path = require('path')
 // Load the napi-rs .node addon.  The filename is platform-specific; we try the
 // packaged path (resources/) first, then the development path (apps/audio-native/).
 const { platform, arch } = process
-const abi      = platform === 'win32' ? '-msvc' : platform === 'linux' ? '-gnu' : ''
+const abi = platform === 'win32' ? '-msvc' : platform === 'linux' ? '-gnu' : ''
 const nodeName = `audio-native.${platform}-${arch}${abi}.node`
 
 let denoiser = null
@@ -23,7 +23,9 @@ denoiser =
   tryLoad(path.join(__dirname, '..', 'audio-native', nodeName))
 
 if (!denoiser) {
-  console.warn('[audio-native] Native denoiser not loaded — mic will use raw audio')
+  console.warn(
+    '[audio-native] Native denoiser not loaded — mic will use raw audio'
+  )
 }
 
 // ── Expose narrow API to the renderer ─────────────────────────────────────
@@ -50,7 +52,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   openExternal: (url) => ipcRenderer.invoke('open-external', url),
 
   // Identity file I/O
-  saveIdentityFile: (jsonContent) => ipcRenderer.invoke('save-identity-file', jsonContent),
+  saveIdentityFile: (jsonContent) =>
+    ipcRenderer.invoke('save-identity-file', jsonContent),
   loadIdentityFile: () => ipcRenderer.invoke('load-identity-file'),
   selectPfp: () => ipcRenderer.invoke('select-pfp'),
 

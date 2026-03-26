@@ -1,6 +1,6 @@
-export type PublicKey = string;
+export type PublicKey = string
 
 export interface Challenge {
-  challenge: string;
-  ttl: number;
+  challenge: string
+  ttl: number
 }
