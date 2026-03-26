@@ -23,7 +23,9 @@ denoiser =
   tryLoad(path.join(__dirname, '..', 'audio-native', nodeName))
 
 if (!denoiser) {
-  console.warn('[audio-native] Native denoiser not loaded — mic will use raw audio')
+  console.warn(
+    '[audio-native] Native denoiser not loaded — mic will use raw audio'
+  )
 }
 
 // ── Expose narrow API to the renderer ─────────────────────────────────────
@@ -50,7 +52,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   openExternal: (url) => ipcRenderer.invoke('open-external', url),
 
   // Identity file I/O
-  saveIdentityFile: (jsonContent) => ipcRenderer.invoke('save-identity-file', jsonContent),
+  saveIdentityFile: (jsonContent) =>
+    ipcRenderer.invoke('save-identity-file', jsonContent),
   loadIdentityFile: () => ipcRenderer.invoke('load-identity-file'),
   selectPfp: () => ipcRenderer.invoke('select-pfp'),
 
@@ -62,5 +65,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Synchronous audio frame processing via native RNNoise (.node addon).
   // Called from ScriptProcessorNode.onaudioprocess — must be synchronous.
   // input: Float32Array(480), returns number[](480) or null if native unavailable.
-  processAudioFrame: denoiser ? (input) => denoiser.processFrame(Array.from(input)) : null,
+  processAudioFrame: denoiser
+    ? (input) => denoiser.processFrame(Array.from(input))
+    : null,
 })

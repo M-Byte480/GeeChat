@@ -51,8 +51,16 @@ class NoiseSuppressor extends AudioWorkletProcessor {
     // nnnoiseless warms up its allocator.  If that happens the typed-array views
     // are detached — refresh them cheaply with a single pointer comparison.
     if (this._wasmIn.buffer !== this._wasm.memory.buffer) {
-      this._wasmIn = new Float32Array(this._wasm.memory.buffer, this._wasm.input_ptr(), 128)
-      this._wasmOut = new Float32Array(this._wasm.memory.buffer, this._wasm.output_ptr(), 128)
+      this._wasmIn = new Float32Array(
+        this._wasm.memory.buffer,
+        this._wasm.input_ptr(),
+        128
+      )
+      this._wasmOut = new Float32Array(
+        this._wasm.memory.buffer,
+        this._wasm.output_ptr(),
+        128
+      )
     }
 
     this._wasmIn.set(inp) // 128 floats [-1,1] → WASM INPUT_BLK

@@ -13,7 +13,9 @@ interface Props {
 }
 
 // Splits message content into plain text and mention tokens
-function parseContent(content: string): Array<{ type: 'text' | 'mention'; value: string }> {
+function parseContent(
+    content: string
+): Array<{ type: 'text' | 'mention'; value: string }> {
     const parts = content.split(/(@[A-Za-z0-9_-]{32,})/g)
     return parts.map((part) => ({
         type: part.match(/^@[A-Za-z0-9_-]{32,}$/) ? 'mention' : 'text',
@@ -32,7 +34,14 @@ function MentionChip({
 }) {
     const user = useUser(serverUrl, publicKey, identity)
     return (
-        <Text bg={'$blue5'} color={'$blue11'} borderRadius="$2" px="$1" fontWeight="600" fontSize="$3">
+        <Text
+            bg={'$blue5'}
+            color={'$blue11'}
+            borderRadius="$2"
+            px="$1"
+            fontWeight="600"
+            fontSize="$3"
+        >
             @{user?.nickname ?? user?.username ?? publicKey.slice(0, 8)}
         </Text>
     )
@@ -55,12 +64,16 @@ export function MentionText({content, serverUrl, identity}: Props) {
     const [pendingUrl, setPendingUrl] = useState<string | null>(null)
 
     return (
-        <XStack flexWrap="wrap" alignItems="flex-start" gap="$1"
-                bg={isMentioned ? '$yellow5' : 'transparent'}
-                borderLeftColor={isMentioned ? '$yellow9' : 'transparent'}
-                borderLeftWidth={isMentioned ? 3 : 0}
-                p={2}
-                borderRadius="$1">
+        <XStack
+            flexWrap="wrap"
+            alignItems="flex-start"
+            gap="$1"
+            bg={isMentioned ? '$yellow5' : 'transparent'}
+            borderLeftColor={isMentioned ? '$yellow9' : 'transparent'}
+            borderLeftWidth={isMentioned ? 3 : 0}
+            p={2}
+            borderRadius="$1"
+        >
             {parts.map((part, i) =>
                 part.type === 'mention' ? (
                     <MentionChip
@@ -81,12 +94,22 @@ export function MentionText({content, serverUrl, identity}: Props) {
                                 </Text>
                             ),
                             strong: ({children}) => (
-                                <Text fontSize="$3" fontWeight="700" color="$color" userSelect="text">
+                                <Text
+                                    fontSize="$3"
+                                    fontWeight="700"
+                                    color="$color"
+                                    userSelect="text"
+                                >
                                     {children}
                                 </Text>
                             ),
                             em: ({children}) => (
-                                <Text fontSize="$3" fontStyle="italic" color="$color" userSelect="text">
+                                <Text
+                                    fontSize="$3"
+                                    fontStyle="italic"
+                                    color="$color"
+                                    userSelect="text"
+                                >
                                     {children}
                                 </Text>
                             ),
@@ -112,7 +135,12 @@ export function MentionText({content, serverUrl, identity}: Props) {
                                     width="100%"
                                     userSelect="text"
                                 >
-                                    <Text fontSize="$2" fontFamily="$mono" color="$color" userSelect="text">
+                                    <Text
+                                        fontSize="$2"
+                                        fontFamily="$mono"
+                                        color="$color"
+                                        userSelect="text"
+                                    >
                                         {children}
                                     </Text>
                                 </YStack>
@@ -143,7 +171,12 @@ export function MentionText({content, serverUrl, identity}: Props) {
                     </ReactMarkdown>
                 )
             )}
-            {pendingUrl && <ExternalLinkDialog url={pendingUrl} onClose={() => setPendingUrl(null)}/>}
+            {pendingUrl && (
+                <ExternalLinkDialog
+                    url={pendingUrl}
+                    onClose={() => setPendingUrl(null)}
+                />
+            )}
         </XStack>
     )
 }

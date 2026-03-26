@@ -6,7 +6,8 @@ try {
     const Constants = require('expo-constants').default
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const {ExecutionEnvironment} = require('expo-constants')
-    isExpoGo = Constants?.executionEnvironment === ExecutionEnvironment?.StoreClient
+    isExpoGo =
+        Constants?.executionEnvironment === ExecutionEnvironment?.StoreClient
 } catch {
     // not in expo environment
 }

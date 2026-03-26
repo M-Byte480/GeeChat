@@ -8,7 +8,12 @@ type ServerButtonProps = {
     options: { label: string; onPress: () => void }[]
 }
 
-export function ServerButton({server, isActive, onSelect, options}: ServerButtonProps) {
+export function ServerButton({
+                                 server,
+                                 isActive,
+                                 onSelect,
+                                 options,
+                             }: ServerButtonProps) {
     const initials = server.name
         .split(/\s+/)
         .slice(0, 2)
@@ -31,7 +36,11 @@ export function ServerButton({server, isActive, onSelect, options}: ServerButton
                         hoverStyle={{borderRadius: '$4', scale: 1.05}}
                         onPress={() => onSelect(server)}
                     >
-                        <Text fontSize="$3" fontWeight="700" color={isActive ? '$color12' : '$color11'}>
+                        <Text
+                            fontSize="$3"
+                            fontWeight="700"
+                            color={isActive ? '$color12' : '$color11'}
+                        >
                             {initials}
                         </Text>
                     </Button>

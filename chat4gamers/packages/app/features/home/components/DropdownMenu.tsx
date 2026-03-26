@@ -26,7 +26,10 @@ export function DropdownMenu({options, trigger}: Props) {
         if (!triggerRef.current) return
         const rect = triggerRef.current.getBoundingClientRect()
         const x = Math.min(rect.left, window.innerWidth - MENU_WIDTH - 4)
-        const y = Math.min(rect.bottom + 4, window.innerHeight - options.length * ITEM_HEIGHT - 8)
+        const y = Math.min(
+            rect.bottom + 4,
+            window.innerHeight - options.length * ITEM_HEIGHT - 8
+        )
         setPos({x, y})
     }, [options.length])
 
@@ -85,7 +88,13 @@ export function DropdownMenu({options, trigger}: Props) {
     )
 }
 
-function DropdownItem({option, onClose}: { option: DropdownOption; onClose: () => void }) {
+function DropdownItem({
+                          option,
+                          onClose,
+                      }: {
+    option: DropdownOption
+    onClose: () => void
+}) {
     const [hovered, setHovered] = useState(false)
     return (
         <div
@@ -113,7 +122,9 @@ function DropdownItem({option, onClose}: { option: DropdownOption; onClose: () =
             }}
         >
             {option.icon && (
-                <span style={{display: 'flex', alignItems: 'center', opacity: 0.8}}>{option.icon}</span>
+                <span style={{display: 'flex', alignItems: 'center', opacity: 0.8}}>
+          {option.icon}
+        </span>
             )}
             {option.label}
         </div>

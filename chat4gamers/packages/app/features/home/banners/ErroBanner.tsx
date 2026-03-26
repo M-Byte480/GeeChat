@@ -9,7 +9,8 @@ export function ErrorBanner() {
           textAlign: 'center',
         }}
       >
-        <strong>Error:</strong> An unexpected error occurred. Please try again later.
+        <strong>Error:</strong> An unexpected error occurred. Please try again
+        later.
       </div>
     </>
   )

@@ -27,7 +27,12 @@ export function ImageLightbox({url, onClose}: Props) {
                         {url && (
                             <img
                                 src={`${API_BASE}/proxy-image?url=${encodeURIComponent(url)}`}
-                                style={{width: '100%', objectFit: 'contain', borderRadius: 8, cursor: 'zoom-out'}}
+                                style={{
+                                    width: '100%',
+                                    objectFit: 'contain',
+                                    borderRadius: 8,
+                                    cursor: 'zoom-out',
+                                }}
                                 onClick={onClose}
                             />
                         )}
