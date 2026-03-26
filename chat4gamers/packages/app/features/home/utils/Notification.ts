@@ -1,8 +1,8 @@
 export function fireDesktopNotification({
-                                          title,
-                                          body,
-                                          serverUrl,
-                                        }: {
+  title,
+  body,
+  serverUrl,
+}: {
   title: string
   body: string
   serverUrl: string

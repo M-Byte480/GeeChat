@@ -12,6 +12,7 @@ That's it. The script handles everything:
 5. Runs docker compose up -d --build
 
 Other fixes bundled in:
+
 - Dockerfile now has a yarn build (tsc) step — the old one was missing this, so dist/ never existed and the server would fail to start
 - CMD changed to node dist/index.js directly — drops the unnecessary db:push call since the schema self-bootstraps at startup
 - livekit.yaml is now gitignored (it contains real secrets); livekit.yaml.template is committed instead

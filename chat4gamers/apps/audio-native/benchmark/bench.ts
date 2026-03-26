@@ -1,6 +1,6 @@
-import { Bench } from 'tinybench'
+import {Bench} from 'tinybench'
 
-import { plus100 } from '../index.js'
+import {plus100} from '../index.js'
 
 function add(a: number) {
   return a + 100
@@ -18,4 +18,4 @@ b.add('JavaScript a + 100', () => {
 
 await b.run()
 
-console.table(b.table())
+// console.table(b.table())

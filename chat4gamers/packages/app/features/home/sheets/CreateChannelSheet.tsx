@@ -1,4 +1,4 @@
-import {Paragraph, Sheet, XStack, YStack, Text, Input, Button} from "@my/ui"
+import { Sheet, Text, Input, Button } from '@my/ui'
 
 export function CreateChannelSheet({
   showCreateChannel,
@@ -6,10 +6,16 @@ export function CreateChannelSheet({
   createChannelType,
   newChannelName,
   setNewChannelName,
-  handleCreateChannel
-                                   }){
+  handleCreateChannel,
+}) {
   return (
-    <Sheet open={showCreateChannel} onOpenChange={setShowCreateChannel} modal dismissOnSnapToBottom snapPoints={[35]}>
+    <Sheet
+      open={showCreateChannel}
+      onOpenChange={setShowCreateChannel}
+      modal
+      dismissOnSnapToBottom
+      snapPoints={[35]}
+    >
       <Sheet.Frame p="$5" gap="$4">
         <Text fontWeight="700" fontSize="$6">
           New {createChannelType === 'text' ? 'Text' : 'Voice'} Channel
@@ -24,12 +30,16 @@ export function CreateChannelSheet({
           autoCorrect={false}
           onSubmitEditing={handleCreateChannel}
         />
-        <Button theme="active" size="$4" disabled={!newChannelName.trim()} onPress={handleCreateChannel}>
+        <Button
+          theme="active"
+          size="$4"
+          disabled={!newChannelName.trim()}
+          onPress={handleCreateChannel}
+        >
           Create Channel
         </Button>
       </Sheet.Frame>
       <Sheet.Overlay />
     </Sheet>
-
   )
 }

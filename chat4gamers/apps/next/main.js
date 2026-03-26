@@ -1,16 +1,21 @@
-import { app, BrowserWindow, Menu, ipcMain, shell, dialog, safeStorage } from 'electron'
+import {
+  app,
+  BrowserWindow,
+  dialog,
+  ipcMain,
+  Menu,
+  safeStorage,
+  shell,
+} from 'electron'
 import path from 'node:path'
 import fs from 'node:fs'
-import { fileURLToPath } from 'node:url'
-import electronUpdater from 'electron-updater';
-import { createRequire } from 'module';
-const require = createRequire(import.meta.url);
+import {fileURLToPath} from 'node:url'
+import electronUpdater from 'electron-updater'
 
-const { autoUpdater } = electronUpdater;
+const {autoUpdater} = electronUpdater
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
-
 
 const createSplash = () => {
   const splash = new BrowserWindow({
@@ -20,7 +25,7 @@ const createSplash = () => {
     alwaysOnTop: true,
     resizable: false,
     center: true,
-    webPreferences: { nodeIntegration: false },
+    webPreferences: {nodeIntegration: false},
   })
   splash.loadFile(path.join(__dirname, 'splash.html'))
   return splash
@@ -42,7 +47,7 @@ const createWindow = () => {
       nodeIntegration: false,
       contextIsolation: true,
       webSecurity: true,
-      sandbox: false,  // preload needs Node built-ins (path, require) to load .node addon
+      sandbox: false, // preload needs Node built-ins (path, require) to load .node addon
       preload: path.join(__dirname, 'preload.cjs'),
     },
   })
@@ -62,10 +67,12 @@ const createWindow = () => {
 
 let mainWindow = null
 
-const authHeader = Buffer.from('gclient:encryptedSecret_2026_jarv1s').toString('base64');
+const authHeader = Buffer.from('gclient:encryptedSecret_2026_jarv1s').toString(
+  'base64'
+)
 autoUpdater.requestHeaders = {
-  "Authorization": `Basic ${authHeader}`
-};
+  Authorization: `Basic ${authHeader}`,
+}
 
 autoUpdater.on('update-available', () => {
   console.log('Update available. Downloading...')
@@ -82,23 +89,32 @@ autoUpdater.on('update-downloaded', () => {
 ipcMain.handle('get-version', () => app.getVersion())
 
 // Deferred so app.getPath('userData') is only called after app.whenReady()
-const getSafeStorePath = () => path.join(app.getPath('userData'), 'identity.enc')
+const getSafeStorePath = () =>
+  path.join(app.getPath('userData'), 'identity.enc')
 
 ipcMain.handle('save-identity-file', async (_, jsonContent) => {
-  const { filePath, canceled } = await dialog.showSaveDialog({
+  const {filePath, canceled} = await dialog.showSaveDialog({
     title: 'Save Identity File',
-    defaultPath: path.join(app.getPath('downloads'), 'geechat-identity.geechat-identity'),
-    filters: [{ name: 'GeeChat Identity', extensions: ['geechat-identity'] }],
+    defaultPath: path.join(
+      app.getPath('downloads'),
+      'geechat-identity.geechat-identity'
+    ),
+    filters: [{name: 'GeeChat Identity', extensions: ['geechat-identity']}],
   })
-  if (canceled || !filePath) return { ok: false }
+  if (canceled || !filePath) return {ok: false}
   fs.writeFileSync(filePath, jsonContent, 'utf8')
-  return { ok: true }
+  return {ok: true}
 })
 
 ipcMain.handle('load-identity-file', async () => {
-  const { filePaths, canceled } = await dialog.showOpenDialog({
+  const {filePaths, canceled} = await dialog.showOpenDialog({
     title: 'Open Identity File',
-    filters: [{ name: 'GeeChat Identity', extensions: ['geechat-identity', 'json'] }],
+    filters: [
+      {
+        name: 'GeeChat Identity',
+        extensions: ['geechat-identity', 'json'],
+      },
+    ],
     properties: ['openFile'],
   })
   if (canceled || filePaths.length === 0) return null
@@ -107,9 +123,14 @@ ipcMain.handle('load-identity-file', async () => {
 })
 
 ipcMain.handle('select-pfp', async () => {
-  const { filePaths, canceled } = await dialog.showOpenDialog({
+  const {filePaths, canceled} = await dialog.showOpenDialog({
     title: 'Select Profile Picture',
-    filters: [{ name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'gif', 'webp'] }],
+    filters: [
+      {
+        name: 'Images',
+        extensions: ['jpg', 'jpeg', 'png', 'gif', 'webp'],
+      },
+    ],
     properties: ['openFile'],
   })
   if (canceled || filePaths.length === 0) return null
@@ -129,7 +150,7 @@ ipcMain.handle('safestore-set', (_, plaintext) => {
 
 ipcMain.handle('safestore-get', () => {
   const p = getSafeStorePath()
-    console.log(p)
+  console.log(p)
   if (!fs.existsSync(p)) return null
   if (!safeStorage.isEncryptionAvailable()) return null
   const encrypted = fs.readFileSync(p)
@@ -143,7 +164,10 @@ ipcMain.handle('safestore-clear', () => {
 
 // Open URLs in the default system browser — never inside the Electron window
 ipcMain.handle('open-external', (_, url) => {
-  if (typeof url === 'string' && (url.startsWith('http://') || url.startsWith('https://'))) {
+  if (
+    typeof url === 'string' &&
+    (url.startsWith('http://') || url.startsWith('https://'))
+  ) {
     return shell.openExternal(url)
   }
 })
@@ -157,7 +181,7 @@ ipcMain.handle('open-external', (_, url) => {
 //    file handle is still open, instead of failing silently with exit code 2.
 ipcMain.on('install-update', () => {
   app.removeAllListeners('window-all-closed')
-  BrowserWindow.getAllWindows().forEach(w => w.destroy())
+  BrowserWindow.getAllWindows().forEach((w) => w.destroy())
   setImmediate(() => autoUpdater.quitAndInstall(false, true))
 })
 
@@ -171,11 +195,13 @@ app.whenReady().then(() => {
 
   // Prevent renderer from navigating away from the app (e.g. link clicks bypassing our dialog)
   win.webContents.on('will-navigate', (event, navigationUrl) => {
-    const isLocal = navigationUrl.startsWith('http://localhost') || navigationUrl.startsWith('file://')
+    const isLocal =
+      navigationUrl.startsWith('http://localhost') ||
+      navigationUrl.startsWith('file://')
     if (!isLocal) event.preventDefault()
   })
   // Block window.open() from spawning new browser windows
-  win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }))
+  win.webContents.setWindowOpenHandler(() => ({action: 'deny'}))
 
   const splashStart = Date.now()
   win.once('ready-to-show', () => {
@@ -187,11 +213,11 @@ app.whenReady().then(() => {
     }, remaining)
   })
 
-  console.log("App is packaged:", app.isPackaged)
+  console.log('App is packaged:', app.isPackaged)
 
   if (app.isPackaged) {
-    console.log("Looking for updates...")
-    autoUpdater.checkForUpdatesAndNotify().then(r => console.log(r))
+    console.log('Looking for updates...')
+    autoUpdater.checkForUpdatesAndNotify().then((r) => console.log(r))
     autoUpdater.logger = console
   }
 })

@@ -7,14 +7,16 @@ function deriveWsBase(url: string): string {
 }
 
 export function useChannelsController(serverUrl: string | null) {
-  const setChannels = useAppStore(s => s.setChannels)
+  const setChannels = useAppStore((s) => s.setChannels)
 
   useEffect(() => {
     if (!serverUrl) return
 
     apiFetch(`${serverUrl}`, `/channels`)
-      .then(r => r.json())
-      .then(data => { if (Array.isArray(data)) setChannels(serverUrl, data) })
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data)) setChannels(serverUrl, data)
+      })
       .catch(() => {})
   }, [serverUrl, setChannels])
 
@@ -25,8 +27,10 @@ export function useChannelsController(serverUrl: string | null) {
       const msg = JSON.parse(event.data)
       if (msg.type === 'CHANNEL_CREATED') {
         apiFetch(`${serverUrl}`, `/channel`)
-          .then(r => r.json())
-          .then(data => { if (Array.isArray(data)) setChannels(serverUrl, data) })
+          .then((r) => r.json())
+          .then((data) => {
+            if (Array.isArray(data)) setChannels(serverUrl, data)
+          })
           .catch(() => {})
       }
     }

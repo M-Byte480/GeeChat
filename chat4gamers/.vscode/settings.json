@@ -34,7 +34,5 @@
   "editor.codeActionsOnSave": {
     "source.fixAll.eslint": "always"
   },
-  "cSpell.words": [
-    "Tamagui"
-  ],
+  "cSpell.words": ["Tamagui"]
 }

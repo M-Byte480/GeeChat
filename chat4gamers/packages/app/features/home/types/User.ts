@@ -7,10 +7,10 @@ export enum UserStatus {
 }
 
 export type User = {
-  username: string;
-  publicKey: string;
-  status: UserStatus;
-  avatarUrl?: string;
+  username: string
+  publicKey: string
+  status: UserStatus
+  avatarUrl?: string
 }
 
 export interface Users {

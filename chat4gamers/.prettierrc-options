@@ -1,0 +1,21 @@
+All the options for Prettier are listed here: https://prettier.io/docs/en/options.html
+
+{
+  "trailingComma": "es5",
+  "semi": false,
+  "singleQuote": true,
+  "arrowParens": "always",
+  "printWidth": 100
+}
+
+{
+  "printWidth": 80,
+  "tabWidth": 2,
+  "useTabs": false,
+  "semi": true,
+  "singleQuote": true,
+  "trailingComma": "es5",
+  "bracketSpacing": true,
+  "jsxBracketSameLine": false,
+  "arrowParens": "always"
+}
