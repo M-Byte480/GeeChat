@@ -1,8 +1,14 @@
 // Shared WebSocket client registry — imported by route handlers that need to broadcast
-export const clients = new Set<any>()
+
+interface WsClient {
+  readyState: number
+  send: (data: string) => void
+}
+
+export const clients = new Set<WsClient>()
 
 // publicKey → WebSocket, for targeted DM delivery
-export const clientsByKey = new Map<string, any>()
+export const clientsByKey = new Map<string, WsClient>()
 
 /** Send a JSON string to every connected client */
 export function broadcast(payload: string) {
@@ -22,14 +28,15 @@ export function sendToUser(publicKey: string, payload: string): boolean {
 }
 
 /** Register the /ws upgrade route on the given Hono app */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function registerWsRoute(app: any, upgradeWebSocket: any) {
   app.get(
     '/ws',
     upgradeWebSocket(() => ({
-      onOpen(_e: any, ws: any) {
+      onOpen(_e: unknown, ws: WsClient) {
         clients.add(ws)
       },
-      onMessage(event: any, ws: any) {
+      onMessage(event: { data: { toString: () => string } }, ws: WsClient) {
         const data = JSON.parse(event.data.toString())
         if (data.type === 'TYPING') {
           clients.forEach((client) => {
@@ -41,7 +48,7 @@ export function registerWsRoute(app: any, upgradeWebSocket: any) {
           clientsByKey.set(data.publicKey, ws)
         }
       },
-      onClose(_e: any, ws: any) {
+      onClose(_e: unknown, ws: WsClient) {
         clients.delete(ws)
         for (const [key, client] of clientsByKey) {
           if (client === ws) {

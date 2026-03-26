@@ -7,15 +7,19 @@ const EMPTY_CHANNEL: Channel = {} as Channel
 
 export function useChannels(serverUrl: string | null) {
     const setVoiceParticipants = useAppStore((s) => s.setVoiceParticipants)
-    const channels = useAppStore((s) => s.cache[serverUrl ?? '']?.channels ?? EMPTY_CHANNELS)
+    const channels = useAppStore(
+        (s) => s.cache[serverUrl ?? '']?.channels ?? EMPTY_CHANNELS
+    )
 
     const [activeChannelId, setActiveChannelId] = useState<string | null>(null)
-    const [connectedVoiceChannelId, setConnectedVoiceChannelId] = useState<string | null>(null)
+    const [connectedVoiceChannelId, setConnectedVoiceChannelId] = useState<
+        string | null
+    >(null)
 
     // Auto-select first channel when channels load and none is selected
     useEffect(() => {
         if (channels.length > 0 && !activeChannelId) {
-            setActiveChannelId(channels[0]!.id)
+            setActiveChannelId(channels[0]?.id ?? null)
         }
     }, [channels, activeChannelId])
 

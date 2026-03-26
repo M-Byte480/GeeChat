@@ -57,9 +57,12 @@ router.post('/messages', requireAuth, async (c) => {
         }
         broadcast(JSON.stringify({type: 'NEW_MESSAGE', ...result}))
         return c.json(result)
-    } catch (err: any) {
-        console.error('POST /messages error:', err.stack || err)
-        return c.json({error: err.message}, 500)
+    } catch (err) {
+        console.error('POST /messages error:', err)
+        return c.json(
+            {error: err instanceof Error ? err.message : 'Internal error'},
+            500
+        )
     }
 })
 

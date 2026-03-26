@@ -1,114 +1,128 @@
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useIdentity } from 'app/features/home/identity/IdentityContext'
-import { MessageRow } from 'app/features/home/components/MessageRow'
-import { Paragraph, ScrollView, YStack } from '@my/ui'
-import { Message } from 'app/features/home/types/types'
-import { MessageRowSkeleton } from 'app/features/home/chat/MessageRowSkeleton'
+import {memo, useCallback, useEffect, useMemo, useRef, useState} from 'react'
+import {useIdentity} from 'app/features/home/identity/IdentityContext'
+import {MessageRow} from 'app/features/home/components/MessageRow'
+import {Paragraph, ScrollView, YStack} from '@my/ui'
+import {Message} from 'app/features/home/types/types'
+import {MessageRowSkeleton} from 'app/features/home/chat/MessageRowSkeleton'
 
 type Props = {
-  messages: Message[]
-  serverUrl: string
-  typingUser?: string | null
+    messages: Message[]
+    serverUrl: string
+    typingUser?: string | null
 }
 
-export const MessageList = memo(({ messages, serverUrl, typingUser }: Props) => {
-  const INITIAL_LIMIT = 20
-  const [limit, setLimit] = useState(INITIAL_LIMIT)
-  const [isReady, setIsReady] = useState(false)
-  const [hasFetched, setHasFetched] = useState(false)
+export const MessageList = memo(
+    ({messages, serverUrl, typingUser}: Props) => {
+        const INITIAL_LIMIT = 20
+        const [limit, setLimit] = useState(INITIAL_LIMIT)
+        const [isReady, setIsReady] = useState(false)
 
-  // Reset when channel changes
-  useEffect(() => {
-    setIsReady(false)
-    setHasFetched(false)
-  }, [serverUrl])
+        // Reset when channel changes
+        useEffect(() => {
+            setIsReady(false)
+        }, [serverUrl])
 
-  useEffect(() => {
-    if (!hasFetched) setHasFetched(true)
-  }, [messages])
+        const scrollViewRef = useRef<{
+            scrollToEnd: (opts: { animated: boolean }) => void
+        } | null>(null)
+        const isAtBottomRef = useRef(true)
+        const {identity} = useIdentity()
 
-  const isEmpty = hasFetched && messages.length === 0
-  const showSkeletons = !isReady && !isEmpty
+        const visibleMessages = useMemo(
+            () => messages.slice(-limit),
+            [messages, limit]
+        )
 
-  const scrollViewRef = useRef<any>(null)
-  const isAtBottomRef = useRef(true)
-  const { identity } = useIdentity()
+        const initialLoadRef = useRef(true)
 
-  const visibleMessages = useMemo(() => messages.slice(-limit), [messages, limit])
+        const skeletons = useMemo(
+            () =>
+                Array.from({length: 14}).map((_, i) => (
+                    <MessageRowSkeleton key={`skeleton-${i}`}/>
+                )),
+            []
+        )
 
-  const initialLoadRef = useRef(true)
+        useEffect(() => {
+            initialLoadRef.current = true
+        }, []) // reset on mount
 
-  const skeletons = useMemo(
-    () => Array.from({ length: 14 }).map((_, i) => <MessageRowSkeleton key={`skeleton-${i}`} />),
-    []
-  )
+        const handleScroll = useCallback(
+            (event: {
+                nativeEvent: {
+                    contentOffset: { y: number }
+                    layoutMeasurement: { height: number }
+                    contentSize: { height: number }
+                }
+            }) => {
+                const {contentOffset, layoutMeasurement, contentSize} =
+                    event.nativeEvent
+                if (contentOffset.y < 100 && limit < messages.length) {
+                    setLimit((prev) => Math.min(prev + 50, messages.length))
+                }
+                isAtBottomRef.current =
+                    layoutMeasurement.height + contentOffset.y >= contentSize.height - 80
+            },
+            [limit, messages.length]
+        )
 
-  useEffect(() => {
-    initialLoadRef.current = true
-  }, []) // reset on mount
+        useEffect(() => {
+            if (messages.length === 0) return
 
-  const handleScroll = useCallback(
-    (event: any) => {
-      const { contentOffset, layoutMeasurement, contentSize } = event.nativeEvent
-      if (contentOffset.y < 100 && limit < messages.length) {
-        setLimit((prev) => Math.min(prev + 50, messages.length))
-      }
-      isAtBottomRef.current = layoutMeasurement.height + contentOffset.y >= contentSize.height - 80
-    },
-    [limit, messages.length]
-  )
+            if (initialLoadRef.current) {
+                initialLoadRef.current = false
+                // Give rows time to paint before jumping to bottom
+                scrollViewRef.current?.scrollToEnd({animated: false})
+                return
+            }
 
-  useEffect(() => {
-    if (messages.length === 0) return
+            const latest = messages[messages.length - 1]
+            if (isAtBottomRef.current || latest?.senderId === identity.publicKey) {
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        scrollViewRef.current?.scrollToEnd({animated: false})
+                    })
+                })
+            }
+            // eslint-disable-next-line react-hooks/exhaustive-deps
+        }, [messages])
 
-    if (initialLoadRef.current) {
-      initialLoadRef.current = false
-      // Give rows time to paint before jumping to bottom
-      scrollViewRef.current?.scrollToEnd({ animated: false })
-      return
+        const messageList = useMemo(
+            () =>
+                visibleMessages.map((msg, index) => (
+                    <MessageRow
+                        key={msg.id}
+                        message={msg}
+                        serverUrl={serverUrl}
+                        onLayout={
+                            index === visibleMessages.length - 1
+                                ? () => setIsReady(true)
+                                : undefined
+                        }
+                    />
+                )),
+            [visibleMessages, serverUrl]
+        )
+
+        return (
+            <ScrollView
+                ref={scrollViewRef}
+                flex={1}
+                mb="$2"
+                onScroll={handleScroll}
+                scrollEventThrottle={100}
+            >
+                <YStack gap="$2">
+                    {skeletons}
+                    {/* Render messages on top of skeletons, hidden until ready */}
+                    <YStack display={isReady ? 'flex' : 'none'}>{messageList}</YStack>
+                </YStack>
+                {typingUser && (
+                    <Paragraph size="$1" color="$gray10" mt="$2">
+                        {typingUser} is typing...
+                    </Paragraph>
+                )}
+            </ScrollView>
+        )
     }
-
-    const latest = messages[messages.length - 1]
-    if (isAtBottomRef.current || latest?.senderId === identity.publicKey) {
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          scrollViewRef.current?.scrollToEnd({ animated: false })
-        })
-      })
-    }
-  }, [messages])
-
-  const messageList = useMemo(
-    () =>
-      visibleMessages.map((msg, index) => (
-        <MessageRow
-          key={msg.id}
-          message={msg}
-          serverUrl={serverUrl}
-          onLayout={index === visibleMessages.length - 1 ? () => setIsReady(true) : undefined}
-        />
-      )),
-    [visibleMessages, serverUrl]
-  )
-
-  return (
-    <ScrollView
-      ref={scrollViewRef}
-      flex={1}
-      mb="$2"
-      onScroll={handleScroll}
-      scrollEventThrottle={100}
-    >
-      <YStack gap="$2">
-        {skeletons}
-        {/* Render messages on top of skeletons, hidden until ready */}
-        <YStack display={isReady ? 'flex' : 'none'}>{messageList}</YStack>
-      </YStack>
-      {typingUser && (
-        <Paragraph size="$1" color="$gray10" mt="$2">
-          {typingUser} is typing...
-        </Paragraph>
-      )}
-    </ScrollView>
-  )
-})
+)

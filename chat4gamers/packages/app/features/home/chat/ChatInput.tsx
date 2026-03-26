@@ -3,33 +3,46 @@ import {useIdentity} from 'app/features/home/identity/IdentityContext'
 import {Button, Input, Text, XStack, YStack} from '@my/ui'
 import {EmojiPicker} from 'app/features/home/components/EmojiPicker'
 import {Send} from '@tamagui/lucide-icons'
-import {useCallback, useRef} from 'react'
+import {useCallback, useLayoutEffect, useRef} from 'react'
 
 export const ChatInput = ({channelId, onSend, socketRef, members}) => {
     const {identity} = useIdentity()
-    const {inputText, mentionQuery, handleInputChange, handleSend, insertMention} = useChatInput({
+    const {
+        inputText,
+        mentionQuery,
+        handleInputChange,
+        handleSend,
+        insertMention,
+    } = useChatInput({
         channelId,
         identity,
         onSend,
-        socketRef
+        socketRef,
     })
 
     const inputTextRef = useRef(inputText)
-    inputTextRef.current = inputText
+    useLayoutEffect(() => {
+        inputTextRef.current = inputText
+    })
     const selectionRef = useRef({start: 0, end: 0})
-    const inputRef = useRef<any>(null)
+    const inputRef = useRef<{ focus: () => void } | null>(null)
 
-    const filteredMembers = mentionQuery !== null
-        ? members.filter(m =>
-            (m.nickname ?? m.username).toLowerCase().includes(mentionQuery.toLowerCase())
-        )
-        : []
+    const filteredMembers =
+        mentionQuery !== null
+            ? members.filter((m) =>
+                (m.nickname ?? m.username)
+                    .toLowerCase()
+                    .includes(mentionQuery.toLowerCase())
+            )
+            : []
 
     const handleEmojiSelect = useCallback(
         (emoji: string, keepOpen: boolean) => {
             const {start, end} = selectionRef.current
             const newText =
-                inputTextRef.current.substring(0, start) + emoji + inputTextRef.current.substring(end)
+                inputTextRef.current.substring(0, start) +
+                emoji +
+                inputTextRef.current.substring(end)
             handleInputChange(newText)
             const newPos = start + emoji.length
             selectionRef.current = {start: newPos, end: newPos}
@@ -53,7 +66,7 @@ export const ChatInput = ({channelId, onSend, socketRef, members}) => {
                     elevation="$4"
                     zIndex={100}
                 >
-                    {filteredMembers.map(member => (
+                    {filteredMembers.map((member) => (
                         <XStack
                             key={member.publicKey}
                             p="$2"

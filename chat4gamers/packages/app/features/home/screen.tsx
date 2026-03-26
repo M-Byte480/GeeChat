@@ -36,18 +36,38 @@ export function HomeScreen() {
     )
 }
 
-export function onRender(id, phase, actualDuration, baseDuration, startTime, commitTime) {
-    console.log(`[Profiler] ${id} rendered. Phase: ${phase}. Actual duration: ${actualDuration}ms`)
+export function onRender(
+    id,
+    phase,
+    actualDuration,
+    _baseDuration,
+    _startTime,
+    _commitTime
+) {
+    console.warn(
+        `[Profiler] ${id} rendered. Phase: ${phase}. Actual duration: ${actualDuration}ms`
+    )
 }
 
 const HomeScreenInner = memo(function HomeScreenInner() {
-    const {identity, changeUsername, changePfp, servers, addServer, deleteServer} = useIdentity()
+    const {
+        identity,
+        changeUsername,
+        changePfp,
+        servers,
+        addServer,
+        deleteServer,
+    } = useIdentity()
 
     const activeServerUrl = useAppStore((s) => s.activeServerUrl)
     const setActiveServerUrl = useAppStore((s) => s.setActiveServerUrl)
-    const channels = useAppStore((s) => s.cache[activeServerUrl ?? '']?.channels ?? EMPTY_CHANNELS)
+    const channels = useAppStore(
+        (s) => s.cache[activeServerUrl ?? '']?.channels ?? EMPTY_CHANNELS
+    )
     const voiceParticipants = useAppStore(
-        (s) => s.cache[activeServerUrl ?? '']?.voiceParticipants ?? EMPTY_VOICE_PARTICIPANTS
+        (s) =>
+            s.cache[activeServerUrl ?? '']?.voiceParticipants ??
+            EMPTY_VOICE_PARTICIPANTS
     )
 
     const {
@@ -62,10 +82,11 @@ const HomeScreenInner = memo(function HomeScreenInner() {
     const [usernameInput, setUsernameInput] = useState('')
     const [showSettings, setShowSettings] = useState(false)
     const [showEditUsername, setShowEditUsername] = useState(false)
-    const [showMobileMenu, setShowMobileMenu] = useState(false)
+    const [, setShowMobileMenu] = useState(false)
     const [showMemberPane, setShowMemberPane] = useState(true)
     const [showCreateChannel, setShowCreateChannel] = useState(false)
-    const [createChannelType, setCreateChannelType] = useState<ChannelType>('text')
+    const [createChannelType, setCreateChannelType] =
+        useState<ChannelType>('text')
     const [newChannelName, setNewChannelName] = useState('')
     const [appVersion, setAppVersion] = useState('')
 
@@ -80,7 +101,7 @@ const HomeScreenInner = memo(function HomeScreenInner() {
     }, [])
 
     useEffect(() => {
-        ;(window as any).electronAPI?.getVersion().then((v: string) => setAppVersion(v))
+        window.electronAPI?.getVersion().then((v: string) => setAppVersion(v))
     }, [])
 
     const activeServer = servers.find((s) => s.url === activeServerUrl) ?? null
@@ -104,7 +125,12 @@ const HomeScreenInner = memo(function HomeScreenInner() {
     })
 
     return (
-        <YStack height="100vh" bg="$background" position="relative" userSelect="none">
+        <YStack
+            height="100vh"
+            bg="$background"
+            position="relative"
+            userSelect="none"
+        >
             <TopScreenStatusBar
                 setUsernameInput={setUsernameInput}
                 setShowEditUsername={setShowEditUsername}
@@ -136,7 +162,10 @@ const HomeScreenInner = memo(function HomeScreenInner() {
                             onPress: () => {
                             },
                         },
-                        {label: 'Copy URL', onPress: () => navigator.clipboard.writeText(server.url)},
+                        {
+                            label: 'Copy URL',
+                            onPress: () => navigator.clipboard.writeText(server.url),
+                        },
                         {
                             label: 'Leave Server',
                             onPress: async () => {
@@ -179,7 +208,11 @@ const HomeScreenInner = memo(function HomeScreenInner() {
                     {activeServer ? (
                         // {
                         //   visitedServer.map(id => (
-                        <Sidebar width={250} activeServer={activeServer} {...sidebarProps} />
+                        <Sidebar
+                            width={250}
+                            activeServer={activeServer}
+                            {...sidebarProps}
+                        />
                     ) : (
                         //   ))
                         // }

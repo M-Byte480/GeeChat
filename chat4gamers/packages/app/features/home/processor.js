@@ -5,7 +5,7 @@ class MyRustProcessor extends AudioWorkletProcessor {
     // Load your Rust WASM module here
   }
 
-  process(inputs, outputs) {
+  process(inputs, _outputs) {
     const input = inputs[0][0] // Raw microphone samples
     if (input) {
       this.rustModule.process(input) // Call your Rust function
