@@ -1,21 +1,21 @@
 // src/db/index.ts
-import {drizzle} from 'drizzle-orm/better-sqlite3'
+import { drizzle } from 'drizzle-orm/better-sqlite3'
 import Database from 'better-sqlite3-multiple-ciphers'
-import {mkdirSync} from 'node:fs'
-import {dirname, resolve} from 'node:path'
+import { mkdirSync } from 'node:fs'
+import { dirname, resolve } from 'node:path'
 import * as schema from './schema.js'
 
 const isProd = process.env.NODE_ENV === 'production'
 const dbPath = isProd ? '/app/data/chat.db' : resolve('./data/chat.db')
 
 // Auto-create the directory if it doesn't exist
-mkdirSync(dirname(dbPath), {recursive: true})
+mkdirSync(dirname(dbPath), { recursive: true })
 
 const sqlite = new Database(dbPath)
 
 // Apply encryption key before any queries (SQLCipher)
 if (process.env.DB_KEY) {
-    sqlite.pragma(`key = '${process.env.DB_KEY}'`)
+  sqlite.pragma(`key = '${process.env.DB_KEY}'`)
 }
 
 // Bootstrap schema — safe to run on every startup
@@ -164,20 +164,20 @@ sqlite.exec(`
 
 // Migration guards for databases predating this schema
 try {
-    sqlite.exec(`ALTER TABLE messages
+  sqlite.exec(`ALTER TABLE messages
         ADD COLUMN signature TEXT NOT NULL DEFAULT ''`)
 } catch {
-    /* column already exists */
+  /* column already exists */
 }
 
 // Seed default channels if the table is empty
 const channelCount = (
-    sqlite.prepare('SELECT COUNT(*) as cnt FROM channels').get() as {
-        cnt: number
-    }
+  sqlite.prepare('SELECT COUNT(*) as cnt FROM channels').get() as {
+    cnt: number
+  }
 ).cnt
 if (channelCount === 0) {
-    sqlite.exec(`
+  sqlite.exec(`
         INSERT INTO channels (id, name, type)
         VALUES ('general', 'general', 'text'),
                ('off-topic', 'off-topic', 'text'),
@@ -186,4 +186,4 @@ if (channelCount === 0) {
     `)
 }
 
-export const db = drizzle(sqlite, {schema})
+export const db = drizzle(sqlite, { schema })

@@ -9,10 +9,10 @@ import {
 } from 'electron'
 import path from 'node:path'
 import fs from 'node:fs'
-import {fileURLToPath} from 'node:url'
+import { fileURLToPath } from 'node:url'
 import electronUpdater from 'electron-updater'
 
-const {autoUpdater} = electronUpdater
+const { autoUpdater } = electronUpdater
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -25,7 +25,7 @@ const createSplash = () => {
     alwaysOnTop: true,
     resizable: false,
     center: true,
-    webPreferences: {nodeIntegration: false},
+    webPreferences: { nodeIntegration: false },
   })
   splash.loadFile(path.join(__dirname, 'splash.html'))
   return splash
@@ -93,21 +93,21 @@ const getSafeStorePath = () =>
   path.join(app.getPath('userData'), 'identity.enc')
 
 ipcMain.handle('save-identity-file', async (_, jsonContent) => {
-  const {filePath, canceled} = await dialog.showSaveDialog({
+  const { filePath, canceled } = await dialog.showSaveDialog({
     title: 'Save Identity File',
     defaultPath: path.join(
       app.getPath('downloads'),
       'geechat-identity.geechat-identity'
     ),
-    filters: [{name: 'GeeChat Identity', extensions: ['geechat-identity']}],
+    filters: [{ name: 'GeeChat Identity', extensions: ['geechat-identity'] }],
   })
-  if (canceled || !filePath) return {ok: false}
+  if (canceled || !filePath) return { ok: false }
   fs.writeFileSync(filePath, jsonContent, 'utf8')
-  return {ok: true}
+  return { ok: true }
 })
 
 ipcMain.handle('load-identity-file', async () => {
-  const {filePaths, canceled} = await dialog.showOpenDialog({
+  const { filePaths, canceled } = await dialog.showOpenDialog({
     title: 'Open Identity File',
     filters: [
       {
@@ -123,7 +123,7 @@ ipcMain.handle('load-identity-file', async () => {
 })
 
 ipcMain.handle('select-pfp', async () => {
-  const {filePaths, canceled} = await dialog.showOpenDialog({
+  const { filePaths, canceled } = await dialog.showOpenDialog({
     title: 'Select Profile Picture',
     filters: [
       {
@@ -201,7 +201,7 @@ app.whenReady().then(() => {
     if (!isLocal) event.preventDefault()
   })
   // Block window.open() from spawning new browser windows
-  win.webContents.setWindowOpenHandler(() => ({action: 'deny'}))
+  win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }))
 
   const splashStart = Date.now()
   win.once('ready-to-show', () => {
