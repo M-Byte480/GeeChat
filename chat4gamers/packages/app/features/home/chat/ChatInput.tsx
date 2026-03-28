@@ -97,7 +97,7 @@ export const ChatInput = ({ channelId, onSend, socketRef, members }) => {
         icon={Send}
         onPress={handleSend}
         disabled={!inputText.trim()}
-        theme="active"
+        theme="dark"
       />
     </XStack>
   )
