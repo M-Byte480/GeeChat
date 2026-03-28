@@ -73,6 +73,7 @@ export function MentionText({ content, serverUrl, identity }: Props) {
       borderLeftWidth={isMentioned ? 3 : 0}
       p={2}
       borderRadius="$1"
+      mr="$2"
     >
       {parts.map((part, i) =>
         part.type === 'mention' ? (

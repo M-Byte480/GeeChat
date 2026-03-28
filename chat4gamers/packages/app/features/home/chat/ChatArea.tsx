@@ -1,5 +1,5 @@
 import { YStack } from '@my/ui'
-import { Profiler, useEffect, useRef, useState } from 'react'
+import { Profiler, useCallback, useEffect, useRef, useState } from 'react'
 import { useMessages } from '../hooks/useMessages'
 import { ImageLightbox } from '../components/ImageLightbox'
 import { ExternalLinkDialog } from '../components/ExternalLinkDialog'
@@ -14,9 +14,15 @@ type Props = {
   channelId: string
   serverUrl: string
   members: User[]
+  showMemberPane?: boolean
 }
 
-export const ChatArea = ({ channelId, serverUrl, members }: Props) => {
+export const ChatArea = ({
+  channelId,
+  serverUrl,
+  members,
+  showMemberPane,
+}: Props) => {
   const { identity } = useIdentity()
   const socketRef = useRef<WebSocket | null>(null)
 
@@ -31,11 +37,15 @@ export const ChatArea = ({ channelId, serverUrl, members }: Props) => {
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null)
 
   const initialLoadRef = useRef(true)
+  const [chatHovered, setChatHovered] = useState(false)
 
   // Reset scroll state when switching channels
   useEffect(() => {
     initialLoadRef.current = true
   }, [channelId])
+
+  const handleChatMouseEnter = useCallback(() => setChatHovered(true), [])
+  const handleChatMouseLeave = useCallback(() => setChatHovered(false), [])
 
   useWhyDidYouRender('ChatArea', {
     channelId,
@@ -50,6 +60,9 @@ export const ChatArea = ({ channelId, serverUrl, members }: Props) => {
       bg="$background"
       height="100%"
       userSelect="auto"
+      // @ts-ignore — web-only events, not in RN types
+      onMouseEnter={handleChatMouseEnter}
+      onMouseLeave={handleChatMouseLeave}
     >
       {/* TODO: re-enable error banner — currently disabled */}
 
@@ -60,6 +73,8 @@ export const ChatArea = ({ channelId, serverUrl, members }: Props) => {
           isLoading={isLoading}
           serverUrl={serverUrl}
           typingUser={typingUser}
+          scrollbarVisible={chatHovered}
+          insetScrollbar={showMemberPane}
         />
       </Profiler>
 

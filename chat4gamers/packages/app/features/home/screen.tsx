@@ -254,6 +254,7 @@ const HomeScreenInner = memo(function HomeScreenInner() {
                   channelId={activeChannel.id}
                   serverUrl={activeServer.url}
                   members={serverMembers}
+                  showMemberPane={showMemberPane}
                 />
               </Profiler>
             ) : (
