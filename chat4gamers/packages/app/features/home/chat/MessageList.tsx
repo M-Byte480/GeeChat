@@ -10,10 +10,19 @@ type Props = {
   isLoading: boolean
   serverUrl: string
   typingUser?: string | null
+  scrollbarVisible?: boolean
+  insetScrollbar?: boolean
 }
 
 export const MessageList = memo(
-  ({ messages, isLoading, serverUrl, typingUser }: Props) => {
+  ({
+    messages,
+    isLoading,
+    serverUrl,
+    typingUser,
+    scrollbarVisible,
+    insetScrollbar,
+  }: Props) => {
     const INITIAL_LIMIT = 20
     const [limit, setLimit] = useState(INITIAL_LIMIT)
 
@@ -89,8 +98,11 @@ export const MessageList = memo(
     return (
       <ScrollView
         ref={scrollViewRef}
+        // @ts-ignore — className is web-only, not in RN types
+        className={scrollbarVisible ? 'chat-area-scrollbar' : undefined}
         flex={1}
         mb="$2"
+        mr={insetScrollbar ? -3 : 0}
         onScroll={handleScroll}
         scrollEventThrottle={100}
       >
