@@ -4,7 +4,9 @@
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "vitest run --config vitest.config.ts",
+    "test:watch": "vitest --config vitest.config.ts",
+    "test:server": "tsx src/index.ts",
     "start": "npm run db:push && node dist/index.js",
     "dev": "yarn run db:push && tsx watch src/index.ts",
     "build": "tsc",
@@ -20,7 +22,8 @@
     "cross-env": "^10.1.0",
     "drizzle-kit": "^0.31.9",
     "tsx": "^4.21.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^2.1.1"
   },
   "dependencies": {
     "@hono/node-server": "^1.19.9",
