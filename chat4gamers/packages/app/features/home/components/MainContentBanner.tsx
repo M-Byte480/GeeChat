@@ -32,7 +32,6 @@ export function MainContentBanner({
         color={showMemberPane ? '$color' : '$color10'}
         backgroundColor={showMemberPane ? '$color4' : 'transparent'}
         borderRadius="$3"
-        animation="quick"
       />
     </XStack>
   )

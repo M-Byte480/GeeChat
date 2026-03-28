@@ -3,7 +3,11 @@
 import { useState } from 'react'
 import { Button, Input, Paragraph, Text, XStack, YStack } from '@my/ui'
 import type { Identity, IdentityFile } from './types'
-import { decryptIdentity, generateIdentity, serializeForStorage, } from './crypto'
+import {
+  decryptIdentity,
+  generateIdentity,
+  serializeForStorage,
+} from './crypto'
 
 type Step = 'choose' | 'create-info' | 'create-passphrase' | 'import-passphrase'
 
@@ -143,7 +147,7 @@ export function WelcomeScreen({ onIdentityReady }: Props) {
             onChangeText={setUsername}
             autoFocus
             autoCapitalize="none"
-            autoCorrect={false}
+            autoCorrect="off"
           />
           <XStack gap="$2" alignItems="center">
             <Button flex={1} size="$4" onPress={handleSelectPfp}>
@@ -191,7 +195,7 @@ export function WelcomeScreen({ onIdentityReady }: Props) {
             secureTextEntry
             autoFocus
             autoCapitalize="none"
-            autoCorrect={false}
+            autoCorrect="off"
           />
           <Input
             placeholder="Confirm passphrase..."
@@ -200,7 +204,7 @@ export function WelcomeScreen({ onIdentityReady }: Props) {
             onChangeText={setConfirmPassphrase}
             secureTextEntry
             autoCapitalize="none"
-            autoCorrect={false}
+            autoCorrect="off"
             onSubmitEditing={handleCreate}
           />
           <Paragraph color="$color10" fontSize="$2">
@@ -236,7 +240,7 @@ export function WelcomeScreen({ onIdentityReady }: Props) {
             secureTextEntry
             autoFocus
             autoCapitalize="none"
-            autoCorrect={false}
+            autoCorrect="off"
             onSubmitEditing={handleImport}
           />
           <Button

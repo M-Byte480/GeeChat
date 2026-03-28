@@ -177,7 +177,7 @@ function ChannelRow({
         onPress={handlePress}
         backgroundColor={isActive ? '$color4' : 'transparent'}
         hoverStyle={{ backgroundColor: '$color4' }}
-        animation="quick"
+        transition="quick"
         pressStyle={{ scale: 0.98 }}
       >
         <Icon size={14} color={isActive ? '$color' : '$color10'} />

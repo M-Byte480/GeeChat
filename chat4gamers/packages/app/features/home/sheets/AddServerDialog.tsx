@@ -223,7 +223,7 @@ export function AddServerDialog({
         }}
         onSubmitEditing={handleAdd}
         autoCapitalize="none"
-        autoCorrect={false}
+        autoCorrect="off"
       />
       {error ? (
         <Text color="$red10" fontSize="$2">

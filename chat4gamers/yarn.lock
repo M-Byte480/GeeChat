@@ -18528,6 +18528,7 @@ __metadata:
     livekit-server-sdk: "npm:^2.15.0"
     tsx: "npm:^4.21.0"
     typescript: "npm:^5.9.3"
+    vitest: "npm:^2.1.1"
   languageName: unknown
   linkType: soft
 

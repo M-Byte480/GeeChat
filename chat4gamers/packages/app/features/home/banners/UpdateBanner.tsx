@@ -8,22 +8,24 @@ export function UpdateBanner() {
   const [progress, setProgress] = useState<number | null>(null)
   const [ready, setReady] = useState(false)
 
-  useEffect(() => {
-    const api = (
-      window as unknown as {
-        electronAPI?: {
-          onUpdateProgress?: (cb: (p: number) => void) => () => void
-          onUpdateReady?: (cb: () => void) => () => void
-        }
+  const api = (
+    window as unknown as {
+      electronAPI?: {
+        onUpdateProgress?: (cb: (p: number) => void) => () => void
+        onUpdateReady?: (cb: () => void) => () => void
+        installUpdate?: () => void
       }
-    ).electronAPI
+    }
+  ).electronAPI
+
+  useEffect(() => {
     if (!api) return // Not running in Electron
 
-    const removeProgress = api.onUpdateProgress((percent: number) => {
+    const removeProgress = api.onUpdateProgress?.((percent: number) => {
       setProgress(percent)
     })
 
-    const removeReady = api.onUpdateReady(() => {
+    const removeReady = api.onUpdateReady?.(() => {
       setProgress(null)
       setReady(true)
     })
@@ -47,7 +49,7 @@ export function UpdateBanner() {
       alignItems="center"
       gap="$3"
       zIndex={1000}
-      animation="quick"
+      transition="quick"
     >
       {ready ? (
         <>
@@ -58,13 +60,7 @@ export function UpdateBanner() {
           <Button
             size="$3"
             theme="active"
-            onPress={() =>
-              (
-                window as unknown as {
-                  electronAPI?: { installUpdate?: () => void }
-                }
-              ).electronAPI?.installUpdate()
-            }
+            onPress={() => api?.installUpdate?.()}
           >
             Restart & Update
           </Button>

@@ -26,24 +26,39 @@ export function IdentityGate({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const api = window.electronAPI
-    if (!api?.safestoreGet) {
-      setMounted(true)
-      return
-    }
-    api.safestoreGet().then((json: string | null) => {
+    if (api?.safestoreGet) {
+      api.safestoreGet().then((json: string | null) => {
+        if (json) {
+          try {
+            setIdentity(deserializeFromStorage(json))
+          } catch {
+            // Corrupted data — fall through to WelcomeScreen
+          }
+        }
+        setMounted(true)
+      })
+    } else {
+      // Non-Electron environments (browser, Playwright): fall back to localStorage.
+      // Each browser context has isolated storage, so this naturally gives
+      // separate sessions per context in tests.
+      const json = localStorage.getItem('geechat-identity')
       if (json) {
         try {
           setIdentity(deserializeFromStorage(json))
         } catch {
-          // Corrupted data — fall through to WelcomeScreen
+          localStorage.removeItem('geechat-identity')
         }
       }
       setMounted(true)
-    })
+    }
   }, [])
 
   const persist = useCallback((updated: Identity) => {
-    window.electronAPI?.safestoreSet(serializeForStorage(updated))
+    if (window.electronAPI?.safestoreSet) {
+      window.electronAPI.safestoreSet(serializeForStorage(updated))
+    } else {
+      localStorage.setItem('geechat-identity', serializeForStorage(updated))
+    }
     setIdentity(updated)
   }, [])
 
@@ -86,7 +101,7 @@ export function IdentityGate({ children }: { children: React.ReactNode }) {
   )
 
   if (!mounted) return null
-  if (!identity) return <WelcomeScreen onIdentityReady={setIdentity} />
+  if (!identity) return <WelcomeScreen onIdentityReady={persist} />
 
   return (
     <IdentityContext.Provider

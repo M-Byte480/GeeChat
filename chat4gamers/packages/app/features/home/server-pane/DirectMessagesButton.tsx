@@ -17,7 +17,6 @@ export function DirectMessagesButton({ isActive, onPress }: Props) {
           theme={isActive ? 'active' : undefined}
           borderWidth={isActive ? 2 : 0}
           borderColor={isActive ? '$color8' : 'transparent'}
-          animation="bouncy"
           hoverStyle={{ borderRadius: '$4', scale: 1.05 }}
           onPress={onPress}
         >
@@ -33,14 +32,6 @@ export function DirectMessagesButton({ isActive, onPress }: Props) {
       <Tooltip.Content
         enterStyle={{ x: -10, opacity: 0 }}
         exitStyle={{ x: -10, opacity: 0 }}
-        animation={[
-          'quick',
-          {
-            opacity: {
-              overshootClamping: true,
-            },
-          },
-        ]}
       >
         <Text fontSize="$2">Direct Messages</Text>
       </Tooltip.Content>

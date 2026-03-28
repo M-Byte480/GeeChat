@@ -12,7 +12,7 @@ export function AvatarButton({
       padding={0} // Ensure the image fills the circle
       overflow="hidden"
       hoverStyle={{ borderRadius: '$4', scale: 1.1 }} // Discord-style hover effect
-      animation="bouncy"
+      transition="bouncy"
       onClick={onClickCallback}
     >
       {/* If server.image exists, we'd use an Avatar or Image here */}

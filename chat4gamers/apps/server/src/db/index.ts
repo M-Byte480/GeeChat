@@ -6,7 +6,9 @@ import { dirname, resolve } from 'node:path'
 import * as schema from './schema.js'
 
 const isProd = process.env.NODE_ENV === 'production'
-const dbPath = isProd ? '/app/data/chat.db' : resolve('./data/chat.db')
+const dbPath =
+  process.env.DB_PATH ??
+  (isProd ? '/app/data/chat.db' : resolve('./data/chat.db'))
 
 // Auto-create the directory if it doesn't exist
 mkdirSync(dirname(dbPath), { recursive: true })
@@ -160,6 +162,33 @@ sqlite.exec(`
         );
 
     CREATE INDEX IF NOT EXISTS dm_idx ON direct_messages (sender_id, recipient_id, timestamp);
+
+    CREATE TABLE IF NOT EXISTS sessions (
+        token       TEXT    PRIMARY KEY,
+        public_key  TEXT    NOT NULL REFERENCES users(public_key) ON DELETE CASCADE,
+        expires_at  INTEGER NOT NULL,
+        created_at  INTEGER NOT NULL DEFAULT (unixepoch())
+    );
+
+    CREATE TABLE IF NOT EXISTS relay_subscriptions (
+        id               INTEGER PRIMARY KEY AUTOINCREMENT,
+        relay_id         TEXT    NOT NULL,
+        user_public_key  TEXT    NOT NULL,
+        topic            TEXT    NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS media (
+        id           INTEGER PRIMARY KEY AUTOINCREMENT,
+        uploader_key TEXT    NOT NULL REFERENCES users(public_key),
+        url          TEXT    NOT NULL,
+        mime_type    TEXT    NOT NULL,
+        size_bytes   INTEGER NOT NULL,
+        context      TEXT,
+        context_id   TEXT,
+        created_at   INTEGER NOT NULL DEFAULT (unixepoch())
+    );
+
+    CREATE INDEX IF NOT EXISTS channel_timestamp_idx ON messages (channel_id, timestamp);
 `)
 
 // Migration guards for databases predating this schema

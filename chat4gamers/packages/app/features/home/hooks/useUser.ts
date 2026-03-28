@@ -9,6 +9,7 @@ export interface UserProfile {
   avatarUrl: string | null
   role: 'owner' | 'admin' | 'member'
   status: 'active' | 'awaiting_to_join' | 'banned'
+  joinedAt?: string
 }
 
 export function useUser(
