@@ -95,13 +95,13 @@ export function AddServerDialog({
         return
       }
 
-      const server = buildServer(url)
-      onAddServer(server)
-
       if (data.status === 'awaiting_to_join') {
+        const server = buildServer(url)
+        onAddServer({ ...server, pending: true })
         setPendingServer(server)
         setStep('pending')
       } else {
+        onAddServer(buildServer(url))
         handleClose()
       }
     } catch {

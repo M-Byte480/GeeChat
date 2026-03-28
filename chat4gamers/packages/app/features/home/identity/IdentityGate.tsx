@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Identity, Server } from './types'
 import { deserializeFromStorage, serializeForStorage } from './crypto'
 import { WelcomeScreen } from './WelcomeScreen'
@@ -23,6 +23,9 @@ declare global {
 export function IdentityGate({ children }: { children: React.ReactNode }) {
   const [identity, setIdentity] = useState<Identity | null>(null)
   const [mounted, setMounted] = useState(false)
+  // Always-current ref so stable callbacks (configureClient) never close over stale identity
+  const identityRef = useRef(identity)
+  identityRef.current = identity
 
   useEffect(() => {
     const api = window.electronAPI
@@ -89,6 +92,19 @@ export function IdentityGate({ children }: { children: React.ReactNode }) {
     [identity, persist]
   )
 
+  const updateServer = useCallback(
+    (id: string, updates: Partial<Server>) => {
+      if (!identity) return
+      persist({
+        ...identity,
+        servers: identity.servers.map((s) =>
+          s.id === id ? { ...s, ...updates } : s
+        ),
+      })
+    },
+    [identity, persist]
+  )
+
   const deleteServer = useCallback(
     (serverUrl: string) => {
       if (!identity) return
@@ -111,21 +127,26 @@ export function IdentityGate({ children }: { children: React.ReactNode }) {
         changePfp,
         servers: identity.servers,
         addServer,
+        updateServer,
         deleteServer,
       }}
     >
       <ApiProvider
         identity={identity}
         onSessionExpired={(baseUrl) => {
+          const cur = identityRef.current
+          if (!cur) return
           persist({
-            ...identity,
-            sessionTokens: { ...identity.sessionTokens, [baseUrl]: undefined },
+            ...cur,
+            sessionTokens: { ...cur.sessionTokens, [baseUrl]: undefined },
           })
         }}
         persistSessionToken={(baseUrl, token) => {
+          const cur = identityRef.current
+          if (!cur) return
           persist({
-            ...identity,
-            sessionTokens: { ...identity.sessionTokens, [baseUrl]: token },
+            ...cur,
+            sessionTokens: { ...cur.sessionTokens, [baseUrl]: token },
           })
         }}
       >
