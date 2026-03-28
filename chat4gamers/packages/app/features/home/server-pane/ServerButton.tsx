@@ -29,12 +29,12 @@ export function ServerButton({
             size="$5"
             padding={0}
             overflow="hidden"
-            theme={isActive ? 'active' : undefined}
+            theme={isActive ? 'dark_black_accent' : undefined}
             borderWidth={isActive ? 2 : 0}
             borderColor={isActive ? '$color8' : 'transparent'}
             hoverStyle={{
-              borderRadius: '$4',
-              scale: 1.05,
+              borderRadius: '$8',
+              scale: 1.02,
             }}
             onPress={() => onSelect(server)}
           >
