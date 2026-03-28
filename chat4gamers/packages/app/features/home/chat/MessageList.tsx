@@ -7,33 +7,27 @@ import { MessageRowSkeleton } from 'app/features/home/chat/MessageRowSkeleton'
 
 type Props = {
   messages: Message[]
+  isLoading: boolean
   serverUrl: string
   typingUser?: string | null
 }
 
 export const MessageList = memo(
-  ({ messages, serverUrl, typingUser }: Props) => {
+  ({ messages, isLoading, serverUrl, typingUser }: Props) => {
     const INITIAL_LIMIT = 20
     const [limit, setLimit] = useState(INITIAL_LIMIT)
-    const [isReady, setIsReady] = useState(false)
-
-    // Reset when channel changes
-    useEffect(() => {
-      setIsReady(false)
-    }, [serverUrl])
 
     const scrollViewRef = useRef<{
       scrollToEnd: (opts: { animated: boolean }) => void
     } | null>(null)
     const isAtBottomRef = useRef(true)
+    const initialLoadRef = useRef(true)
     const { identity } = useIdentity()
 
     const visibleMessages = useMemo(
       () => messages.slice(-limit),
       [messages, limit]
     )
-
-    const initialLoadRef = useRef(true)
 
     const skeletons = useMemo(
       () =>
@@ -42,10 +36,6 @@ export const MessageList = memo(
         )),
       []
     )
-
-    useEffect(() => {
-      initialLoadRef.current = true
-    }, []) // reset on mount
 
     const handleScroll = useCallback(
       (event: {
@@ -71,8 +61,9 @@ export const MessageList = memo(
 
       if (initialLoadRef.current) {
         initialLoadRef.current = false
-        // Give rows time to paint before jumping to bottom
-        scrollViewRef.current?.scrollToEnd({ animated: false })
+        requestAnimationFrame(() => {
+          scrollViewRef.current?.scrollToEnd({ animated: false })
+        })
         return
       }
 
@@ -89,17 +80,8 @@ export const MessageList = memo(
 
     const messageList = useMemo(
       () =>
-        visibleMessages.map((msg, index) => (
-          <MessageRow
-            key={msg.id}
-            message={msg}
-            serverUrl={serverUrl}
-            onLayout={
-              index === visibleMessages.length - 1
-                ? () => setIsReady(true)
-                : undefined
-            }
-          />
+        visibleMessages.map((msg) => (
+          <MessageRow key={msg.id} message={msg} serverUrl={serverUrl} />
         )),
       [visibleMessages, serverUrl]
     )
@@ -112,11 +94,7 @@ export const MessageList = memo(
         onScroll={handleScroll}
         scrollEventThrottle={100}
       >
-        <YStack gap="$2">
-          {skeletons}
-          {/* Render messages on top of skeletons, hidden until ready */}
-          <YStack display={isReady ? 'flex' : 'none'}>{messageList}</YStack>
-        </YStack>
+        <YStack gap="$2">{isLoading ? skeletons : messageList}</YStack>
         {typingUser && (
           <Paragraph size="$1" color="$gray10" mt="$2">
             {typingUser} is typing...
