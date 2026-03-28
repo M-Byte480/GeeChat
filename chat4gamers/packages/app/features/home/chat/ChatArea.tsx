@@ -20,7 +20,7 @@ export const ChatArea = ({ channelId, serverUrl, members }: Props) => {
   const { identity } = useIdentity()
   const socketRef = useRef<WebSocket | null>(null)
 
-  const { messages, typingUser, sendMessage } = useMessages({
+  const { messages, isLoading, typingUser, sendMessage } = useMessages({
     channelId,
     identity,
     serverUrl,
@@ -55,7 +55,9 @@ export const ChatArea = ({ channelId, serverUrl, members }: Props) => {
 
       <Profiler id={'ScrollView'} onRender={onRender}>
         <MessageList
+          key={channelId}
           messages={messages}
+          isLoading={isLoading}
           serverUrl={serverUrl}
           typingUser={typingUser}
         />

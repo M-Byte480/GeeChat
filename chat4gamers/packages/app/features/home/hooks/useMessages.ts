@@ -32,6 +32,11 @@ export function useMessages({
     return s.messageCache[channelId]?.messages ?? EMPTY_MESSAGES
   })
 
+  const [isLoading, setIsLoading] = useState(
+    () =>
+      (useAppStore.getState().messageCache[channelId]?.messages ?? [])
+        .length === 0
+  )
   const [typingUser, setTypingUser] = useState<string | null>(null)
   const [errorBanner, setErrorBanner] = useState<string | null>(null)
   const errorTimerRef = useRef<NodeJS.Timeout | null>(null)
@@ -51,6 +56,7 @@ export function useMessages({
       : ''
 
     if (cached.length > 0) {
+      setIsLoading(false)
       // Background fetch — silent
       apiFetch(apiBase, `/chat-history?channel=${channelId}${since}`)
         .then((res) => (res.ok ? res.json() : []))
@@ -68,6 +74,7 @@ export function useMessages({
         })
         .catch(() => {})
     } else {
+      setIsLoading(true)
       // No cache — full blocking fetch
       apiFetch(apiBase, `/chat-history?channel=${channelId}`)
         .then((res) => {
@@ -81,6 +88,7 @@ export function useMessages({
         .catch(() =>
           showError('Could not load message history. Is the server running?')
         )
+        .finally(() => setIsLoading(false))
     }
 
     // WebSocket always runs regardless of cache
@@ -170,6 +178,7 @@ export function useMessages({
 
   return {
     messages: cachedMessages,
+    isLoading,
     typingUser,
     errorBanner,
     setErrorBanner,
