@@ -2,9 +2,9 @@ import { Button, Text, Tooltip } from '@my/ui'
 import { ContextMenu } from 'app/features/home/components/ContextMenu'
 
 type ServerButtonProps = {
-  server: { id: string; name: string }
+  server: { id: string; name: string; pending?: boolean }
   isActive: boolean
-  onSelect: (server: { id: string; name: string }) => void
+  onSelect: (server: { id: string; name: string; pending?: boolean }) => void
   options: { label: string; onPress: () => void }[]
 }
 
@@ -29,9 +29,13 @@ export function ServerButton({
             size="$5"
             padding={0}
             overflow="hidden"
+            opacity={server.pending ? 0.45 : 1}
             theme={isActive ? 'dark_black_accent' : undefined}
-            borderWidth={isActive ? 2 : 0}
-            borderColor={isActive ? '$color8' : 'transparent'}
+            borderWidth={isActive ? 2 : server.pending ? 2 : 0}
+            borderColor={
+              isActive ? '$color8' : server.pending ? '$color6' : 'transparent'
+            }
+            borderStyle={server.pending ? 'dashed' : 'solid'}
             hoverStyle={{
               borderRadius: '$8',
               scale: 1.02,
@@ -59,7 +63,10 @@ export function ServerButton({
             },
           ]}
         >
-          <Text fontSize="$2">{server.name}</Text>
+          <Text fontSize="$2">
+            {server.name}
+            {server.pending ? ' (pending)' : ''}
+          </Text>
         </Tooltip.Content>
       </Tooltip>
     </ContextMenu>

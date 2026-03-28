@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Button, Image, Sheet, Spinner, Text, XStack, YStack } from '@my/ui'
 import { Check, X } from '@tamagui/lucide-icons'
+import { apiFetch } from '@my/api-client'
 
 type PendingMember = {
   publicKey: string
@@ -30,7 +31,7 @@ export function JoinRequestsSheet({
   const fetchPending = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await fetch(`${serverUrl}/members/pending`)
+      const res = await apiFetch(serverUrl, '/members/pending')
       const data = await res.json()
       if (Array.isArray(data)) setPending(data)
     } catch {
@@ -47,11 +48,10 @@ export function JoinRequestsSheet({
   const act = async (publicKey: string, action: 'approve' | 'deny') => {
     setActioning(publicKey)
     try {
-      await fetch(
-        `${serverUrl}/members/${encodeURIComponent(publicKey)}/${action}`,
-        {
-          method: 'POST',
-        }
+      await apiFetch(
+        serverUrl,
+        `/members/${encodeURIComponent(publicKey)}/${action}`,
+        { method: 'POST' }
       )
       setPending((prev) => prev.filter((m) => m.publicKey !== publicKey))
     } catch {

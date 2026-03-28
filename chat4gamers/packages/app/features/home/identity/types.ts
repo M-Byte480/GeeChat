@@ -2,6 +2,7 @@ export type Server = {
   id: string
   name: string
   url: string // e.g. "https://REDACTED_DOMAIN" or "http://192.168.1.100:4000"
+  pending?: boolean // true while awaiting owner approval
 }
 
 export type Identity = {

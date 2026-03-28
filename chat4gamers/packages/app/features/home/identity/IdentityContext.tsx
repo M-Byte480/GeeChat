@@ -7,6 +7,7 @@ interface IdentityContextValue {
   changePfp: (dataUrl: string) => void
   servers: Server[]
   addServer: (server: Server) => void
+  updateServer: (id: string, updates: Partial<Server>) => void
   deleteServer: (url: string) => void
 }
 
