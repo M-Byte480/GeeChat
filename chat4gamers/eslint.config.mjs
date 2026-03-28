@@ -50,7 +50,7 @@ export default tseslint.config(
       'react-hooks/set-state-in-effect': 'off',
 
       // General
-      'no-console': ['warn', {allow: ['warn', 'error']}],
+      'no-console': ['warn', { allow: ['warn', 'error'] }],
       'no-debugger': 'error',
       'prefer-const': 'error',
       'no-var': 'error',
