@@ -4,6 +4,10 @@ import { db } from '../db/index.js'
 import { members, users } from '../db/schema.js'
 import { requireAdmin, requireAuth, requireMember } from '../lib/middleware.js'
 import { broadcast } from '../ws.js'
+import { rateLimit } from '../lib/rateLimit.js'
+
+// 5 join attempts per IP per 10 minutes
+const joinLimit = rateLimit(5, 10 * 60_000)
 
 // ── Owner bootstrap token ────────────────────────────────────────────────────
 // Generated once when the server has no owner. Printed to the terminal so the
@@ -35,7 +39,7 @@ const router = new Hono()
  *  - Returning user (same publicKey, new device) → already has a member record → let them in.
  *  - New user → insert with awaiting_to_join, except the very first user who becomes owner.
  */
-router.post('/join', async (c) => {
+router.post('/join', joinLimit, async (c) => {
   const body = await c.req.json()
   const {
     publicKey,

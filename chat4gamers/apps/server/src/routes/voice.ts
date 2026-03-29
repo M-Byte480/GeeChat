@@ -18,7 +18,6 @@ router.get('/get-voice-token', requireAuth, requireMember, async (c) => {
     room: roomName,
     canPublish: true,
     canSubscribe: true,
-    roomAdmin: true,
   })
 
   const token = await at.toJwt()
@@ -28,6 +27,18 @@ router.get('/get-voice-token', requireAuth, requireMember, async (c) => {
 
 router.post('/voice-state', requireAuth, requireMember, async (c) => {
   const { channelId, participants } = await c.req.json()
+
+  if (
+    typeof channelId !== 'string' ||
+    channelId.length === 0 ||
+    channelId.length > 100
+  ) {
+    return c.json({ error: 'Invalid channelId' }, 400)
+  }
+  if (!Array.isArray(participants) || participants.length > 50) {
+    return c.json({ error: 'Invalid participants' }, 400)
+  }
+
   broadcast(JSON.stringify({ type: 'VOICE_STATE', channelId, participants }))
   return c.json({ ok: true })
 })

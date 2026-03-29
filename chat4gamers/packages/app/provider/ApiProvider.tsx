@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { configureAvatarStorage, configureClient } from '@my/api-client'
 import { Identity } from 'app/features/home/identity'
 import { signChallenge } from 'app/features/home/identity/crypto'
@@ -21,6 +21,11 @@ export function ApiProvider({
   onSessionExpired,
   persistSessionToken,
 }: ApiProviderProps) {
+  // Always-current ref so getSessionToken always reads the latest sessionTokens
+  // even though configureClient only re-runs when the publicKey changes
+  const identityRef = useRef(identity)
+  identityRef.current = identity
+
   useEffect(() => {
     if (
       typeof Notification !== 'undefined' &&
@@ -39,7 +44,8 @@ export function ApiProvider({
       publicKey: identity.publicKey,
       signChallenge: (challenge) =>
         signChallenge(identity.privateKeyBytes, challenge),
-      getSessionToken: (baseUrl) => identity.sessionTokens[baseUrl] ?? null,
+      getSessionToken: (baseUrl) =>
+        identityRef.current?.sessionTokens[baseUrl] ?? null,
       setSessionToken: (baseUrl, token) => persistSessionToken(baseUrl, token),
       onSessionExpired,
     })
