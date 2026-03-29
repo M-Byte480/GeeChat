@@ -54,6 +54,7 @@ const HomeScreenInner = memo(function HomeScreenInner() {
     identity,
     changeUsername,
     changePfp,
+    changeProfile,
     servers,
     addServer,
     deleteServer,
@@ -299,6 +300,7 @@ const HomeScreenInner = memo(function HomeScreenInner() {
         <OverlayManager
           serverUrl={activeServerUrl}
           changeUsername={changeUsername}
+          changeProfile={changeProfile}
           identity={identity}
           showEditUsername={showEditUsername}
           setShowEditUsername={setShowEditUsername}

@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { useAppStore } from 'app/features/home/hooks/useAppStore'
-import { apiFetch } from '@my/api-client'
+import { apiFetch, invalidateUser } from '@my/api-client'
 
 function deriveWsBase(url: string): string {
   return url.replace(/^https:\/\//, 'wss://').replace(/^http:\/\//, 'ws://')
@@ -32,6 +32,8 @@ export function useChannelsController(serverUrl: string | null) {
             if (Array.isArray(data)) setChannels(serverUrl, data)
           })
           .catch(() => {})
+      } else if (msg.type === 'PROFILE_UPDATED' && msg.publicKey) {
+        invalidateUser(msg.publicKey)
       }
     }
     return () => ws.close()
