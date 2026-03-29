@@ -2,7 +2,7 @@ import { Hono } from 'hono'
 import { eq } from 'drizzle-orm'
 import { db } from '../db/index.js'
 import { members, users } from '../db/schema.js'
-import { requireAdmin, requireAuth } from '../lib/middleware.js'
+import { requireAdmin, requireAuth, requireMember } from '../lib/middleware.js'
 import { broadcast } from '../ws.js'
 
 // ── Owner bootstrap token ────────────────────────────────────────────────────
@@ -167,7 +167,7 @@ router.patch('/profile', requireAuth, async (c) => {
  * GET /members
  * Returns all active members — used by the client to populate the member pane.
  */
-router.get('/members', requireAuth, async (c) => {
+router.get('/members', requireAuth, requireMember, async (c) => {
   // todo: pagination for large servers, and filter by status (active, pending, etc)
 
   const rows = await db
@@ -224,13 +224,18 @@ router.post(
 /**
  * POST /members/:publicKey/deny
  */
-router.post('/members/:publicKey/deny', async (c) => {
-  const { publicKey } = c.req.param()
-  await db
-    .update(members)
-    .set({ status: 'denied' })
-    .where(eq(members.userPublicKey, publicKey))
-  return c.json({ ok: true })
-})
+router.post(
+  '/members/:publicKey/deny',
+  requireAuth,
+  requireAdmin,
+  async (c) => {
+    const { publicKey } = c.req.param()
+    await db
+      .update(members)
+      .set({ status: 'denied' })
+      .where(eq(members.userPublicKey, publicKey))
+    return c.json({ ok: true })
+  }
+)
 
 export default router
