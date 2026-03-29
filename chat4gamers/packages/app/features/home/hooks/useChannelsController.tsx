@@ -27,7 +27,7 @@ export function useChannelsController(serverUrl: string | null) {
     ws.onmessage = (event) => {
       const msg = JSON.parse(event.data)
       if (msg.type === 'CHANNEL_CREATED') {
-        apiFetch(`${serverUrl}`, `/channel`)
+        apiFetch(`${serverUrl}`, `/channels`)
           .then((r) => r.json())
           .then((data) => {
             if (Array.isArray(data)) setChannels(serverUrl, data)

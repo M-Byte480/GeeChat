@@ -4,6 +4,7 @@ import { sessions, users } from '../db/schema.js'
 import { eq } from 'drizzle-orm'
 import { PublicKey } from '../types.js'
 import crypto from 'crypto'
+import { rateLimit } from '../lib/rateLimit.js'
 
 const auth = new Hono()
 const pendingChallenges = new Map<
@@ -11,7 +12,12 @@ const pendingChallenges = new Map<
   { nonce: string; expiresAt: number }
 >()
 
-auth.post('/challenge', async (c) => {
+// 10 challenge requests per IP per minute
+const challengeLimit = rateLimit(10, 60_000)
+// 10 verify attempts per IP per minute
+const verifyLimit = rateLimit(10, 60_000)
+
+auth.post('/challenge', challengeLimit, async (c) => {
   const { publicKey } = await c.req.json()
 
   if (!publicKey) {
@@ -27,7 +33,7 @@ auth.post('/challenge', async (c) => {
   return c.json({ challenge: nonceHex })
 })
 
-auth.post('/verify', async (c) => {
+auth.post('/verify', verifyLimit, async (c) => {
   const { publicKey: publicKeyBase64, signature: signatureBase64 } =
     await c.req.json()
 

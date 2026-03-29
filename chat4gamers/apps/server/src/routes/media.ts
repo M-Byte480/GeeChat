@@ -38,6 +38,15 @@ app.post('/upload', requireAuth, requireMember, async (c) => {
 app.get('/uploads/:filename', requireAuth, requireMember, async (c) => {
   const url = c.req.param('filename')
 
+  // Reject anything that doesn't look like a UUID filename to prevent path traversal
+  if (
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.[a-z]+$/.test(
+      url
+    )
+  ) {
+    return c.json({ error: 'Not found' }, 404)
+  }
+
   const mediaRecord = await db.query.media.findFirst({
     where: eq(media.url, url),
   })
