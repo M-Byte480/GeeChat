@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { useAppStore } from 'app/features/home/hooks/useAppStore'
-import { apiFetch, invalidateUser } from '@my/api-client'
+import { apiFetch, getConfig, invalidateUser } from '@my/api-client'
 
 function deriveWsBase(url: string): string {
   return url.replace(/^https:\/\//, 'wss://').replace(/^http:\/\//, 'ws://')
@@ -22,7 +22,8 @@ export function useChannelsController(serverUrl: string | null) {
 
   useEffect(() => {
     if (!serverUrl) return
-    const ws = new WebSocket(deriveWsBase(serverUrl) + '/ws')
+    const token = getConfig().getSessionToken(serverUrl)
+    const ws = new WebSocket(deriveWsBase(serverUrl) + `/ws?token=${token}`)
     ws.onmessage = (event) => {
       const msg = JSON.parse(event.data)
       if (msg.type === 'CHANNEL_CREATED') {

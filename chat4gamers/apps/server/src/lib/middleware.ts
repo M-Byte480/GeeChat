@@ -50,13 +50,65 @@ export async function requireMember(c: Context, next: Next) {
 
 export async function requireAdmin(c: Context, next: Next) {
   const user = c.get('user')
-  const member = await db.query.members.findFirst({
-    where: and(
-      eq(members.userPublicKey, user.publicKey),
-      inArray(members.role, ['owner', 'admin'])
-    ),
-  })
+  const member = db
+    .select()
+    .from(members)
+    .where(
+      and(
+        eq(members.userPublicKey, user.publicKey),
+        inArray(members.role, ['owner', 'admin']),
+        eq(members.status, 'active')
+      )
+    )
+    .get()
 
   if (!member) return c.json({ error: 'Forbidden' }, 403)
+  await next()
+}
+
+/** For WebSocket upgrade requests — token comes as ?token= query param */
+export async function requireWsAuth(c: Context, next: Next) {
+  const token = c.req.query('token')
+
+  if (!token) {
+    return c.text('Unauthorized', 401)
+  }
+
+  const session = db
+    .select()
+    .from(sessions)
+    .where(eq(sessions.token, token))
+    .get()
+
+  if (!session || session.expiresAt < new Date()) {
+    return c.text('Session expired', 401)
+  }
+
+  const user = db
+    .select()
+    .from(users)
+    .where(eq(users.publicKey, session.publicKey))
+    .get()
+
+  if (!user) {
+    return c.text('Unauthorized', 401)
+  }
+
+  const member = db
+    .select()
+    .from(members)
+    .where(
+      and(
+        eq(members.userPublicKey, user.publicKey),
+        eq(members.status, 'active')
+      )
+    )
+    .get()
+
+  if (!member) {
+    return c.text('Forbidden', 403)
+  }
+
+  c.set('user', user)
   await next()
 }

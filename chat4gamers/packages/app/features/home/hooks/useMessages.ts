@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { signMessage } from '../identity/crypto'
 import type { Identity } from '../identity/types'
-import { apiFetch } from '@my/api-client'
+import { apiFetch, getConfig } from '@my/api-client'
 import type { Message } from '../types/types'
 import { fireDesktopNotification } from '../utils/Notification'
 import { useAppStore } from 'app/features/home/hooks/useAppStore'
@@ -92,7 +92,8 @@ export function useMessages({
     }
 
     // WebSocket always runs regardless of cache
-    const ws = new WebSocket(`${wsBase}/ws`)
+    const token = getConfig().getSessionToken(serverUrl)
+    const ws = new WebSocket(`${wsBase}/ws?token=${token}`)
     socketRef.current = ws
 
     ws.onmessage = (event) => {

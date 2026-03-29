@@ -1,8 +1,11 @@
 // Shared WebSocket client registry — imported by route handlers that need to broadcast
 
+import { requireWsAuth } from './lib/middleware.js'
+
 interface WsClient {
   readyState: number
   send: (data: string) => void
+  close: () => void
 }
 
 export const clients = new Set<WsClient>()
@@ -32,31 +35,36 @@ export function sendToUser(publicKey: string, payload: string): boolean {
 export function registerWsRoute(app: any, upgradeWebSocket: any) {
   app.get(
     '/ws',
-    upgradeWebSocket(() => ({
-      onOpen(_e: unknown, ws: WsClient) {
-        clients.add(ws)
-      },
-      onMessage(event: { data: { toString: () => string } }, ws: WsClient) {
-        const data = JSON.parse(event.data.toString())
-        if (data.type === 'TYPING') {
-          clients.forEach((client) => {
-            if (client !== ws && client.readyState === 1) {
-              client.send(JSON.stringify(data))
-            }
-          })
-        } else if (data.type === 'REGISTER' && data.publicKey) {
-          clientsByKey.set(data.publicKey, ws)
-        }
-      },
-      onClose(_e: unknown, ws: WsClient) {
-        clients.delete(ws)
-        for (const [key, client] of clientsByKey) {
-          if (client === ws) {
-            clientsByKey.delete(key)
-            break
+    requireWsAuth,
+    upgradeWebSocket((c: any) => {
+      const user = c.get('user')
+      return {
+        onOpen(_e: unknown, ws: WsClient) {
+          clients.add(ws)
+          if (user?.publicKey) {
+            clientsByKey.set(user.publicKey, ws)
           }
-        }
-      },
-    }))
+        },
+        onMessage(event: { data: { toString: () => string } }, ws: WsClient) {
+          const data = JSON.parse(event.data.toString())
+          if (data.type === 'TYPING') {
+            clients.forEach((client) => {
+              if (client !== ws && client.readyState === 1) {
+                client.send(JSON.stringify(data))
+              }
+            })
+          }
+        },
+        onClose(_e: unknown, ws: WsClient) {
+          clients.delete(ws)
+          for (const [key, client] of clientsByKey) {
+            if (client === ws) {
+              clientsByKey.delete(key)
+              break
+            }
+          }
+        },
+      }
+    })
   )
 }
