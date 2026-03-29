@@ -23,7 +23,7 @@ export const MessageList = memo(
     scrollbarVisible,
     insetScrollbar,
   }: Props) => {
-    const INITIAL_LIMIT = 20
+    const INITIAL_LIMIT = 50
     const [limit, setLimit] = useState(INITIAL_LIMIT)
 
     const scrollViewRef = useRef<{
@@ -31,6 +31,7 @@ export const MessageList = memo(
     } | null>(null)
     const isAtBottomRef = useRef(true)
     const initialLoadRef = useRef(true)
+    const scrollYRef = useRef(0)
     const { identity } = useIdentity()
 
     const visibleMessages = useMemo(
@@ -56,6 +57,7 @@ export const MessageList = memo(
       }) => {
         const { contentOffset, layoutMeasurement, contentSize } =
           event.nativeEvent
+        scrollYRef.current = contentOffset.y
         if (contentOffset.y < 100 && limit < messages.length) {
           setLimit((prev) => Math.min(prev + 50, messages.length))
         }
@@ -65,13 +67,30 @@ export const MessageList = memo(
       [limit, messages.length]
     )
 
+    // After a limit increase, the DOM re-renders with new content above the current
+    // scroll position. On web the scroll event may not re-fire even if we're still
+    // near y=0, so we check once via rAF and load another batch if needed.
     useEffect(() => {
-      if (messages.length === 0) return
+      if (limit >= messages.length) return
+      const id = requestAnimationFrame(() => {
+        if (scrollYRef.current < 100) {
+          setLimit((prev) => Math.min(prev + 50, messages.length))
+        }
+      })
+      return () => cancelAnimationFrame(id)
+    }, [limit, messages.length])
+
+    useEffect(() => {
+      // Don't scroll while skeleton is showing — content height is wrong.
+      // When isLoading flips to false this effect re-runs with the real messages.
+      if (messages.length === 0 || isLoading) return
 
       if (initialLoadRef.current) {
         initialLoadRef.current = false
         requestAnimationFrame(() => {
-          scrollViewRef.current?.scrollToEnd({ animated: false })
+          requestAnimationFrame(() => {
+            scrollViewRef.current?.scrollToEnd({ animated: false })
+          })
         })
         return
       }
@@ -85,14 +104,30 @@ export const MessageList = memo(
         })
       }
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [messages])
+    }, [messages, isLoading])
 
     const messageList = useMemo(
       () =>
-        visibleMessages.map((msg) => (
-          <MessageRow key={msg.id} message={msg} serverUrl={serverUrl} />
-        )),
-      [visibleMessages, serverUrl]
+        visibleMessages.map((msg, i) => {
+          const prev = visibleMessages[i - 1]
+          const showHeader =
+            !prev ||
+            prev.senderId !== msg.senderId ||
+            new Date(msg.timestamp).getTime() -
+              new Date(prev.timestamp).getTime() >
+              5 * 60_000
+          return (
+            <MessageRow
+              key={msg.id}
+              message={msg}
+              serverUrl={serverUrl}
+              identity={identity}
+              showHeader={showHeader}
+              isFirst={i === 0}
+            />
+          )
+        }),
+      [visibleMessages, serverUrl, identity]
     )
 
     return (
@@ -106,7 +141,7 @@ export const MessageList = memo(
         onScroll={handleScroll}
         scrollEventThrottle={100}
       >
-        <YStack gap="$2">{isLoading ? skeletons : messageList}</YStack>
+        <YStack>{isLoading ? skeletons : messageList}</YStack>
         {typingUser && (
           <Paragraph size="$1" color="$gray10" mt="$2">
             {typingUser} is typing...

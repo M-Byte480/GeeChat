@@ -1,14 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { signMessage } from '../identity/crypto'
 import type { Identity } from '../identity/types'
-import { apiFetch, getConfig } from '@my/api-client'
+import { apiFetch } from '@my/api-client'
 import type { Message } from '../types/types'
 import { fireDesktopNotification } from '../utils/Notification'
 import { useAppStore } from 'app/features/home/hooks/useAppStore'
-
-function deriveWsBase(url: string): string {
-  return url.replace(/^https:\/\//, 'wss://').replace(/^http:\/\//, 'ws://')
-}
+import { useServerSocket } from './useServerSocket'
 
 const EMPTY_MESSAGES: Message[] = []
 
@@ -26,17 +23,21 @@ export function useMessages({
   socketRef,
 }: Params) {
   const apiBase = serverUrl
-  const wsBase = deriveWsBase(serverUrl)
 
   const cachedMessages = useAppStore((s) => {
     return s.messageCache[channelId]?.messages ?? EMPTY_MESSAGES
   })
 
-  const [isLoading, setIsLoading] = useState(
-    () =>
-      (useAppStore.getState().messageCache[channelId]?.messages ?? [])
-        .length === 0
-  )
+  // Derived-state pattern: when channelId changes, reset isLoading to true
+  // synchronously during render (before paint) so the skeleton always shows
+  // during the channel switch window. React discards + retries the render
+  // with the new state — no extra useEffect needed.
+  const [isLoading, setIsLoading] = useState(true)
+  const [prevChannelId, setPrevChannelId] = useState(channelId)
+  if (prevChannelId !== channelId) {
+    setPrevChannelId(channelId)
+    setIsLoading(true)
+  }
   const [typingUser, setTypingUser] = useState<string | null>(null)
   const [errorBanner, setErrorBanner] = useState<string | null>(null)
   const errorTimerRef = useRef<NodeJS.Timeout | null>(null)
@@ -90,20 +91,19 @@ export function useMessages({
         )
         .finally(() => setIsLoading(false))
     }
+  }, [channelId, showError, apiBase])
 
-    // WebSocket always runs regardless of cache
-    const token = getConfig().getSessionToken(serverUrl)
-    const ws = new WebSocket(`${wsBase}/ws?token=${token}`)
-    socketRef.current = ws
-
-    ws.onmessage = (event) => {
-      const msg = JSON.parse(event.data)
+  useServerSocket(
+    serverUrl,
+    (msg) => {
       if (msg.type === 'NEW_MESSAGE' && msg.channelId === channelId) {
-        const isMentioned = msg.content?.includes(`@${identity.publicKey}`)
+        const isMentioned = (msg.content as string)?.includes(
+          `@${identity.publicKey}`
+        )
         if (isMentioned && document.visibilityState !== 'visible') {
           fireDesktopNotification({
             title: `${msg.senderName} mentioned you`,
-            body: msg.content,
+            body: msg.content as string,
             serverUrl,
           })
         }
@@ -113,22 +113,26 @@ export function useMessages({
           (m: Message) => m.id === msg.tempId
         )
         if (optimisticIndex !== -1) {
-          useAppStore.getState().updateMessage(channelId, msg.tempId, msg)
+          useAppStore
+            .getState()
+            .updateMessage(
+              channelId,
+              msg.tempId as number,
+              msg as unknown as Message
+            )
         } else {
-          useAppStore.getState().appendMessage(channelId, msg)
+          useAppStore
+            .getState()
+            .appendMessage(channelId, msg as unknown as Message)
         }
       }
       if (msg.type === 'TYPING' && msg.username !== identity.username) {
-        setTypingUser(msg.username)
+        setTypingUser(msg.username as string)
         setTimeout(() => setTypingUser(null), 2500)
       }
-    }
-
-    ws.onerror = () =>
-      showError('Connection lost. Reconnect by switching channels.')
-    return () => ws.close()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [channelId, identity.username, showError, apiBase, wsBase])
+    },
+    socketRef
+  )
 
   const sendMessage = useCallback(
     async (text: string) => {

@@ -3,7 +3,7 @@ import { useUser } from '../hooks/useUser'
 import type { Identity } from '../identity'
 import ReactMarkdown from 'react-markdown'
 import { ExternalLinkDialog } from 'app/features/home/components/ExternalLinkDialog'
-import { useState } from 'react'
+import { memo, useMemo, useState } from 'react'
 import remarkGfm from 'remark-gfm'
 
 interface Props {
@@ -22,6 +22,9 @@ function parseContent(
     value: part,
   }))
 }
+
+// Markdown syntax characters — if absent, skip ReactMarkdown entirely
+const MARKDOWN_RE = /[*_`~#[>\\]/
 
 function MentionChip({
   publicKey,
@@ -56,8 +59,12 @@ function isSafeUrl(href: string): boolean {
   }
 }
 
-export function MentionText({ content, serverUrl, identity }: Props) {
-  const parts = parseContent(content)
+export const MentionText = memo(function MentionText({
+  content,
+  serverUrl,
+  identity,
+}: Props) {
+  const parts = useMemo(() => parseContent(content), [content])
   const isMentioned = parts.some(
     (p) => p.type === 'mention' && p.value.slice(1) === identity.publicKey
   )
@@ -65,6 +72,7 @@ export function MentionText({ content, serverUrl, identity }: Props) {
 
   return (
     <XStack
+      width="100%"
       flexWrap="wrap"
       alignItems="flex-start"
       gap="$1"
@@ -83,6 +91,11 @@ export function MentionText({ content, serverUrl, identity }: Props) {
             serverUrl={serverUrl}
             identity={identity}
           />
+        ) : !MARKDOWN_RE.test(part.value) ? (
+          // Fast path: no markdown syntax — skip the parser entirely
+          <Text key={i} fontSize="$3" color="$color" userSelect="text">
+            {part.value}
+          </Text>
         ) : (
           <ReactMarkdown
             remarkPlugins={[remarkGfm]}
@@ -146,6 +159,20 @@ export function MentionText({ content, serverUrl, identity }: Props) {
                   </Text>
                 </YStack>
               ),
+              img: ({ src, alt }) => (
+                <YStack my="$2">
+                  <img
+                    src={src}
+                    alt={alt ?? 'Image'}
+                    style={{
+                      maxWidth: '100%',
+                      maxHeight: 300,
+                      borderRadius: 8,
+                      display: 'block',
+                    }}
+                  />
+                </YStack>
+              ),
               a: ({ href, children }) => {
                 if (!href || !isSafeUrl(href))
                   return (
@@ -180,4 +207,4 @@ export function MentionText({ content, serverUrl, identity }: Props) {
       )}
     </XStack>
   )
-}
+})
