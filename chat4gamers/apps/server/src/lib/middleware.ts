@@ -31,6 +31,23 @@ export async function requireAuth(c: Context, next: Next) {
   await next()
 }
 
+export async function requireMember(c: Context, next: Next) {
+  const user = c.get('user')
+  const member = db
+    .select()
+    .from(members)
+    .where(
+      and(
+        eq(members.userPublicKey, user.publicKey),
+        eq(members.status, 'active')
+      )
+    )
+    .get()
+
+  if (!member) return c.json({ error: 'Forbidden' }, 403)
+  await next()
+}
+
 export async function requireAdmin(c: Context, next: Next) {
   const user = c.get('user')
   const member = await db.query.members.findFirst({

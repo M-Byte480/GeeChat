@@ -108,3 +108,9 @@ export async function getUser(
 export function getCachedUser(publicKey: string): ServerUser | null {
   return userMemoryCache.get(publicKey) ?? null
 }
+
+export function invalidateUser(publicKey: string) {
+  userMemoryCache.delete(publicKey)
+  memoryCache.delete(publicKey)
+  _storage?.setItem(`avatar:${publicKey}`, '')
+}

@@ -6,6 +6,21 @@ import { deserializeFromStorage, serializeForStorage } from './crypto'
 import { WelcomeScreen } from './WelcomeScreen'
 import { ApiProvider } from 'app/provider/ApiProvider'
 import { IdentityContext } from 'app/features/home/identity/IdentityContext'
+import { apiFetch } from '@my/api-client'
+
+function syncProfileToServers(
+  servers: Server[],
+  body: Record<string, unknown>
+) {
+  for (const server of servers) {
+    if (!server.pending) {
+      apiFetch(server.url, '/profile', {
+        method: 'PATCH',
+        body: JSON.stringify(body),
+      }).catch(() => {})
+    }
+  }
+}
 
 interface ElectronAPI {
   safestoreGet: () => Promise<string | null>
@@ -70,6 +85,7 @@ export function IdentityGate({ children }: { children: React.ReactNode }) {
       const trimmed = name.trim()
       if (!trimmed || !identity) return
       persist({ ...identity, username: trimmed })
+      syncProfileToServers(identity.servers, { username: trimmed })
     },
     [identity, persist]
   )
@@ -78,6 +94,24 @@ export function IdentityGate({ children }: { children: React.ReactNode }) {
     (dataUrl: string) => {
       if (!identity) return
       persist({ ...identity, pfp: dataUrl })
+      syncProfileToServers(identity.servers, { pfp: dataUrl })
+    },
+    [identity, persist]
+  )
+
+  const changeProfile = useCallback(
+    (username: string, pfp?: string) => {
+      const trimmed = username.trim()
+      if (!trimmed || !identity) return
+      const updated = {
+        ...identity,
+        username: trimmed,
+        ...(pfp !== undefined ? { pfp } : {}),
+      }
+      persist(updated)
+      const syncPayload: Record<string, unknown> = { username: trimmed }
+      if (pfp !== undefined) syncPayload.pfp = pfp
+      syncProfileToServers(identity.servers, syncPayload)
     },
     [identity, persist]
   )
@@ -129,6 +163,7 @@ export function IdentityGate({ children }: { children: React.ReactNode }) {
         addServer,
         updateServer,
         deleteServer,
+        changeProfile,
       }}
     >
       <ApiProvider

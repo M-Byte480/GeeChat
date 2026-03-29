@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm'
 import { db } from '../db/index.js'
 import { members, users } from '../db/schema.js'
 import { requireAdmin, requireAuth } from '../lib/middleware.js'
+import { broadcast } from '../ws.js'
 
 // ── Owner bootstrap token ────────────────────────────────────────────────────
 // Generated once when the server has no owner. Printed to the terminal so the
@@ -137,6 +138,28 @@ router.post('/leave', requireAuth, async (c) => {
     .update(members)
     .set({ status: 'inactive' })
     .where(eq(members.userPublicKey, publicKey))
+  return c.json({ ok: true })
+})
+
+/**
+ * PATCH /profile
+ * Lets the authenticated user update their own username and pfp.
+ */
+router.patch('/profile', requireAuth, async (c) => {
+  const user = c.get('user')
+  const { username, pfp } = await c.req.json()
+  const update: { username?: string; pfp?: string } = {}
+  if (username !== undefined) update.username = username
+  if (pfp !== undefined) update.pfp = pfp
+  if (Object.keys(update).length === 0) return c.json({ ok: true })
+  db.update(users).set(update).where(eq(users.publicKey, user.publicKey)).run()
+  broadcast(
+    JSON.stringify({
+      type: 'PROFILE_UPDATED',
+      publicKey: user.publicKey,
+      ...update,
+    })
+  )
   return c.json({ ok: true })
 })
 

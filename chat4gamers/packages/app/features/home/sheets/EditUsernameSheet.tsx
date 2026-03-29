@@ -1,14 +1,16 @@
 import { Avatar, Button, Input, Sheet, Text, XStack } from '@my/ui'
+import { useState } from 'react'
 
 export function EditProfileSheet({
   showEditUsername,
   setShowEditUsername,
   usernameInput,
   setUsernameInput,
-  changeUsername,
+  changeProfile,
   currentPfp,
-  changePfp,
 }) {
+  const [pendingPfp, setPendingPfp] = useState<string | null>(null)
+
   const pickImage = async () => {
     const input = document.createElement('input')
     input.type = 'file'
@@ -18,17 +20,33 @@ export function EditProfileSheet({
       if (!file) return
       const reader = new FileReader()
       reader.onload = () => {
-        if (typeof reader.result === 'string') changePfp(reader.result)
+        if (typeof reader.result === 'string') setPendingPfp(reader.result)
       }
       reader.readAsDataURL(file)
     }
     input.click()
   }
 
+  const handleSave = () => {
+    const t = usernameInput.trim()
+    if (!t) return
+    // Single persist call — avoids the stale-closure overwrite bug where
+    // two separate changePfp + changeUsername calls each spread the same
+    // old identity, causing the last write to erase the first.
+    changeProfile(t, pendingPfp ?? undefined)
+    setPendingPfp(null)
+    setShowEditUsername(false)
+  }
+
+  const previewPfp = pendingPfp ?? currentPfp
+
   return (
     <Sheet
       open={showEditUsername}
-      onOpenChange={setShowEditUsername}
+      onOpenChange={(open) => {
+        if (!open) setPendingPfp(null)
+        setShowEditUsername(open)
+      }}
       modal
       dismissOnSnapToBottom
       snapPoints={[50]}
@@ -38,11 +56,10 @@ export function EditProfileSheet({
           Edit Profile
         </Text>
 
-        {/* Avatar picker */}
         <XStack alignItems="center" gap="$4">
           <Avatar circular size="$6">
             <Avatar.Image
-              src={currentPfp || 'https://placehold.co/100x100'}
+              src={previewPfp || 'https://placehold.co/100x100'}
               draggable={false}
             />
             <Avatar.Fallback bc="$color8" />
@@ -52,7 +69,6 @@ export function EditProfileSheet({
           </Button>
         </XStack>
 
-        {/* Username */}
         <Input
           value={usernameInput}
           onChangeText={setUsernameInput}
@@ -61,26 +77,14 @@ export function EditProfileSheet({
           autoFocus
           autoCapitalize="none"
           autoCorrect={false}
-          onSubmitEditing={() => {
-            const t = usernameInput.trim()
-            if (t) {
-              changeUsername(t)
-              setShowEditUsername(false)
-            }
-          }}
+          onSubmitEditing={handleSave}
         />
 
         <Button
           theme="active"
           size="$4"
           disabled={!usernameInput.trim()}
-          onPress={() => {
-            const t = usernameInput.trim()
-            if (t) {
-              changeUsername(t)
-              setShowEditUsername(false)
-            }
-          }}
+          onPress={handleSave}
         >
           Save
         </Button>

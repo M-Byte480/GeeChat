@@ -7,11 +7,11 @@ import { writeFile } from 'fs/promises'
 import { Buffer } from 'buffer'
 import { createReadStream } from 'fs'
 import { Readable } from 'stream'
-import { requireAuth } from '../lib/middleware.js'
+import { requireAuth, requireMember } from '../lib/middleware.js'
 
 const app = new Hono()
 
-app.post('/upload', requireAuth, async (c) => {
+app.post('/upload', requireAuth, requireMember, async (c) => {
   const file = await c.req.formData()
   const image = file.get('file') as File
 

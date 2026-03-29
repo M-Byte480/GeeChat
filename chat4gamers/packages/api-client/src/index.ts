@@ -7,4 +7,5 @@ export {
   invalidateAvatar,
   getUser,
   getCachedUser,
+  invalidateUser,
 } from './avatar'

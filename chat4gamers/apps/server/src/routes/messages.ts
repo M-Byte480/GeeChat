@@ -5,11 +5,11 @@ import { messages } from '../db/schema.js'
 import { verifyEd25519 } from '../lib/crypto.js'
 import { sanitize } from '../lib/sanitize.js'
 import { broadcast } from '../ws.js'
-import { requireAuth } from '../lib/middleware.js'
+import { requireAuth, requireMember } from '../lib/middleware.js'
 
 const router = new Hono()
 
-router.post('/messages', requireAuth, async (c) => {
+router.post('/messages', requireAuth, requireMember, async (c) => {
   const body = await c.req.json()
   console.log('[Messages] body:', body)
   try {
@@ -66,7 +66,7 @@ router.post('/messages', requireAuth, async (c) => {
   }
 })
 
-router.get('/chat-history', requireAuth, async (c) => {
+router.get('/chat-history', requireAuth, requireMember, async (c) => {
   const channelId = c.req.query('channel')
   const since = c.req.query('since')
   if (!channelId) return c.json({ error: 'channel is required' }, 400)

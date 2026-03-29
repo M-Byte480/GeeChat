@@ -11,7 +11,7 @@ type Props = {
 
 export function MemberPane({ members, serverUrl, identity }: Props) {
   return (
-    <YStack background="#1e1e1e" alignItems="center" px="$2.5" py="$2">
+    <YStack background="#1e1e1e" px="$2.5" py="$2">
       {members.map((user) => (
         <UserAvatar
           key={user.publicKey}
