@@ -78,9 +78,12 @@ describe('Owner authentication', () => {
     const body = (await res.json()) as unknown[]
     expect(Array.isArray(body)).toBe(true)
     // The owner should already be in the member list
-    expect(body.some((m: any) => m.publicKey === ownerKeypair.publicKey)).toBe(
-      true
-    )
+    expect(
+      body.some(
+        (m: unknown) =>
+          (m as { publicKey?: string }).publicKey === ownerKeypair.publicKey
+      )
+    ).toBe(true)
   })
 
   it('rejects requests without a token', async () => {

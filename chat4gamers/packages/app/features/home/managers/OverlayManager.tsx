@@ -8,7 +8,6 @@ import type { ChannelType } from 'app/features/home/types/types'
 
 interface Props {
   serverUrl: string | null
-  changeUsername: (name: string) => void
   changeProfile: (username: string, pfp?: string) => void
   identity: Identity
   showEditUsername: boolean
@@ -23,12 +22,10 @@ interface Props {
   newChannelName: string
   setNewChannelName: (v: string) => void
   appVersion: string
-  changePfp: (pfp: string) => void
 }
 
 export function OverlayManager({
   serverUrl,
-  changeUsername,
   changeProfile,
   identity,
   showEditUsername,
@@ -43,7 +40,6 @@ export function OverlayManager({
   newChannelName,
   setNewChannelName,
   appVersion,
-  changePfp,
 }: Props) {
   const handleCreateChannel = useCallback(async () => {
     const name = newChannelName.trim()

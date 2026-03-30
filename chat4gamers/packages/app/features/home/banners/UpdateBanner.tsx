@@ -8,17 +8,15 @@ export function UpdateBanner() {
   const [progress, setProgress] = useState<number | null>(null)
   const [ready, setReady] = useState(false)
 
-  const api = (
-    window as unknown as {
-      electronAPI?: {
-        onUpdateProgress?: (cb: (p: number) => void) => () => void
-        onUpdateReady?: (cb: () => void) => () => void
-        installUpdate?: () => void
-      }
-    }
-  ).electronAPI
-
   useEffect(() => {
+    const api = (
+      window as unknown as {
+        electronAPI?: {
+          onUpdateProgress?: (cb: (p: number) => void) => () => void
+          onUpdateReady?: (cb: () => void) => () => void
+        }
+      }
+    ).electronAPI
     if (!api) return // Not running in Electron
 
     const removeProgress = api.onUpdateProgress?.((percent: number) => {
@@ -60,7 +58,13 @@ export function UpdateBanner() {
           <Button
             size="$3"
             theme="active"
-            onPress={() => api?.installUpdate?.()}
+            onPress={() =>
+              (
+                window as unknown as {
+                  electronAPI?: { installUpdate?: () => void }
+                }
+              ).electronAPI?.installUpdate?.()
+            }
           >
             Restart & Update
           </Button>

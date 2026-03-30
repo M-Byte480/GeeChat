@@ -8,6 +8,7 @@ const chat = new Hono()
 
 chat.get('/history/:roomId', requireAuth, async (c) => {
   const roomId = c.req.param('roomId')
+  if (!roomId) return c.json({ error: 'Not found' }, 404)
 
   const history = await db
     .select()

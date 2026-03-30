@@ -23,7 +23,9 @@ function getOrOpen(serverUrl: string): WebSocket {
     try {
       const msg = JSON.parse(event.data as string)
       listeners.get(serverUrl)?.forEach((fn) => fn(msg))
-    } catch {}
+    } catch {
+      // ignore JSON parse errors from malformed WebSocket messages
+    }
   }
   ws.onclose = () => sockets.delete(serverUrl)
 
@@ -49,8 +51,11 @@ export function useServerSocket(
   useEffect(() => {
     if (!serverUrl) return
 
-    if (!listeners.has(serverUrl)) listeners.set(serverUrl, new Set())
-    const subs = listeners.get(serverUrl)!
+    let subs = listeners.get(serverUrl)
+    if (!subs) {
+      subs = new Set()
+      listeners.set(serverUrl, subs)
+    }
     const stable: MessageHandler = (msg) => handlerRef.current(msg)
     subs.add(stable)
 

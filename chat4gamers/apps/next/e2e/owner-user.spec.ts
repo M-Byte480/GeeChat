@@ -113,7 +113,9 @@ test.describe('Two authenticated sessions', () => {
       localStorage.getItem('geechat-identity')
     )
 
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const ownerParsed = JSON.parse(ownerStored!)
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const userParsed = JSON.parse(userStored!)
 
     expect(ownerParsed.username).toBe('E2EOwner')

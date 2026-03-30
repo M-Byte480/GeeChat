@@ -203,5 +203,6 @@ export default async function globalSetup() {
   }
 
   writeFileSync(E2E_FIXTURES_PATH, JSON.stringify(fixtures, null, 2))
+  // eslint-disable-next-line no-console
   console.log('[E2E setup] DB seeded, fixtures written to', E2E_FIXTURES_PATH)
 }
