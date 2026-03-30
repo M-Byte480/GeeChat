@@ -38,6 +38,7 @@ app.post('/upload', requireAuth, requireMember, async (c) => {
 
 app.get('/uploads/:filename', requireAuth, requireMember, async (c) => {
   const url = c.req.param('filename')
+  if (!url) return c.json({ error: 'Not found' }, 404)
 
   // Reject anything that doesn't look like a UUID filename to prevent path traversal
   if (
@@ -60,6 +61,7 @@ app.get('/uploads/:filename', requireAuth, requireMember, async (c) => {
 
 app.get('/users/:publicKey/avatar', requireAuth, async (c) => {
   const publicKey = c.req.param('publicKey')
+  if (!publicKey) return c.json({ error: 'Not found' }, 404)
 
   const user = db
     .select({ pfp: users.pfp })
@@ -74,6 +76,7 @@ app.get('/users/:publicKey/avatar', requireAuth, async (c) => {
 
 app.get('/users/:publicKey', requireAuth, async (c) => {
   const publicKey = c.req.param('publicKey')
+  if (!publicKey) return c.json({ error: 'Not found' }, 404)
 
   const result = db
     .select({

@@ -36,6 +36,7 @@ export function registerWsRoute(app: any, upgradeWebSocket: any) {
   app.get(
     '/ws',
     requireWsAuth,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     upgradeWebSocket((c: any) => {
       const user = c.get('user')
       return {

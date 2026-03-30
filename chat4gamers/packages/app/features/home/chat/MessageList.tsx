@@ -16,6 +16,8 @@ type Props = {
   hasMoreHistory?: boolean
 }
 
+type ScrollableNode = { getScrollableNode?: () => HTMLElement }
+
 export const MessageList = memo(
   ({
     messages,
@@ -75,7 +77,7 @@ export const MessageList = memo(
         requestAnimationFrame(() => {
           const anchor = prependAnchorRef.current
           const scrollNode = (
-            scrollViewRef.current as any
+            scrollViewRef.current as unknown as ScrollableNode
           )?.getScrollableNode?.()
           if (anchor && scrollNode) {
             const delta = scrollNode.scrollHeight - anchor.scrollHeight
@@ -110,7 +112,7 @@ export const MessageList = memo(
             // All local cache shown — fetch older from server.
             // Snapshot scroll state so we can restore position after prepend.
             const scrollNode = (
-              scrollViewRef.current as any
+              scrollViewRef.current as unknown as ScrollableNode
             )?.getScrollableNode?.()
             if (scrollNode) {
               prependAnchorRef.current = {
@@ -190,7 +192,7 @@ export const MessageList = memo(
     return (
       <ScrollView
         ref={scrollViewRef}
-        // @ts-ignore — className is web-only, not in RN types
+        // @ts-expect-error — className is web-only, not in RN types
         className={scrollbarVisible ? 'chat-area-scrollbar' : undefined}
         flex={1}
         mb="$2"

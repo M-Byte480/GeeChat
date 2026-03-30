@@ -50,15 +50,8 @@ export function onRender(
 }
 
 const HomeScreenInner = memo(function HomeScreenInner() {
-  const {
-    identity,
-    changeUsername,
-    changePfp,
-    changeProfile,
-    servers,
-    addServer,
-    deleteServer,
-  } = useIdentity()
+  const { identity, changeProfile, servers, addServer, deleteServer } =
+    useIdentity()
 
   const activeServerUrl = useAppStore((s) => s.activeServerUrl)
   const setActiveServerUrl = useAppStore((s) => s.setActiveServerUrl)
@@ -299,7 +292,6 @@ const HomeScreenInner = memo(function HomeScreenInner() {
       <Profiler id="OverlayManager" onRender={onRender}>
         <OverlayManager
           serverUrl={activeServerUrl}
-          changeUsername={changeUsername}
           changeProfile={changeProfile}
           identity={identity}
           showEditUsername={showEditUsername}
@@ -314,7 +306,6 @@ const HomeScreenInner = memo(function HomeScreenInner() {
           newChannelName={newChannelName}
           setNewChannelName={setNewChannelName}
           appVersion={appVersion}
-          changePfp={changePfp}
         />
       </Profiler>
     </YStack>

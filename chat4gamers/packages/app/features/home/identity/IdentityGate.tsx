@@ -40,7 +40,9 @@ export function IdentityGate({ children }: { children: React.ReactNode }) {
   const [mounted, setMounted] = useState(false)
   // Always-current ref so stable callbacks (configureClient) never close over stale identity
   const identityRef = useRef(identity)
-  identityRef.current = identity
+  useEffect(() => {
+    identityRef.current = identity
+  })
 
   useEffect(() => {
     const api = window.electronAPI

@@ -19,10 +19,10 @@ export function useChannelsController(serverUrl: string | null) {
   }, [serverUrl, setChannels])
 
   useServerSocket(serverUrl, (msg) => {
-    if (msg.type === 'CHANNEL_CREATED' && msg.channel) {
+    if (msg.type === 'CHANNEL_CREATED' && msg.channel && serverUrl) {
       // Append the new channel directly from the WS payload — no re-fetch needed
-      const current = useAppStore.getState().cache[serverUrl!]?.channels ?? []
-      setChannels(serverUrl!, [...current, msg.channel as Channel])
+      const current = useAppStore.getState().cache[serverUrl]?.channels ?? []
+      setChannels(serverUrl, [...current, msg.channel as Channel])
     } else if (msg.type === 'PROFILE_UPDATED' && msg.publicKey) {
       invalidateUser(msg.publicKey as string)
     }
