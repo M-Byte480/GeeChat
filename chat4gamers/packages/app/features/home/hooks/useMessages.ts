@@ -28,6 +28,9 @@ export function useMessages({
     return s.messageCache[channelId]?.messages ?? EMPTY_MESSAGES
   })
 
+  const [hasMoreHistory, setHasMoreHistory] = useState(true)
+  const isFetchingOlderRef = useRef(false)
+
   // Derived-state pattern: when channelId changes, reset isLoading to true
   // synchronously during render (before paint) so the skeleton always shows
   // during the channel switch window. React discards + retries the render
@@ -37,6 +40,7 @@ export function useMessages({
   if (prevChannelId !== channelId) {
     setPrevChannelId(channelId)
     setIsLoading(true)
+    setHasMoreHistory(true)
   }
   const [typingUser, setTypingUser] = useState<string | null>(null)
   const [errorBanner, setErrorBanner] = useState<string | null>(null)
@@ -181,6 +185,38 @@ export function useMessages({
     [channelId, identity, apiBase, showError]
   )
 
+  const fetchOlderMessages = useCallback(async () => {
+    if (isFetchingOlderRef.current || !hasMoreHistory) return
+    const cached =
+      useAppStore.getState().messageCache[channelId]?.messages ?? []
+    if (cached.length === 0) return
+    isFetchingOlderRef.current = true
+    try {
+      const oldest = cached[0]
+      const res = await apiFetch(
+        apiBase,
+        `/chat-history?channel=${channelId}&before=${encodeURIComponent(oldest.timestamp)}`
+      )
+      if (!res.ok) return
+      const data: Message[] = await res.json()
+      if (!Array.isArray(data) || data.length === 0) {
+        setHasMoreHistory(false)
+        return
+      }
+      const existingIds = new Set(cached.map((m: Message) => m.id))
+      const newMessages = data.filter((m: Message) => !existingIds.has(m.id))
+      if (newMessages.length === 0) {
+        setHasMoreHistory(false)
+        return
+      }
+      useAppStore
+        .getState()
+        .setChannelMessages(channelId, [...newMessages, ...cached])
+    } finally {
+      isFetchingOlderRef.current = false
+    }
+  }, [channelId, apiBase, hasMoreHistory])
+
   return {
     messages: cachedMessages,
     isLoading,
@@ -188,5 +224,7 @@ export function useMessages({
     errorBanner,
     setErrorBanner,
     sendMessage,
+    fetchOlderMessages,
+    hasMoreHistory,
   }
 }

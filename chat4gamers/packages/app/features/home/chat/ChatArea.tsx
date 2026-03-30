@@ -26,7 +26,14 @@ export const ChatArea = ({
   const { identity } = useIdentity()
   const socketRef = useRef<WebSocket | null>(null)
 
-  const { messages, isLoading, typingUser, sendMessage } = useMessages({
+  const {
+    messages,
+    isLoading,
+    typingUser,
+    sendMessage,
+    fetchOlderMessages,
+    hasMoreHistory,
+  } = useMessages({
     channelId,
     identity,
     serverUrl,
@@ -60,7 +67,6 @@ export const ChatArea = ({
       bg="$background"
       height="100%"
       userSelect="auto"
-      // @ts-ignore — web-only events, not in RN types
       onMouseEnter={handleChatMouseEnter}
       onMouseLeave={handleChatMouseLeave}
     >
@@ -75,6 +81,8 @@ export const ChatArea = ({
           typingUser={typingUser}
           scrollbarVisible={chatHovered}
           insetScrollbar={showMemberPane}
+          onFetchOlder={fetchOlderMessages}
+          hasMoreHistory={hasMoreHistory}
         />
       </Profiler>
 
