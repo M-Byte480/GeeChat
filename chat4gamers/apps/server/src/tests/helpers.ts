@@ -17,11 +17,11 @@ export interface Keypair {
  * which matches the format the server stores in the `users` table.
  */
 export async function generateKeypair(): Promise<Keypair> {
-  const { privateKey, publicKey: rawPublic } = await crypto.subtle.generateKey(
+  const { privateKey, publicKey: rawPublic } = (await crypto.subtle.generateKey(
     { name: 'Ed25519' } as Algorithm,
     true,
     ['sign', 'verify']
-  )
+  )) as CryptoKeyPair
   const exported = await crypto.subtle.exportKey('raw', rawPublic)
   return {
     publicKey: Buffer.from(exported).toString('base64url'),
