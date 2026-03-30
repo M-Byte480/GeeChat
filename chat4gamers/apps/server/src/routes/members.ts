@@ -2,7 +2,12 @@ import { Hono } from 'hono'
 import { eq } from 'drizzle-orm'
 import { db } from '../db/index.js'
 import { members, users } from '../db/schema.js'
-import { requireAdmin, requireAuth } from '../lib/middleware.js'
+import { requireAdmin, requireAuth, requireMember } from '../lib/middleware.js'
+import { broadcast } from '../ws.js'
+import { rateLimit } from '../lib/rateLimit.js'
+
+// 5 join attempts per IP per 10 minutes
+const joinLimit = rateLimit(5, 10 * 60_000)
 
 // ── Owner bootstrap token ────────────────────────────────────────────────────
 // Generated once when the server has no owner. Printed to the terminal so the
@@ -34,7 +39,7 @@ const router = new Hono()
  *  - Returning user (same publicKey, new device) → already has a member record → let them in.
  *  - New user → insert with awaiting_to_join, except the very first user who becomes owner.
  */
-router.post('/join', async (c) => {
+router.post('/join', joinLimit, async (c) => {
   const body = await c.req.json()
   const {
     publicKey,
@@ -141,10 +146,32 @@ router.post('/leave', requireAuth, async (c) => {
 })
 
 /**
+ * PATCH /profile
+ * Lets the authenticated user update their own username and pfp.
+ */
+router.patch('/profile', requireAuth, async (c) => {
+  const user = c.get('user')
+  const { username, pfp } = await c.req.json()
+  const update: { username?: string; pfp?: string } = {}
+  if (username !== undefined) update.username = username
+  if (pfp !== undefined) update.pfp = pfp
+  if (Object.keys(update).length === 0) return c.json({ ok: true })
+  db.update(users).set(update).where(eq(users.publicKey, user.publicKey)).run()
+  broadcast(
+    JSON.stringify({
+      type: 'PROFILE_UPDATED',
+      publicKey: user.publicKey,
+      ...update,
+    })
+  )
+  return c.json({ ok: true })
+})
+
+/**
  * GET /members
  * Returns all active members — used by the client to populate the member pane.
  */
-router.get('/members', requireAuth, async (c) => {
+router.get('/members', requireAuth, requireMember, async (c) => {
   // todo: pagination for large servers, and filter by status (active, pending, etc)
 
   const rows = await db
@@ -201,13 +228,18 @@ router.post(
 /**
  * POST /members/:publicKey/deny
  */
-router.post('/members/:publicKey/deny', async (c) => {
-  const { publicKey } = c.req.param()
-  await db
-    .update(members)
-    .set({ status: 'denied' })
-    .where(eq(members.userPublicKey, publicKey))
-  return c.json({ ok: true })
-})
+router.post(
+  '/members/:publicKey/deny',
+  requireAuth,
+  requireAdmin,
+  async (c) => {
+    const { publicKey } = c.req.param()
+    await db
+      .update(members)
+      .set({ status: 'denied' })
+      .where(eq(members.userPublicKey, publicKey))
+    return c.json({ ok: true })
+  }
+)
 
 export default router

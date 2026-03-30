@@ -5,8 +5,10 @@ interface IdentityContextValue {
   identity: Identity
   changeUsername: (name: string) => void
   changePfp: (dataUrl: string) => void
+  changeProfile: (username: string, pfp?: string) => void
   servers: Server[]
   addServer: (server: Server) => void
+  updateServer: (id: string, updates: Partial<Server>) => void
   deleteServer: (url: string) => void
 }
 

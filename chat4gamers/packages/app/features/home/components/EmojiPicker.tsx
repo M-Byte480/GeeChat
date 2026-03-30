@@ -265,7 +265,7 @@ export const EmojiPicker = memo(({ onSelect }: Props) => {
         size="$4"
         icon={Smile}
         onPress={() => setOpen((v) => !v)}
-        theme="active"
+        theme="dark"
       />
     </YStack>
   )

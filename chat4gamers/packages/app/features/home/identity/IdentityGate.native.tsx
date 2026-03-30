@@ -1,0 +1,105 @@
+import { useCallback, useEffect, useState } from 'react'
+import * as SecureStore from 'expo-secure-store'
+import type { Identity, Server } from './types'
+import { deserializeFromStorage, serializeForStorage } from './crypto'
+import { WelcomeScreen } from './WelcomeScreen'
+import { ApiProvider } from 'app/provider/ApiProvider'
+import { IdentityContext } from 'app/features/home/identity/IdentityContext'
+
+const STORAGE_KEY = 'geechat-identity'
+
+export function IdentityGate({ children }: { children: React.ReactNode }) {
+  const [identity, setIdentity] = useState<Identity | null>(null)
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    SecureStore.getItemAsync(STORAGE_KEY).then((json) => {
+      if (json) {
+        try {
+          setIdentity(deserializeFromStorage(json))
+        } catch {
+          // Corrupted data — fall through to WelcomeScreen
+          SecureStore.deleteItemAsync(STORAGE_KEY)
+        }
+      }
+      setMounted(true)
+    })
+  }, [])
+
+  const persist = useCallback((updated: Identity) => {
+    SecureStore.setItemAsync(STORAGE_KEY, serializeForStorage(updated))
+    setIdentity(updated)
+  }, [])
+
+  const changeUsername = useCallback(
+    (name: string) => {
+      const trimmed = name.trim()
+      if (!trimmed || !identity) return
+      persist({ ...identity, username: trimmed })
+    },
+    [identity, persist]
+  )
+
+  const changePfp = useCallback(
+    (dataUrl: string) => {
+      if (!identity) return
+      persist({ ...identity, pfp: dataUrl })
+    },
+    [identity, persist]
+  )
+
+  const addServer = useCallback(
+    (server: Server) => {
+      if (!identity) return
+      const already = identity.servers.some((s) => s.id === server.id)
+      if (already) return
+      persist({ ...identity, servers: [...identity.servers, server] })
+    },
+    [identity, persist]
+  )
+
+  const deleteServer = useCallback(
+    (serverUrl: string) => {
+      if (!identity) return
+      persist({
+        ...identity,
+        servers: identity.servers.filter((s) => s.url !== serverUrl),
+      })
+    },
+    [identity, persist]
+  )
+
+  if (!mounted) return null
+  if (!identity) return <WelcomeScreen onIdentityReady={persist} />
+
+  return (
+    <IdentityContext.Provider
+      value={{
+        identity,
+        changeUsername,
+        changePfp,
+        servers: identity.servers,
+        addServer,
+        deleteServer,
+      }}
+    >
+      <ApiProvider
+        identity={identity}
+        onSessionExpired={(baseUrl) => {
+          persist({
+            ...identity,
+            sessionTokens: { ...identity.sessionTokens, [baseUrl]: undefined },
+          })
+        }}
+        persistSessionToken={(baseUrl, token) => {
+          persist({
+            ...identity,
+            sessionTokens: { ...identity.sessionTokens, [baseUrl]: token },
+          })
+        }}
+      >
+        {children}
+      </ApiProvider>
+    </IdentityContext.Provider>
+  )
+}

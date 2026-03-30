@@ -13,7 +13,7 @@ export interface UserProfile {
 }
 
 export function useUser(
-  serverUrl: string,
+  serverUrl: string | null,
   publicKey: string,
   identity: Identity | null
 ): UserProfile | null {
@@ -61,6 +61,7 @@ export function useUser(
       return // never fetch own user from server
     }
 
+    if (!serverUrl) return
     getUser(serverUrl, publicKey).then((user) => {
       if (!user) return
       setProfile({

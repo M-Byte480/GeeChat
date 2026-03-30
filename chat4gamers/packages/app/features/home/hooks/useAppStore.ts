@@ -43,11 +43,6 @@ export const useAppStore = create<AppState>((set) => ({
   members: {} as Record<string, User[]>,
 
   setChannelMessages: (channelId, messages) => {
-    console.warn(
-      '[store] setChannelMessages called',
-      channelId,
-      messages.length
-    )
     set((state) => ({
       messageCache: {
         ...state.messageCache,

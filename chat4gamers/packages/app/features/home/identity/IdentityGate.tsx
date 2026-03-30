@@ -1,11 +1,26 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Identity, Server } from './types'
 import { deserializeFromStorage, serializeForStorage } from './crypto'
 import { WelcomeScreen } from './WelcomeScreen'
 import { ApiProvider } from 'app/provider/ApiProvider'
 import { IdentityContext } from 'app/features/home/identity/IdentityContext'
+import { apiFetch } from '@my/api-client'
+
+function syncProfileToServers(
+  servers: Server[],
+  body: Record<string, unknown>
+) {
+  for (const server of servers) {
+    if (!server.pending) {
+      apiFetch(server.url, '/profile', {
+        method: 'PATCH',
+        body: JSON.stringify(body),
+      }).catch(() => {})
+    }
+  }
+}
 
 interface ElectronAPI {
   safestoreGet: () => Promise<string | null>
@@ -23,6 +38,9 @@ declare global {
 export function IdentityGate({ children }: { children: React.ReactNode }) {
   const [identity, setIdentity] = useState<Identity | null>(null)
   const [mounted, setMounted] = useState(false)
+  // Always-current ref so stable callbacks (configureClient) never close over stale identity
+  const identityRef = useRef(identity)
+  identityRef.current = identity
 
   useEffect(() => {
     const api = window.electronAPI
@@ -67,6 +85,7 @@ export function IdentityGate({ children }: { children: React.ReactNode }) {
       const trimmed = name.trim()
       if (!trimmed || !identity) return
       persist({ ...identity, username: trimmed })
+      syncProfileToServers(identity.servers, { username: trimmed })
     },
     [identity, persist]
   )
@@ -75,6 +94,24 @@ export function IdentityGate({ children }: { children: React.ReactNode }) {
     (dataUrl: string) => {
       if (!identity) return
       persist({ ...identity, pfp: dataUrl })
+      syncProfileToServers(identity.servers, { pfp: dataUrl })
+    },
+    [identity, persist]
+  )
+
+  const changeProfile = useCallback(
+    (username: string, pfp?: string) => {
+      const trimmed = username.trim()
+      if (!trimmed || !identity) return
+      const updated = {
+        ...identity,
+        username: trimmed,
+        ...(pfp !== undefined ? { pfp } : {}),
+      }
+      persist(updated)
+      const syncPayload: Record<string, unknown> = { username: trimmed }
+      if (pfp !== undefined) syncPayload.pfp = pfp
+      syncProfileToServers(identity.servers, syncPayload)
     },
     [identity, persist]
   )
@@ -85,6 +122,19 @@ export function IdentityGate({ children }: { children: React.ReactNode }) {
       const already = identity.servers.some((s) => s.id === server.id)
       if (already) return
       persist({ ...identity, servers: [...identity.servers, server] })
+    },
+    [identity, persist]
+  )
+
+  const updateServer = useCallback(
+    (id: string, updates: Partial<Server>) => {
+      if (!identity) return
+      persist({
+        ...identity,
+        servers: identity.servers.map((s) =>
+          s.id === id ? { ...s, ...updates } : s
+        ),
+      })
     },
     [identity, persist]
   )
@@ -111,21 +161,27 @@ export function IdentityGate({ children }: { children: React.ReactNode }) {
         changePfp,
         servers: identity.servers,
         addServer,
+        updateServer,
         deleteServer,
+        changeProfile,
       }}
     >
       <ApiProvider
         identity={identity}
         onSessionExpired={(baseUrl) => {
+          const cur = identityRef.current
+          if (!cur) return
           persist({
-            ...identity,
-            sessionTokens: { ...identity.sessionTokens, [baseUrl]: undefined },
+            ...cur,
+            sessionTokens: { ...cur.sessionTokens, [baseUrl]: undefined },
           })
         }}
         persistSessionToken={(baseUrl, token) => {
+          const cur = identityRef.current
+          if (!cur) return
           persist({
-            ...identity,
-            sessionTokens: { ...identity.sessionTokens, [baseUrl]: token },
+            ...cur,
+            sessionTokens: { ...cur.sessionTokens, [baseUrl]: token },
           })
         }}
       >
