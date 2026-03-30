@@ -7,8 +7,9 @@ import { Buffer } from 'buffer'
 import { createReadStream } from 'fs'
 import { Readable } from 'stream'
 import { requireAuth, requireMember } from '../lib/middleware.js'
+import type { AppEnv } from '../lib/types.js'
 
-const app = new Hono()
+const app = new Hono<AppEnv>()
 
 app.post('/upload', requireAuth, requireMember, async (c) => {
   const user = c.get('user')

@@ -26,13 +26,17 @@ export async function requireAuth(c: Context, next: Next) {
     .where(eq(users.publicKey, session.publicKey))
     .get()
 
+  if (!user) {
+    return c.json({ error: 'Unauthorized' }, 401)
+  }
+
   c.set('user', user)
 
   await next()
 }
 
 export async function requireMember(c: Context, next: Next) {
-  const user = c.get('user')
+  const user = c.get('user') as typeof users.$inferSelect
   const member = db
     .select()
     .from(members)
@@ -49,7 +53,7 @@ export async function requireMember(c: Context, next: Next) {
 }
 
 export async function requireAdmin(c: Context, next: Next) {
-  const user = c.get('user')
+  const user = c.get('user') as typeof users.$inferSelect
   const member = db
     .select()
     .from(members)

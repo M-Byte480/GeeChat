@@ -5,6 +5,7 @@ import { members, users } from '../db/schema.js'
 import { requireAdmin, requireAuth, requireMember } from '../lib/middleware.js'
 import { broadcast } from '../ws.js'
 import { rateLimit } from '../lib/rateLimit.js'
+import type { AppEnv } from '../lib/types.js'
 
 // 5 join attempts per IP per 10 minutes
 const joinLimit = rateLimit(5, 10 * 60_000)
@@ -31,7 +32,7 @@ function getOwnerToken(): string {
   return ownerToken
 }
 
-const router = new Hono()
+const router = new Hono<AppEnv>()
 
 /**
  * POST /join
