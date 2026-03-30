@@ -3,16 +3,16 @@ import { eq } from 'drizzle-orm'
 import { db } from '../db/index.js'
 import { channels } from '../db/schema.js'
 import { broadcast } from '../ws.js'
-import { requireAuth } from '../lib/middleware.js'
+import { requireAuth, requireMember } from '../lib/middleware.js'
 
 const router = new Hono()
 
-router.get('/channels', requireAuth, async (c) => {
+router.get('/channels', requireAuth, requireMember, async (c) => {
   const rows = await db.select().from(channels)
   return c.json(rows)
 })
 
-router.post('/channels', requireAuth, async (c) => {
+router.post('/channels', requireAuth, requireMember, async (c) => {
   const { name, type } = await c.req.json()
   const id = name
     .toLowerCase()

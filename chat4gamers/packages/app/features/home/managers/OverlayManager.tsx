@@ -9,6 +9,7 @@ import type { ChannelType } from 'app/features/home/types/types'
 interface Props {
   serverUrl: string | null
   changeUsername: (name: string) => void
+  changeProfile: (username: string, pfp?: string) => void
   identity: Identity
   showEditUsername: boolean
   setShowEditUsername: (v: boolean) => void
@@ -28,6 +29,7 @@ interface Props {
 export function OverlayManager({
   serverUrl,
   changeUsername,
+  changeProfile,
   identity,
   showEditUsername,
   setShowEditUsername,
@@ -75,9 +77,8 @@ export function OverlayManager({
         setShowEditUsername={setShowEditUsername}
         usernameInput={usernameInput}
         setUsernameInput={setUsernameInput}
-        changeUsername={changeUsername}
+        changeProfile={changeProfile}
         currentPfp={identity?.pfp}
-        changePfp={changePfp}
       />
 
       <CreateChannelSheet

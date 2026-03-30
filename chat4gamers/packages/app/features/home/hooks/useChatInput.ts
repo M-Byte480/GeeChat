@@ -3,6 +3,12 @@ import { useCallback, useRef, useState } from 'react'
 export function useChatInput({ channelId, identity, onSend, socketRef }) {
   const [inputText, setInputText] = useState('')
   const [mentionQuery, setMentionQuery] = useState<string | null>(null)
+  const [prevChannelId, setPrevChannelId] = useState(channelId)
+  if (prevChannelId !== channelId) {
+    setPrevChannelId(channelId)
+    setInputText('')
+    setMentionQuery(null)
+  }
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   const handleInputChange = useCallback(

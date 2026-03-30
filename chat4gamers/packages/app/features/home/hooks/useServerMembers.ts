@@ -22,19 +22,12 @@ export function useServerMembers(serverUrl: string | null): User[] {
         if (Array.isArray(data)) {
           setMembers(
             serverUrl,
-            data.map(
-              (m: {
-                username?: string
-                publicKey?: string
-                status?: string
-                avatarUrl?: string
-              }) => ({
-                username: m.username ?? 'Unknown',
-                publicKey: m.publicKey ?? '',
-                status: m.status ?? UserStatus.ONLINE,
-                avatarUrl: m.avatarUrl,
-              })
-            )
+            data.map((m) => ({
+              username: m.username ?? 'Unknown',
+              publicKey: m.publicKey ?? '',
+              status: m.status ?? UserStatus.ONLINE,
+              avatarUrl: m.avatarUrl,
+            }))
           )
         }
       })

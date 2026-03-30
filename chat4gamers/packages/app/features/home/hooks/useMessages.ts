@@ -5,10 +5,7 @@ import { apiFetch } from '@my/api-client'
 import type { Message } from '../types/types'
 import { fireDesktopNotification } from '../utils/Notification'
 import { useAppStore } from 'app/features/home/hooks/useAppStore'
-
-function deriveWsBase(url: string): string {
-  return url.replace(/^https:\/\//, 'wss://').replace(/^http:\/\//, 'ws://')
-}
+import { useServerSocket } from './useServerSocket'
 
 const EMPTY_MESSAGES: Message[] = []
 
@@ -26,12 +23,25 @@ export function useMessages({
   socketRef,
 }: Params) {
   const apiBase = serverUrl
-  const wsBase = deriveWsBase(serverUrl)
 
   const cachedMessages = useAppStore((s) => {
     return s.messageCache[channelId]?.messages ?? EMPTY_MESSAGES
   })
 
+  const [hasMoreHistory, setHasMoreHistory] = useState(true)
+  const isFetchingOlderRef = useRef(false)
+
+  // Derived-state pattern: when channelId changes, reset isLoading to true
+  // synchronously during render (before paint) so the skeleton always shows
+  // during the channel switch window. React discards + retries the render
+  // with the new state — no extra useEffect needed.
+  const [isLoading, setIsLoading] = useState(true)
+  const [prevChannelId, setPrevChannelId] = useState(channelId)
+  if (prevChannelId !== channelId) {
+    setPrevChannelId(channelId)
+    setIsLoading(true)
+    setHasMoreHistory(true)
+  }
   const [typingUser, setTypingUser] = useState<string | null>(null)
   const [errorBanner, setErrorBanner] = useState<string | null>(null)
   const errorTimerRef = useRef<NodeJS.Timeout | null>(null)
@@ -51,6 +61,7 @@ export function useMessages({
       : ''
 
     if (cached.length > 0) {
+      setIsLoading(false)
       // Background fetch — silent
       apiFetch(apiBase, `/chat-history?channel=${channelId}${since}`)
         .then((res) => (res.ok ? res.json() : []))
@@ -68,6 +79,7 @@ export function useMessages({
         })
         .catch(() => {})
     } else {
+      setIsLoading(true)
       // No cache — full blocking fetch
       apiFetch(apiBase, `/chat-history?channel=${channelId}`)
         .then((res) => {
@@ -81,20 +93,21 @@ export function useMessages({
         .catch(() =>
           showError('Could not load message history. Is the server running?')
         )
+        .finally(() => setIsLoading(false))
     }
+  }, [channelId, showError, apiBase])
 
-    // WebSocket always runs regardless of cache
-    const ws = new WebSocket(`${wsBase}/ws`)
-    socketRef.current = ws
-
-    ws.onmessage = (event) => {
-      const msg = JSON.parse(event.data)
+  useServerSocket(
+    serverUrl,
+    (msg) => {
       if (msg.type === 'NEW_MESSAGE' && msg.channelId === channelId) {
-        const isMentioned = msg.content?.includes(`@${identity.publicKey}`)
+        const isMentioned = (msg.content as string)?.includes(
+          `@${identity.publicKey}`
+        )
         if (isMentioned && document.visibilityState !== 'visible') {
           fireDesktopNotification({
             title: `${msg.senderName} mentioned you`,
-            body: msg.content,
+            body: msg.content as string,
             serverUrl,
           })
         }
@@ -104,22 +117,26 @@ export function useMessages({
           (m: Message) => m.id === msg.tempId
         )
         if (optimisticIndex !== -1) {
-          useAppStore.getState().updateMessage(channelId, msg.tempId, msg)
+          useAppStore
+            .getState()
+            .updateMessage(
+              channelId,
+              msg.tempId as number,
+              msg as unknown as Message
+            )
         } else {
-          useAppStore.getState().appendMessage(channelId, msg)
+          useAppStore
+            .getState()
+            .appendMessage(channelId, msg as unknown as Message)
         }
       }
       if (msg.type === 'TYPING' && msg.username !== identity.username) {
-        setTypingUser(msg.username)
+        setTypingUser(msg.username as string)
         setTimeout(() => setTypingUser(null), 2500)
       }
-    }
-
-    ws.onerror = () =>
-      showError('Connection lost. Reconnect by switching channels.')
-    return () => ws.close()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [channelId, identity.username, showError, apiBase, wsBase])
+    },
+    socketRef
+  )
 
   const sendMessage = useCallback(
     async (text: string) => {
@@ -168,11 +185,46 @@ export function useMessages({
     [channelId, identity, apiBase, showError]
   )
 
+  const fetchOlderMessages = useCallback(async () => {
+    if (isFetchingOlderRef.current || !hasMoreHistory) return
+    const cached =
+      useAppStore.getState().messageCache[channelId]?.messages ?? []
+    if (cached.length === 0) return
+    isFetchingOlderRef.current = true
+    try {
+      const oldest = cached[0]
+      const res = await apiFetch(
+        apiBase,
+        `/chat-history?channel=${channelId}&before=${encodeURIComponent(oldest.timestamp)}`
+      )
+      if (!res.ok) return
+      const data: Message[] = await res.json()
+      if (!Array.isArray(data) || data.length === 0) {
+        setHasMoreHistory(false)
+        return
+      }
+      const existingIds = new Set(cached.map((m: Message) => m.id))
+      const newMessages = data.filter((m: Message) => !existingIds.has(m.id))
+      if (newMessages.length === 0) {
+        setHasMoreHistory(false)
+        return
+      }
+      useAppStore
+        .getState()
+        .setChannelMessages(channelId, [...newMessages, ...cached])
+    } finally {
+      isFetchingOlderRef.current = false
+    }
+  }, [channelId, apiBase, hasMoreHistory])
+
   return {
     messages: cachedMessages,
+    isLoading,
     typingUser,
     errorBanner,
     setErrorBanner,
     sendMessage,
+    fetchOlderMessages,
+    hasMoreHistory,
   }
 }

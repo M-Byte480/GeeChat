@@ -24,7 +24,10 @@ export function createApp() {
 
   app.use('*', trimTrailingSlash())
   app.use('*', logger())
-  app.use('*', cors({ origin: '*', allowMethods: ['GET', 'POST', 'OPTIONS'] }))
+  app.use(
+    '*',
+    cors({ origin: '*', allowMethods: ['GET', 'POST', 'PATCH', 'OPTIONS'] })
+  )
 
   app.get('/', (c) =>
     c.json({

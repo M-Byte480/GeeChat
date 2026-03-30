@@ -21,6 +21,7 @@
     "burnt": "^0.12.2",
     "expo-constants": "~17.1.6",
     "expo-linking": "~7.1.4",
+    "expo-secure-store": "*",
     "livekit-client": "^2.17.1",
     "lucide-react": "^0.574.0",
     "react-markdown": "^10.1.0",

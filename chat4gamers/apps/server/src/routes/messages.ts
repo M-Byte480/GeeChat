@@ -1,15 +1,15 @@
 import { Hono } from 'hono'
-import { and, asc, desc, eq, gt } from 'drizzle-orm'
+import { and, asc, desc, eq, gt, lt } from 'drizzle-orm'
 import { db } from '../db/index.js'
 import { messages } from '../db/schema.js'
 import { verifyEd25519 } from '../lib/crypto.js'
 import { sanitize } from '../lib/sanitize.js'
 import { broadcast } from '../ws.js'
-import { requireAuth } from '../lib/middleware.js'
+import { requireAuth, requireMember } from '../lib/middleware.js'
 
 const router = new Hono()
 
-router.post('/messages', requireAuth, async (c) => {
+router.post('/messages', requireAuth, requireMember, async (c) => {
   const body = await c.req.json()
   console.log('[Messages] body:', body)
   try {
@@ -66,9 +66,10 @@ router.post('/messages', requireAuth, async (c) => {
   }
 })
 
-router.get('/chat-history', requireAuth, async (c) => {
+router.get('/chat-history', requireAuth, requireMember, async (c) => {
   const channelId = c.req.query('channel')
   const since = c.req.query('since')
+  const before = c.req.query('before')
   if (!channelId) return c.json({ error: 'channel is required' }, 400)
 
   if (since) {
@@ -87,14 +88,29 @@ router.get('/chat-history', requireAuth, async (c) => {
     return c.json(result)
   }
 
-  const query = db
+  if (before) {
+    const result = await db
+      .select()
+      .from(messages)
+      .where(
+        and(
+          eq(messages.channelId, channelId),
+          lt(messages.timestamp, new Date(before))
+        )
+      )
+      .orderBy(desc(messages.timestamp))
+      .limit(50)
+
+    return c.json(result.reverse())
+  }
+
+  const result = await db
     .select()
     .from(messages)
     .where(eq(messages.channelId, channelId))
     .orderBy(desc(messages.timestamp))
-    .limit(100)
+    .limit(50)
 
-  const result = await query
   return c.json(result.reverse())
 })
 
