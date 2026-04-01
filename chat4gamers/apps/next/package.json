@@ -47,6 +47,14 @@
         "url": "https://chat.milan.ie/updates/"
       }
     },
+    "mac": {
+      "target": ["dmg", "zip"],
+      "category": "public.app-category.social-networking"
+    },
+    "linux": {
+      "target": ["AppImage", "deb", "rpm"],
+      "category": "Network"
+    },
     "nsis": {
       "oneClick": true,
       "createDesktopShortcut": "always",
