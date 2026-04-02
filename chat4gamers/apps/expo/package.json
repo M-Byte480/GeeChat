@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "private": true,
+  "license": "AGPL-3.0-or-later",
   "scripts": {
     "start": "npx expo start -c",
     "android": "npx expo run:android",

@@ -5,6 +5,7 @@
   "author": "M-Byte480 @ GitHub",
   "private": true,
   "main": "index.js",
+  "license": "AGPL-3.0-or-later",
   "type": "module",
   "scripts": {
     "dev": "next dev",
@@ -48,11 +49,18 @@
       }
     },
     "mac": {
-      "target": ["dmg", "zip"],
+      "target": [
+        "dmg",
+        "zip"
+      ],
       "category": "public.app-category.social-networking"
     },
     "linux": {
-      "target": ["AppImage", "deb", "rpm"],
+      "target": [
+        "AppImage",
+        "deb",
+        "rpm"
+      ],
       "category": "Network"
     },
     "nsis": {
