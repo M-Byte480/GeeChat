@@ -1,0 +1,96 @@
+name: Build Tauri
+
+on:
+  workflow_call:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            artifact: tauri-windows
+          - os: macos-latest
+            artifact: tauri-mac
+          - os: ubuntu-latest
+            artifact: tauri-linux
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Linux system dependencies
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: chat4gamers/apps/desktop-tauri/src-tauri -> target
+
+      - name: Install Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'yarn'
+          cache-dependency-path: chat4gamers/yarn.lock
+
+      - name: Install dependencies
+        working-directory: chat4gamers
+        run: yarn install
+
+      - name: Build and bundle
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          projectPath: chat4gamers/apps/desktop-tauri
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: chat4gamers/apps/desktop-tauri/src-tauri/target/release/bundle/
+          retention-days: 7
+
+  upload-to-server:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clear old release on server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.REMOTE_HOST }}
+          username: ${{ secrets.REMOTE_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /var/www/updates
+            rm -f *.exe *.msi *.sig
+
+      - name: Download Windows artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: tauri-windows
+          path: ./dist-tauri
+
+      - name: Upload to server via SCP
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.REMOTE_HOST }}
+          username: ${{ secrets.REMOTE_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "dist-tauri/nsis/*.exe,dist-tauri/msi/*.msi"
+          target: "/var/www/updates/"
+          strip_components: 2
+          overwrite: true
+          rm: false

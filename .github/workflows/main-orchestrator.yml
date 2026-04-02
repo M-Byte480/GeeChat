@@ -22,35 +22,19 @@ jobs:
           token: ${{ secrets.MY_PAT_TOKEN }}
           persist-credentials: false
 
-      # 1. Detect which folders changed
-      - uses: dorny/paths-filter@v3
-        id: filter
-        with:
-          filters: |
-            server:
-              - 'chat4gamers/apps/server/**'
-              - 'chat4gamers/package.json'
-
-
       - name: Manual Yarn Version Bump
         id: version_bump
         run: |
           cd chat4gamers/apps/next
-          
-          # 1. Bump the version without triggering ANY side effects
-          # --no-deferred prevents Yarn from creating a 'deferred' version file
+
           yarn version patch --no-deferred
-          
-          # 2. Update the lockfile BUT explicitly ignore all build scripts
-          # This prevents Yarn from trying to build Tamagui/Rust/SQLite
+
           export YARN_ENABLE_SCRIPTS=false
           yarn install --mode=skip-build
-          
-          # 3. Extract version for Git
+
           NEW_VERSION=$(node -p "require('./package.json').version")
           echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
-        
-          # 4. Standard Git flow...
+
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
           git add ../../yarn.lock package.json
@@ -58,84 +42,27 @@ jobs:
           git tag -f v$NEW_VERSION
           git push https://x-access-token:${{ secrets.MY_PAT_TOKEN }}@github.com/${{ github.repository }}.git main --tags --force
 
-
-      # 3. ONLY Sync jarvis-deploy if the server folder changed
       - name: Sync jarvis-deploy
         if: steps.filter.outputs.server == 'true'
-
         run: |
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
-          
+
           git remote set-url origin https://x-access-token:${{ secrets.MY_PAT_TOKEN }}@github.com/${{ github.repository }}.git
-          
+
           git fetch origin
           git checkout jarvis-deploy
           git merge main --ff-only
           git push origin jarvis-deploy
 
-  build-windows:
+  tauri:
     needs: analyze-and-sync
-    runs-on: windows-latest
-    defaults:
-      run:
-        working-directory: chat4gamers/apps/next
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+    if: vars.ENABLE_TAURI == 'true'
+    uses: ./.github/workflows/build-tauri.yml
+    secrets: inherit
 
-      - name: Install Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: 'yarn'
-          cache-dependency-path: chat4gamers/yarn.lock
-
-      - name: Install Dependencies
-        run: yarn install
-
-      - name: Build Electron App
-        run: yarn package # This runs your: electron-builder --publish always
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CSC_SKIP_SIGNING: true
-
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: electron-builds
-          path: chat4gamers/apps/next/dist-electron/
-          retention-days: 1
-
-  upload-to-server:
-    needs: build-windows
-    runs-on: ubuntu-latest
-    steps:
-      - name: SSH and Update
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.REMOTE_HOST }}
-          username: ${{ secrets.REMOTE_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            cd /var/www/updates
-            rm -f latest.yml *.exe *.blockmap
-
-      - name: Download Artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: electron-builds
-          path: ./dist-electron
-
-      - name: Upload to NixOS via SCP
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.REMOTE_HOST }}
-          username: ${{ secrets.REMOTE_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          # Files are now in the root of the runner's ./dist-electron folder
-          source: "dist-electron/latest.yml,dist-electron/*.exe,dist-electron/*.blockmap"
-          target: "/var/www/updates/"
-          strip_components: 1
-          overwrite: true
-          rm: false
+  electron:
+    needs: analyze-and-sync
+    if: vars.ENABLE_ELECTRON == 'true'
+    uses: ./.github/workflows/build-electron.yml
+    secrets: inherit

@@ -16,6 +16,8 @@
     "test": "vitest",
     "electron": "cross-env NODE_ENV=development electron .",
     "package": "yarn build && npx electron-builder build --win --publish always",
+    "package:mac": "yarn build && npx electron-builder build --mac --publish always",
+    "package:linux": "yarn build && npx electron-builder build --linux --publish always",
     "package:debug": "yarn build && npx electron-builder build --win --dir",
     "package:installer": "yarn build && npx electron-builder build --win"
   },

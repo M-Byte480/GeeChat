@@ -2,9 +2,9 @@
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "GeeChat",
   "version": "0.1.0",
-  "identifier": "com.tauri.dev",
+  "identifier": "m-byte.geechat",
   "build": {
-    "frontendDist": "../next/out",
+    "frontendDist": "../../next/out",
     "devUrl": "http://localhost:3000",
     "beforeDevCommand": "yarn workspace next-app dev",
     "beforeBuildCommand": "yarn workspace next-app build"
