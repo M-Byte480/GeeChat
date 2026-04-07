@@ -87,12 +87,13 @@ export function ViewUserPopover({ user, trigger }: Props) {
               <div
                 key={r.id}
                 style={{
-                  background: 'var(--blue4)',
+                  background: r.color ? `${r.color}33` : 'var(--blue4)',
                   borderRadius: 4,
                   padding: '2px 8px',
                   fontSize: 12,
                   fontWeight: 600,
-                  color: 'var(--blue11)',
+                  color: r.color ?? 'var(--blue11)',
+                  border: `1px solid ${r.color ?? 'var(--blue6)'}`,
                 }}
               >
                 {r.name}

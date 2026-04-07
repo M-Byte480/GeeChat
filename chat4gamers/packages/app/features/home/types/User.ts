@@ -6,7 +6,7 @@ export enum UserStatus {
   INVISIBLE = 'invisible',
 }
 
-export type CustomRole = { id: string; name: string }
+export type CustomRole = { id: string; name: string; color?: string }
 
 export type User = {
   username: string

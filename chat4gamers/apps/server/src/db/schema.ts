@@ -122,6 +122,8 @@ export const sessions = sqliteTable('sessions', {
 export const roles = sqliteTable('roles', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),
+  color: text('color').notNull().default('#5865f2'),
+  position: integer('position').notNull().default(0),
 })
 
 export const permissions = sqliteTable('permissions', {

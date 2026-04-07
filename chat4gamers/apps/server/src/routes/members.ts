@@ -203,6 +203,7 @@ router.get('/members', requireAuth, requireMember, async (c) => {
           userPublicKey: userRoles.userPublicKey,
           id: roles.id,
           name: roles.name,
+          color: roles.color,
         })
         .from(userRoles)
         .innerJoin(roles, eq(userRoles.roleId, roles.id))

@@ -2,23 +2,39 @@ import type { ReactNode } from 'react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 
+export type MemberRole = 'owner' | 'admin' | 'member'
+
+const ROLE_RANK: Record<MemberRole, number> = { owner: 2, admin: 1, member: 0 }
+
+function hasRole(current: MemberRole | null | undefined, required: MemberRole): boolean {
+  if (!current) return false
+  return ROLE_RANK[current] >= ROLE_RANK[required]
+}
+
 export type DropdownOption = {
   label: string
   icon?: ReactNode
   onPress: () => void
   destructive?: boolean
+  /** If set, option is hidden unless the current user meets this role or higher */
+  minRole?: MemberRole
 }
 
 type Props = {
   options: DropdownOption[]
   /** Render prop — receives the open handler to attach to your trigger element */
   trigger: (open: () => void) => ReactNode
+  /** Current user's role — options with minRole are hidden if the user doesn't qualify */
+  currentRole?: MemberRole | null
 }
 
 const MENU_WIDTH = 200
 const ITEM_HEIGHT = 36
 
-export function DropdownMenu({ options, trigger }: Props) {
+export function DropdownMenu({ options, trigger, currentRole }: Props) {
+  const visibleOptions = options.filter(
+    (opt) => !opt.minRole || hasRole(currentRole, opt.minRole)
+  )
   const [pos, setPos] = useState<{ x: number; y: number } | null>(null)
   const triggerRef = useRef<HTMLDivElement>(null)
 
@@ -28,10 +44,10 @@ export function DropdownMenu({ options, trigger }: Props) {
     const x = Math.min(rect.left, window.innerWidth - MENU_WIDTH - 4)
     const y = Math.min(
       rect.bottom + 4,
-      window.innerHeight - options.length * ITEM_HEIGHT - 8
+      window.innerHeight - visibleOptions.length * ITEM_HEIGHT - 8
     )
     setPos({ x, y })
-  }, [options.length])
+  }, [visibleOptions.length])
 
   const close = useCallback(() => setPos(null), [])
 
@@ -70,7 +86,7 @@ export function DropdownMenu({ options, trigger }: Props) {
           padding: '4px 0',
         }}
       >
-        {options.map((opt, i) => (
+        {visibleOptions.map((opt, i) => (
           <DropdownItem key={i} option={opt} onClose={close} />
         ))}
       </div>,

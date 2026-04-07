@@ -29,7 +29,11 @@ export function useServerMembers(serverUrl: string | null): User[] {
               avatarUrl: m.pfp ?? m.avatarUrl,
               role: m.role,
               joinedAt: m.joinedAt,
-              customRoles: m.customRoles ?? [],
+              customRoles: (m.customRoles ?? []).map((r: { id: string; name: string; color?: string }) => ({
+                id: r.id,
+                name: r.name,
+                color: r.color,
+              })),
             }))
           )
         }
