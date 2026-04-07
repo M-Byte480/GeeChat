@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
-import { eq } from 'drizzle-orm'
+import { eq, inArray } from 'drizzle-orm'
 import { db } from '../db/index.js'
-import { members, users } from '../db/schema.js'
+import { members, roles, userRoles, users } from '../db/schema.js'
 import { requireAdmin, requireAuth, requireMember } from '../lib/middleware.js'
 import { broadcast } from '../ws.js'
 import { rateLimit } from '../lib/rateLimit.js'
@@ -103,7 +103,14 @@ router.post('/join', joinLimit, async (c) => {
     if (providedToken !== token) {
       return c.json({ error: 'Invalid owner token' }, 403)
     }
-    // Token matched — this user becomes the owner
+    // Token matched — this user becomes the owner.
+    // Seed the two built-in roles and assign the owner to the Owner role.
+    const ownerRoleId = crypto.randomUUID()
+    const memberRoleId = crypto.randomUUID()
+    await db.insert(roles).values([
+      { id: ownerRoleId, name: 'Owner' },
+      { id: memberRoleId, name: 'Member' },
+    ])
     await db.insert(members).values({
       id: crypto.randomUUID(),
       userPublicKey: publicKey,
@@ -111,6 +118,7 @@ router.post('/join', joinLimit, async (c) => {
       role: 'owner',
       status: 'active',
     })
+    await db.insert(userRoles).values({ userPublicKey: publicKey, roleId: ownerRoleId })
     ownerToken = null // invalidate token after use
     return c.json({ status: 'active', role: 'owner' })
   }
@@ -173,9 +181,7 @@ router.patch('/profile', requireAuth, async (c) => {
  * Returns all active members — used by the client to populate the member pane.
  */
 router.get('/members', requireAuth, requireMember, async (c) => {
-  // todo: pagination for large servers, and filter by status (active, pending, etc)
-
-  const rows = await db
+  const memberRows = await db
     .select({
       publicKey: users.publicKey,
       username: users.username,
@@ -183,11 +189,38 @@ router.get('/members', requireAuth, requireMember, async (c) => {
       nickname: members.nickname,
       role: members.role,
       status: members.status,
+      joinedAt: members.joinedAt,
     })
     .from(members)
     .innerJoin(users, eq(members.userPublicKey, users.publicKey))
     .where(eq(members.status, 'active'))
-  return c.json(rows)
+
+  // Fetch custom roles for all returned members in one query
+  const publicKeys = memberRows.map((m) => m.publicKey)
+  const roleRows = publicKeys.length
+    ? await db
+        .select({
+          userPublicKey: userRoles.userPublicKey,
+          id: roles.id,
+          name: roles.name,
+        })
+        .from(userRoles)
+        .innerJoin(roles, eq(userRoles.roleId, roles.id))
+        .where(inArray(userRoles.userPublicKey, publicKeys))
+    : []
+
+  const rolesByUser = new Map<string, Array<{ id: string; name: string }>>()
+  for (const row of roleRows) {
+    const existing = rolesByUser.get(row.userPublicKey) ?? []
+    rolesByUser.set(row.userPublicKey, [...existing, { id: row.id, name: row.name }])
+  }
+
+  return c.json(
+    memberRows.map((m) => ({
+      ...m,
+      customRoles: rolesByUser.get(m.publicKey) ?? [],
+    }))
+  )
 })
 
 /**

@@ -25,8 +25,11 @@ export function useServerMembers(serverUrl: string | null): User[] {
             data.map((m) => ({
               username: m.username ?? 'Unknown',
               publicKey: m.publicKey ?? '',
-              status: m.status ?? UserStatus.ONLINE,
-              avatarUrl: m.avatarUrl,
+              status: UserStatus.ONLINE,
+              avatarUrl: m.pfp ?? m.avatarUrl,
+              role: m.role,
+              joinedAt: m.joinedAt,
+              customRoles: m.customRoles ?? [],
             }))
           )
         }

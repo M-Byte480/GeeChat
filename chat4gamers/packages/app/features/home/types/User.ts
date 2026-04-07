@@ -6,11 +6,16 @@ export enum UserStatus {
   INVISIBLE = 'invisible',
 }
 
+export type CustomRole = { id: string; name: string }
+
 export type User = {
   username: string
   publicKey: string
   status: UserStatus
   avatarUrl?: string
+  role?: 'owner' | 'admin' | 'member'
+  joinedAt?: string
+  customRoles?: CustomRole[]
 }
 
 export interface Users {
