@@ -104,6 +104,17 @@ export function WelcomeScreen({ onIdentityReady }: Props) {
       justifyContent="center"
       gap="$5"
     >
+      {/* Drag strip for Electron + Tauri — sits in the empty top area */}
+      <XStack
+        position="absolute"
+        top={0}
+        left={0}
+        right={0}
+        height={40}
+        // @ts-expect-error — desktop drag region attributes
+        data-tauri-drag-region
+        style={{ WebkitAppRegion: 'drag', userSelect: 'none' }}
+      />
       <YStack alignItems="center" gap="$2">
         <Text fontSize="$9" fontWeight="800" letterSpacing={-1} color="$color">
           GeeChat

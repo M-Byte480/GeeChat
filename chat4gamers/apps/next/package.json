@@ -22,7 +22,7 @@
     "package:installer": "yarn build && npx electron-builder build --win"
   },
   "build": {
-    "appId": "ie.REDACTED_USERNAME.geechat",
+    "appId": "ie.M-Byte480.geechat",
     "asar": true,
     "productName": "GeeChat",
     "directories": {
@@ -77,6 +77,7 @@
     "@livekit/krisp-noise-filter": "^0.4.1",
     "@tamagui/config": "^2.0.0-rc.0",
     "@tamagui/next-theme": "^2.0.0-rc.0",
+    "@tauri-apps/api": "^2",
     "app": "0.0.0",
     "electron-updater": "^6.8.3",
     "next": "16.1.1",
