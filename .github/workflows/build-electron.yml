@@ -1,0 +1,82 @@
+name: Build Electron
+
+on:
+  workflow_call:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            script: package
+            artifact: electron-windows
+          - os: macos-latest
+            script: package:mac
+            artifact: electron-mac
+          - os: ubuntu-latest
+            script: package:linux
+            artifact: electron-linux
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: chat4gamers/apps/next
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'yarn'
+          cache-dependency-path: chat4gamers/yarn.lock
+
+      - name: Install dependencies
+        run: yarn install
+
+      - name: Build
+        run: yarn ${{ matrix.script }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_SKIP_SIGNING: true
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: chat4gamers/apps/next/dist-electron/
+          retention-days: 1
+
+  upload-to-server:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clear old release on server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.REMOTE_HOST }}
+          username: ${{ secrets.REMOTE_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /var/www/updates
+            rm -f latest.yml *.exe *.blockmap
+
+      - name: Download Windows artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: electron-windows
+          path: ./dist-electron
+
+      - name: Upload to server via SCP
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.REMOTE_HOST }}
+          username: ${{ secrets.REMOTE_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "dist-electron/latest.yml,dist-electron/*.exe,dist-electron/*.blockmap"
+          target: "/var/www/updates/"
+          strip_components: 1
+          overwrite: true
+          rm: false

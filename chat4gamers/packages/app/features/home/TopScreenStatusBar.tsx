@@ -15,7 +15,8 @@ export function TopScreenStatusBar({
       borderColor="$borderColor"
       alignItems="center"
       px="$3"
-      // @ts-expect-error — Electron-specific CSS property
+      // @ts-expect-error — desktop-specific drag properties (Electron + Tauri)
+      data-tauri-drag-region
       style={{ WebkitAppRegion: 'drag', userSelect: 'none' }}
     >
       <XStack

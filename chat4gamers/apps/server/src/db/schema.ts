@@ -1,4 +1,4 @@
-import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
+import { index, integer, primaryKey, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 import { sql } from 'drizzle-orm'
 
 export const MemberStatus = [
@@ -118,3 +118,47 @@ export const sessions = sqliteTable('sessions', {
     sql`(unixepoch())`
   ),
 })
+
+export const roles = sqliteTable('roles', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  color: text('color').notNull().default('#5865f2'),
+  position: integer('position').notNull().default(0),
+})
+
+export const permissions = sqliteTable('permissions', {
+  id: text('id').primaryKey(),
+  name: text('name')
+    .notNull()
+    .unique(), // e.g. 'manage_channels', 'kick_members'
+})
+
+export const rolePermissions = sqliteTable(
+  'role_permissions',
+  {
+    roleId: text('role_id')
+      .notNull()
+      .references(() => roles.id, { onDelete: 'cascade' }),
+    permissionId: text('permission_id')
+      .notNull()
+      .references(() => permissions.id, { onDelete: 'cascade' }),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.roleId, table.permissionId] }),
+  })
+)
+
+export const userRoles = sqliteTable(
+  'user_roles',
+  {
+    userPublicKey: text('user_public_key')
+      .notNull()
+      .references(() => users.publicKey, { onDelete: 'cascade' }),
+    roleId: text('role_id')
+      .notNull()
+      .references(() => roles.id, { onDelete: 'cascade' }),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.userPublicKey, table.roleId] }),
+  })
+)

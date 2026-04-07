@@ -12,6 +12,7 @@ import chatRoutes from './routes/chat.js'
 import membersRouter from './routes/members.js'
 import relayRouter from './routes/relay.js'
 import media from './routes/media.js'
+import rolesRouter from './routes/roles.js'
 
 /**
  * Creates and configures the Hono application without starting a server.
@@ -26,7 +27,7 @@ export function createApp() {
   app.use('*', logger())
   app.use(
     '*',
-    cors({ origin: '*', allowMethods: ['GET', 'POST', 'PATCH', 'OPTIONS'] })
+    cors({ origin: '*', allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'] })
   )
 
   app.get('/', (c) =>
@@ -46,6 +47,7 @@ export function createApp() {
   app.route('/', membersRouter)
   app.route('/', relayRouter)
   app.route('/', media)
+  app.route('/', rolesRouter)
 
   return app
 }

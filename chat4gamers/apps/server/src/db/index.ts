@@ -188,16 +188,66 @@ sqlite.exec(`
         created_at   INTEGER NOT NULL DEFAULT (unixepoch())
     );
 
+    CREATE TABLE IF NOT EXISTS roles (
+        id       TEXT    PRIMARY KEY,
+        name     TEXT    NOT NULL,
+        color    TEXT    NOT NULL DEFAULT '#5865f2',
+        position INTEGER NOT NULL DEFAULT 0
+    );
+
+    CREATE TABLE IF NOT EXISTS permissions (
+        id   TEXT PRIMARY KEY,
+        name TEXT NOT NULL UNIQUE
+    );
+
+    CREATE TABLE IF NOT EXISTS role_permissions (
+        role_id       TEXT NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
+        permission_id TEXT NOT NULL REFERENCES permissions(id) ON DELETE CASCADE,
+        PRIMARY KEY (role_id, permission_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS user_roles (
+        user_public_key TEXT NOT NULL REFERENCES users(public_key) ON DELETE CASCADE,
+        role_id         TEXT NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
+        PRIMARY KEY (user_public_key, role_id)
+    );
+
     CREATE INDEX IF NOT EXISTS channel_timestamp_idx ON messages (channel_id, timestamp);
 `)
 
 // Migration guards for databases predating this schema
 try {
-  sqlite.exec(`ALTER TABLE messages
-        ADD COLUMN signature TEXT NOT NULL DEFAULT ''`)
-} catch {
-  /* column already exists */
-}
+  sqlite.exec(`ALTER TABLE messages ADD COLUMN signature TEXT NOT NULL DEFAULT ''`)
+} catch { /* column already exists */ }
+
+try {
+  sqlite.exec(`ALTER TABLE roles ADD COLUMN color TEXT NOT NULL DEFAULT '#5865f2'`)
+} catch { /* column already exists */ }
+
+try {
+  sqlite.exec(`ALTER TABLE roles ADD COLUMN position INTEGER NOT NULL DEFAULT 0`)
+} catch { /* column already exists */ }
+
+try {
+  sqlite.exec(`ALTER TABLE members ADD COLUMN role_check TEXT`)
+  // Fix old CHECK constraint that only included 'owner','member' — drop is not
+  // supported in SQLite, so we recreate the table to add 'admin'.
+  // Only runs if the column add succeeded (i.e. this is an old DB).
+  sqlite.exec(`
+    CREATE TABLE IF NOT EXISTS members_new (
+      id               TEXT PRIMARY KEY,
+      user_public_key  TEXT NOT NULL REFERENCES users(public_key) ON DELETE CASCADE,
+      nickname         TEXT,
+      role             TEXT NOT NULL DEFAULT 'member' CHECK (role IN ('owner','admin','member')),
+      status           TEXT NOT NULL DEFAULT 'awaiting_to_join'
+                            CHECK (status IN ('active','banned','inactive','awaiting_to_join','denied')),
+      joined_at        INTEGER NOT NULL DEFAULT (unixepoch())
+    );
+    INSERT INTO members_new SELECT id,user_public_key,nickname,role,status,joined_at FROM members;
+    DROP TABLE members;
+    ALTER TABLE members_new RENAME TO members;
+  `)
+} catch { /* members already up to date */ }
 
 // Seed default channels if the table is empty
 const channelCount = (

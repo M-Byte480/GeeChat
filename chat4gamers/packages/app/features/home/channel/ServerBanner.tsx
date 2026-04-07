@@ -1,25 +1,44 @@
 import { Text, XStack } from '@my/ui'
-import { ChevronDown, Users } from '@tamagui/lucide-icons'
+import { ChevronDown, UserCog, UserLock, Users } from '@tamagui/lucide-icons'
 import { DropdownMenu } from 'app/features/home/components/DropdownMenu'
-import type { DropdownOption } from 'app/features/home/components/DropdownMenu'
+import type { DropdownOption, MemberRole } from 'app/features/home/components/DropdownMenu'
+import { GearIcon } from '@livekit/components-react'
 
 type Props = {
   serverName: string
+  currentRole: MemberRole | null
   onViewJoinRequests: () => void
+  onManageRoles: () => void
 }
 
-export function ServerBanner({ serverName, onViewJoinRequests }: Props) {
+export function ServerBanner({ serverName, currentRole, onViewJoinRequests, onManageRoles }: Props) {
   const options: DropdownOption[] = [
     {
       label: 'View Join Requests',
       icon: <Users size={14} />,
       onPress: onViewJoinRequests,
+      minRole: 'admin',
+    },
+    {
+      label: 'Manage Roles',
+      icon: <UserLock size={14} />,
+      onPress: onManageRoles,
+      minRole: 'admin',
+    },
+    {
+      label: 'Server Settings',
+      icon: <GearIcon size={14} />,
+      onPress: () => {
+        // Implement server settings functionality
+      },
+      minRole: 'owner',
     },
   ]
 
   return (
     <DropdownMenu
       options={options}
+      currentRole={currentRole}
       trigger={(openMenu) => (
         <XStack
           height={50}

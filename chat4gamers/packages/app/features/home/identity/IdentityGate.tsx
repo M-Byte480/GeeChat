@@ -58,9 +58,11 @@ export function IdentityGate({ children }: { children: React.ReactNode }) {
         setMounted(true)
       })
     } else {
-      // Non-Electron environments (browser, Playwright): fall back to localStorage.
-      // Each browser context has isolated storage, so this naturally gives
-      // separate sessions per context in tests.
+      // Tauri and browser environments: use localStorage.
+      // In Tauri, the WebView persists localStorage per-app under its own origin
+      // (tauri://localhost in production), giving natural isolation.
+      // File I/O (import/export identity) is handled via web file-picker APIs
+      // in WelcomeScreen — no native plugin required.
       const json = localStorage.getItem('geechat-identity')
       if (json) {
         try {

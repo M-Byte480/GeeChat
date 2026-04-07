@@ -54,7 +54,7 @@ export function ViewUserPopover({ user, trigger }: Props) {
           }}
         />
 
-        {/* Role */}
+        {/* Roles */}
         <div style={{ marginBottom: 12 }}>
           <div
             style={{
@@ -66,20 +66,39 @@ export function ViewUserPopover({ user, trigger }: Props) {
               marginBottom: 6,
             }}
           >
-            Role
+            Roles
           </div>
-          <div
-            style={{
-              display: 'inline-block',
-              background: 'var(--color4)',
-              borderRadius: 4,
-              padding: '2px 8px',
-              fontSize: 12,
-              fontWeight: 600,
-              color: 'var(--color)',
-            }}
-          >
-            {user.role}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+            {/* Built-in role chip */}
+            <div
+              style={{
+                background: 'var(--color4)',
+                borderRadius: 4,
+                padding: '2px 8px',
+                fontSize: 12,
+                fontWeight: 600,
+                color: 'var(--color)',
+              }}
+            >
+              {user.role}
+            </div>
+            {/* Custom role chips */}
+            {user.customRoles?.map((r) => (
+              <div
+                key={r.id}
+                style={{
+                  background: r.color ? `${r.color}33` : 'var(--blue4)',
+                  borderRadius: 4,
+                  padding: '2px 8px',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  color: r.color ?? 'var(--blue11)',
+                  border: `1px solid ${r.color ?? 'var(--blue6)'}`,
+                }}
+              >
+                {r.name}
+              </div>
+            ))}
           </div>
         </div>
 

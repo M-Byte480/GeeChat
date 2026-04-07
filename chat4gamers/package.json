@@ -6,6 +6,7 @@
     "./apps/federation",
     "./apps/next",
     "./apps/server",
+    "./apps/desktop-tauri",
     "./packages/app",
     "./packages/ui",
     "./packages/config",
@@ -23,7 +24,8 @@
     "web:prod": "yarn workspace next-app build",
     "web:prod:serve": "yarn workspace next-app serve",
     "postinstall": "yarn check-tamagui && yarn build",
-    "build": "yarn workspaces foreach --all --exclude next-app run build",
+    "build": "yarn workspaces foreach --all --exclude next-app --exclude desktop-tauri run build",
+    "tauri": "yarn workspace desktop-tauri tauri",
     "upgrade:tamagui": "yarn up '*tamagui*'@latest '@tamagui/*'@latest",
     "upgrade:tamagui:canary": "yarn up '*tamagui*'@canary '@tamagui/*'@canary",
     "check-tamagui": "tamagui check",
@@ -49,7 +51,7 @@
     "@react-navigation/native": "7.1.28"
   },
   "dependencies": {
-    "@babel/runtime": "^7.24.6",
+    "@babel/runtime": "^7.29.2",
     "@tamagui/cli": "^2.0.0-rc.0",
     "@tamagui/react-native-svg": "^2.0.0-rc.0",
     "@tamagui/react-native-web-lite": "^2.0.0-rc.0",

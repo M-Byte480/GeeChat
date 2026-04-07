@@ -119,3 +119,9 @@ export const useAppStore = create<AppState>((set) => ({
       members: { ...state.members, [serverUrl]: members },
     })),
 }))
+
+// Expose store in devtools console: window.__store.getState()
+if (typeof window !== 'undefined') {
+  // @ts-ignore
+  window.__store = useAppStore
+}

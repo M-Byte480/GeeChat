@@ -17,6 +17,54 @@ interface WelcomeElectronAPI {
 const electronAPI = () =>
   (window as unknown as { electronAPI?: WelcomeElectronAPI }).electronAPI
 
+// ── Web / Tauri file helpers ──────────────────────────────────────────────────
+
+function pickFileAsText(accept: string): Promise<string | null> {
+  return new Promise((resolve) => {
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = accept
+    input.onchange = () => {
+      const file = input.files?.[0]
+      if (!file) return resolve(null)
+      const reader = new FileReader()
+      reader.onload = () => resolve(reader.result as string)
+      reader.onerror = () => resolve(null)
+      reader.readAsText(file)
+    }
+    input.oncancel = () => resolve(null)
+    input.click()
+  })
+}
+
+function pickFileAsDataUrl(accept: string): Promise<string | null> {
+  return new Promise((resolve) => {
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = accept
+    input.onchange = () => {
+      const file = input.files?.[0]
+      if (!file) return resolve(null)
+      const reader = new FileReader()
+      reader.onload = () => resolve(reader.result as string)
+      reader.onerror = () => resolve(null)
+      reader.readAsDataURL(file)
+    }
+    input.oncancel = () => resolve(null)
+    input.click()
+  })
+}
+
+function downloadTextFile(filename: string, content: string) {
+  const blob = new Blob([content], { type: 'application/json' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
 type Props = {
   onIdentityReady: (identity: Identity) => void
 }
@@ -32,13 +80,17 @@ export function WelcomeScreen({ onIdentityReady }: Props) {
   const [error, setError] = useState<string | null>(null)
 
   const handleSelectPfp = async () => {
-    const dataUrl = await electronAPI()?.selectPfp()
+    const dataUrl = electronAPI()?.selectPfp
+      ? await electronAPI()!.selectPfp()
+      : await pickFileAsDataUrl('image/*')
     if (dataUrl) setPfp(dataUrl)
   }
 
   const handleImportClick = async () => {
     setError(null)
-    const jsonStr = await electronAPI()?.loadIdentityFile()
+    const jsonStr = electronAPI()?.loadIdentityFile
+      ? await electronAPI()!.loadIdentityFile()
+      : await pickFileAsText('.json,application/json')
     if (!jsonStr) return // user cancelled
     try {
       const file = JSON.parse(jsonStr) as IdentityFile
@@ -70,8 +122,12 @@ export function WelcomeScreen({ onIdentityReady }: Props) {
         pfp,
         passphrase
       )
-      await electronAPI()?.saveIdentityFile(JSON.stringify(file, null, 2))
-      await electronAPI()?.safestoreSet(serializeForStorage(identity))
+      const jsonContent = JSON.stringify(file, null, 2)
+      if (electronAPI()?.saveIdentityFile) {
+        await electronAPI()!.saveIdentityFile(jsonContent)
+      } else {
+        downloadTextFile(`geechat-identity-${username.trim()}.json`, jsonContent)
+      }
       onIdentityReady(identity)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to create identity')
@@ -104,6 +160,17 @@ export function WelcomeScreen({ onIdentityReady }: Props) {
       justifyContent="center"
       gap="$5"
     >
+      {/* Drag strip for Electron + Tauri — sits in the empty top area */}
+      <XStack
+        position="absolute"
+        top={0}
+        left={0}
+        right={0}
+        height={40}
+        // @ts-expect-error — desktop drag region attributes
+        data-tauri-drag-region
+        style={{ WebkitAppRegion: 'drag', userSelect: 'none' }}
+      />
       <YStack alignItems="center" gap="$2">
         <Text fontSize="$9" fontWeight="800" letterSpacing={-1} color="$color">
           GeeChat

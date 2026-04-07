@@ -13,7 +13,7 @@
     "prebuild": "yarn expo prebuild"
   },
   "dependencies": {
-    "@babel/runtime": "^7.26.0",
+    "@babel/runtime": "^7.29.2",
     "@expo/config-plugins": "~54.0.4",
     "@expo/metro-runtime": "~6.1.2",
     "@my/ui": "0.0.1",

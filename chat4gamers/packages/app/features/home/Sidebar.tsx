@@ -6,6 +6,8 @@ import type { Server } from 'app/features/home/identity/types'
 import { ServerBanner } from 'app/features/home/channel/ServerBanner'
 import { ChannelList } from 'app/features/home/channel/ChannelList'
 import { JoinRequestsSheet } from 'app/features/home/sheets/JoinRequestsSheet'
+import { RoleManagerDialog } from 'app/features/home/user/RoleManagerDialog'
+import { useCurrentMemberRole } from 'app/features/home/hooks/useCurrentMemberRole'
 import { Channel, ChannelType } from 'app/features/home/types/types'
 import { useWhyDidYouRender } from 'app/features/home/hooks/useWhyDidYouRender'
 
@@ -35,6 +37,8 @@ export const Sidebar = ({
   onCreateChannel,
 }: Props) => {
   const [showJoinRequests, setShowJoinRequests] = useState(false)
+  const [showRoleManager, setShowRoleManager] = useState(false)
+  const currentRole = useCurrentMemberRole(activeServer.url)
   useWhyDidYouRender('Sidebar', {
     activeServer,
     channels,
@@ -51,7 +55,9 @@ export const Sidebar = ({
     >
       <ServerBanner
         serverName={activeServer.name}
+        currentRole={currentRole}
         onViewJoinRequests={() => setShowJoinRequests(true)}
+        onManageRoles={() => setShowRoleManager(true)}
       />
 
       {/* Scrollable channel list */}
@@ -71,6 +77,12 @@ export const Sidebar = ({
         onClose={() => setShowJoinRequests(false)}
         serverUrl={activeServer.url}
         serverName={activeServer.name}
+      />
+
+      <RoleManagerDialog
+        open={showRoleManager}
+        onClose={() => setShowRoleManager(false)}
+        serverUrl={activeServer.url}
       />
     </YStack>
   )

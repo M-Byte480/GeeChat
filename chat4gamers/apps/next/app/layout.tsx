@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { NextTamaguiProvider } from 'app/provider/NextTamaguiProvider'
+import { TauriTitleBar } from './TauriTitleBar'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -17,6 +18,7 @@ export default function RootLayout({
     // You can use `suppressHydrationWarning` to avoid the warning about mismatched content during hydration in dev mode
     <html lang="en" suppressHydrationWarning>
       <body>
+        <TauriTitleBar />
         <NextTamaguiProvider>{children}</NextTamaguiProvider>
       </body>
     </html>

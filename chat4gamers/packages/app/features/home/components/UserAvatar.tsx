@@ -13,6 +13,32 @@ interface Props {
 
 export function UserAvatar({ serverUrl, publicKey, identity }: Props) {
   const user = useUser(serverUrl, publicKey, identity)
+  const options = [
+    {
+      label: 'View Profile',
+      onPress: () => {
+        // This will be handled by the ViewUserPopover trigger
+      }
+    },
+    {
+      label: 'Manage Roles',
+      onPress: () => {
+        // Implement manage roles functionality
+      }
+    },
+    {
+      label: 'Kick from Server',
+      onPress: () => {
+        // Implement kick functionality
+      }
+    },
+    {
+      label: 'Ban from Server',
+      onPress: () => {
+        // Implement ban functionality
+      }
+    }
+  ]
 
   if (!user)
     return (
@@ -24,7 +50,7 @@ export function UserAvatar({ serverUrl, publicKey, identity }: Props) {
     )
 
   return (
-    <ContextMenu options={[]}>
+    <ContextMenu options={options}>
       <ViewUserPopover
         user={user}
         trigger={(open) => (
