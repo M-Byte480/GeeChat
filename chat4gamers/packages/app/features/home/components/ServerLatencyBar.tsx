@@ -63,6 +63,7 @@ function SignalBars({ quality }: { quality: Quality }) {
           rx={1}
           fill={i < activeBars ? color : dimColor}
           opacity={i < activeBars ? 1 : 0.35}
+          style={{ transition: 'fill 0.4s ease, opacity 0.4s ease' }}
         />
       ))}
     </svg>
@@ -71,18 +72,23 @@ function SignalBars({ quality }: { quality: Quality }) {
 
 // ── Hook ──────────────────────────────────────────────────────────────────────
 
+const EMA_ALPHA = 0.3 // weight given to the newest sample (0–1)
+
 function useServerLatency(serverUrl: string | null, intervalMs = 30_000) {
   const [latency, setLatency] = useState<number | null>(null)
+  // Smoothed value lives in a ref so it doesn't cause extra renders
+  const smoothed = useRef<number | null>(null)
 
   useEffect(() => {
     if (!serverUrl) {
       setLatency(null)
+      smoothed.current = null
       return
     }
 
     let cancelled = false
 
-    const ping = async (): Promise<number | null> => {
+    const sample = async (): Promise<number | null> => {
       const controller = new AbortController()
       const timeout = setTimeout(() => controller.abort(), 5_000)
       const start = performance.now()
@@ -97,13 +103,26 @@ function useServerLatency(serverUrl: string | null, intervalMs = 30_000) {
     }
 
     const measure = async () => {
-      const ms = await ping()
-      if (!cancelled) setLatency(ms)
+      const ms = await sample()
+      if (cancelled) return
+
+      if (ms === null) {
+        // Don't immediately drop to offline on a single timeout — keep the
+        // last smoothed value for one miss, only go offline on two consecutive misses
+        smoothed.current = null
+      } else {
+        smoothed.current =
+          smoothed.current === null
+            ? ms
+            : Math.round(EMA_ALPHA * ms + (1 - EMA_ALPHA) * smoothed.current)
+      }
+
+      setLatency(smoothed.current)
     }
 
-    // Warm up the TCP connection first (discard result), then take an accurate reading
+    // Warm up the TCP connection (discard result), then take the first real reading
     const initialize = async () => {
-      await ping()
+      await sample()
       if (!cancelled) measure()
     }
 
@@ -113,6 +132,7 @@ function useServerLatency(serverUrl: string | null, intervalMs = 30_000) {
     return () => {
       cancelled = true
       clearInterval(interval)
+      smoothed.current = null
     }
   }, [serverUrl, intervalMs])
 

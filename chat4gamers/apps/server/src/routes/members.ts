@@ -82,9 +82,19 @@ router.post('/join', joinLimit, async (c) => {
   if (existingMember) {
     if (existingMember.status === 'denied')
       return c.json({ status: 'denied' }, 403)
-    if (existingMember.status === 'banned')
-      return c.json({ status: 'banned' }, 403)
-    return c.json({ status: existingMember.status })
+    if (existingMember.status === 'banned') {
+      // Auto-lift expired time-limited bans
+      if (existingMember.banExpiresAt && existingMember.banExpiresAt < new Date()) {
+        await db.update(members)
+          .set({ status: 'inactive', banExpiresAt: null, banReason: null })
+          .where(eq(members.userPublicKey, publicKey))
+        // Fall through to re-join flow below
+      } else {
+        return c.json({ status: 'banned', reason: existingMember.banReason }, 403)
+      }
+    } else {
+      return c.json({ status: existingMember.status })
+    }
   }
 
   // Check if any owner exists

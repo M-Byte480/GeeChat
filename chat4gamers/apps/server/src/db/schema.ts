@@ -43,6 +43,8 @@ export const members = sqliteTable('members', {
   joinedAt: integer('joined_at', { mode: 'timestamp' })
     .notNull()
     .default(sql`(unixepoch())`),
+  banExpiresAt: integer('ban_expires_at', { mode: 'timestamp' }),
+  banReason: text('ban_reason'),
 })
 
 export const channels = sqliteTable('channels', {
@@ -117,6 +119,27 @@ export const sessions = sqliteTable('sessions', {
   createdAt: integer('created_at', { mode: 'timestamp' }).default(
     sql`(unixepoch())`
   ),
+})
+
+export const activities = sqliteTable('activity', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull().unique(),
+})
+
+export const history = sqliteTable('history', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  activityId: text('activity_id')
+    .notNull()
+    .references(() => activities.id),
+  actorPublicKey: text('actor_public_key')
+    .notNull()
+    .references(() => users.publicKey),
+  targetPublicKey: text('target_public_key').references(() => users.publicKey),
+  reason: text('reason'),
+  metadata: text('metadata'), // JSON string for extra data
+  timestamp: integer('timestamp', { mode: 'timestamp' })
+    .notNull()
+    .default(sql`(unixepoch())`),
 })
 
 export const roles = sqliteTable('roles', {
