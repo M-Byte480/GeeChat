@@ -1,5 +1,11 @@
 export type ChannelType = 'text' | 'voice'
 
+export type Reaction = {
+  emoji: string
+  count: number
+  users: string[] // publicKeys
+}
+
 export type Message = {
   id: number
   content: string
@@ -7,6 +13,8 @@ export type Message = {
   senderId: string
   senderName: string
   timestamp: string
+  deletedAt?: string | null
+  reactions?: Reaction[]
 }
 
 export type Channel = {

@@ -2,10 +2,13 @@ import { useEffect } from 'react'
 import { useAppStore } from 'app/features/home/hooks/useAppStore'
 import { apiFetch, invalidateUser } from '@my/api-client'
 import { useServerSocket } from './useServerSocket'
+import { useIdentity } from 'app/features/home/identity/IdentityContext'
 import type { Channel } from 'app/features/home/types/types'
 
 export function useChannelsController(serverUrl: string | null) {
   const setChannels = useAppStore((s) => s.setChannels)
+  const setActiveServerUrl = useAppStore((s) => s.setActiveServerUrl)
+  const { deleteServer } = useIdentity()
 
   useEffect(() => {
     if (!serverUrl) return
@@ -20,11 +23,14 @@ export function useChannelsController(serverUrl: string | null) {
 
   useServerSocket(serverUrl, (msg) => {
     if (msg.type === 'CHANNEL_CREATED' && msg.channel && serverUrl) {
-      // Append the new channel directly from the WS payload — no re-fetch needed
       const current = useAppStore.getState().cache[serverUrl]?.channels ?? []
       setChannels(serverUrl, [...current, msg.channel as Channel])
     } else if (msg.type === 'PROFILE_UPDATED' && msg.publicKey) {
       invalidateUser(msg.publicKey as string)
+    } else if ((msg.type === 'KICKED' || msg.type === 'BANNED') && serverUrl) {
+      // Remove this server from the identity and navigate away
+      setActiveServerUrl(null)
+      deleteServer(serverUrl)
     }
   })
 }

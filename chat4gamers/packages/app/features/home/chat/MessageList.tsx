@@ -4,6 +4,7 @@ import { MessageRow } from 'app/features/home/components/MessageRow'
 import { Paragraph, ScrollView, YStack } from '@my/ui'
 import { Message } from 'app/features/home/types/types'
 import { MessageRowSkeleton } from 'app/features/home/chat/MessageRowSkeleton'
+import type { MemberRole } from 'app/features/home/components/DropdownMenu'
 
 type Props = {
   messages: Message[]
@@ -14,6 +15,9 @@ type Props = {
   insetScrollbar?: boolean
   onFetchOlder?: () => void
   hasMoreHistory?: boolean
+  currentRole: MemberRole | null
+  onDeleteMessage: (messageId: number) => void
+  onReactMessage: (messageId: number, emoji: string) => void
 }
 
 type ScrollableNode = { getScrollableNode?: () => HTMLElement }
@@ -28,6 +32,9 @@ export const MessageList = memo(
     insetScrollbar,
     onFetchOlder,
     hasMoreHistory,
+    currentRole,
+    onDeleteMessage,
+    onReactMessage,
   }: Props) => {
     const INITIAL_LIMIT = 50
     const [limit, setLimit] = useState(INITIAL_LIMIT)
@@ -183,10 +190,13 @@ export const MessageList = memo(
               identity={identity}
               showHeader={showHeader}
               isFirst={i === 0}
+              currentRole={currentRole}
+              onDelete={onDeleteMessage}
+              onReact={onReactMessage}
             />
           )
         }),
-      [visibleMessages, serverUrl, identity]
+      [visibleMessages, serverUrl, identity, currentRole, onDeleteMessage, onReactMessage]
     )
 
     return (

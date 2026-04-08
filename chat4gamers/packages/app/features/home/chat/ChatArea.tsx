@@ -9,6 +9,8 @@ import { onRender } from 'app/features/home/screen'
 import { ChatInput } from 'app/features/home/chat/ChatInput'
 import { MessageList } from 'app/features/home/chat/MessageList'
 import type { User } from 'app/features/home/types/User'
+import { useCurrentMemberRole } from 'app/features/home/hooks/useCurrentMemberRole'
+import { apiFetch } from '@my/api-client'
 
 type Props = {
   channelId: string
@@ -25,6 +27,7 @@ export const ChatArea = ({
 }: Props) => {
   const { identity } = useIdentity()
   const socketRef = useRef<WebSocket | null>(null)
+  const currentRole = useCurrentMemberRole(serverUrl)
 
   const {
     messages,
@@ -53,6 +56,18 @@ export const ChatArea = ({
 
   const handleChatMouseEnter = useCallback(() => setChatHovered(true), [])
   const handleChatMouseLeave = useCallback(() => setChatHovered(false), [])
+
+  const handleDeleteMessage = useCallback(async (messageId: number) => {
+    await apiFetch(serverUrl, `/messages/${messageId}`, { method: 'DELETE' })
+  }, [serverUrl])
+
+  const handleReactMessage = useCallback(async (messageId: number, emoji: string) => {
+    await apiFetch(serverUrl, `/messages/${messageId}/react`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ emoji }),
+    })
+  }, [serverUrl])
 
   useWhyDidYouRender('ChatArea', {
     channelId,
@@ -83,6 +98,9 @@ export const ChatArea = ({
           insetScrollbar={showMemberPane}
           onFetchOlder={fetchOlderMessages}
           hasMoreHistory={hasMoreHistory}
+          currentRole={currentRole}
+          onDeleteMessage={handleDeleteMessage}
+          onReactMessage={handleReactMessage}
         />
       </Profiler>
 

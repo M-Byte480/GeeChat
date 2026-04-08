@@ -6,12 +6,14 @@ type Props = {
   children?: ReactNode
   showMemberPane: boolean
   onToggleMemberPane: () => void
+  rightExtra?: ReactNode
 }
 
 export function MainContentBanner({
   children,
   showMemberPane,
   onToggleMemberPane,
+  rightExtra,
 }: Props) {
   return (
     <XStack
@@ -33,6 +35,7 @@ export function MainContentBanner({
         backgroundColor={showMemberPane ? '$color4' : 'transparent'}
         borderRadius="$3"
       />
+      {rightExtra}
     </XStack>
   )
 }

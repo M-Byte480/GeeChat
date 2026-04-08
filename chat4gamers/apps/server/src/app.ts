@@ -13,6 +13,7 @@ import membersRouter from './routes/members.js'
 import relayRouter from './routes/relay.js'
 import media from './routes/media.js'
 import rolesRouter from './routes/roles.js'
+import adminRouter from './routes/admin.js'
 
 /**
  * Creates and configures the Hono application without starting a server.
@@ -48,6 +49,7 @@ export function createApp() {
   app.route('/', relayRouter)
   app.route('/', media)
   app.route('/', rolesRouter)
+  app.route('/', adminRouter)
 
   return app
 }

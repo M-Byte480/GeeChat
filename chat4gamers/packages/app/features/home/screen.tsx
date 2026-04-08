@@ -218,6 +218,7 @@ const HomeScreenInner = memo(function HomeScreenInner() {
           {activeServer ? (
             <ChannelBanner
               activeChannel={activeChannel}
+              serverUrl={activeServer.url}
               showMemberPane={showMemberPane}
               onToggleMemberPane={() => setShowMemberPane((p) => !p)}
             />

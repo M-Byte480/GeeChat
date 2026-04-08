@@ -2,13 +2,23 @@ import { PopoverMenu } from './PopoverMenu'
 import type { UserProfile } from '../hooks/useUser'
 import type { ReactNode } from 'react'
 import { StatusChip } from 'app/features/home/components/StatusChip'
+import type { MemberRole } from 'app/features/home/components/DropdownMenu'
 
 interface Props {
   user: UserProfile
   trigger: (open: () => void) => ReactNode
+  /** If provided, shows admin action buttons for eligible viewers */
+  currentUserRole?: MemberRole | null
+  onKick?: () => void
+  onBan?: () => void
 }
 
-export function ViewUserPopover({ user, trigger }: Props) {
+export function ViewUserPopover({ user, trigger, currentUserRole, onKick, onBan }: Props) {
+  const canModerate =
+    (currentUserRole === 'admin' || currentUserRole === 'owner') &&
+    user.role !== 'owner' &&
+    onKick &&
+    onBan
   return (
     <PopoverMenu trigger={trigger} width={280}>
       {/* Banner + Avatar */}
@@ -109,6 +119,35 @@ export function ViewUserPopover({ user, trigger }: Props) {
             margin: '0 0 12px',
           }}
         />
+
+        {/* Admin actions */}
+        {canModerate && (
+          <>
+            <hr style={{ border: 'none', borderTop: '1px solid var(--borderColor)', margin: '0 0 12px' }} />
+            <div style={{ marginBottom: 12, display: 'flex', gap: 8 }}>
+              <button
+                onClick={onKick}
+                style={{
+                  flex: 1, background: 'var(--color4)', border: '1px solid var(--borderColor)',
+                  borderRadius: 6, padding: '6px 0', fontSize: 12, fontWeight: 600,
+                  color: 'var(--orange10, #e67e22)', cursor: 'pointer',
+                }}
+              >
+                Kick
+              </button>
+              <button
+                onClick={onBan}
+                style={{
+                  flex: 1, background: 'var(--red4)', border: '1px solid var(--red6)',
+                  borderRadius: 6, padding: '6px 0', fontSize: 12, fontWeight: 600,
+                  color: 'var(--red10)', cursor: 'pointer',
+                }}
+              >
+                Ban
+              </button>
+            </div>
+          </>
+        )}
 
         {/* Member since */}
         <div style={{ marginBottom: 16 }}>
