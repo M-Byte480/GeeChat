@@ -61,6 +61,14 @@ export const ChatArea = ({
     await apiFetch(serverUrl, `/messages/${messageId}`, { method: 'DELETE' })
   }, [serverUrl])
 
+  const handleReactMessage = useCallback(async (messageId: number, emoji: string) => {
+    await apiFetch(serverUrl, `/messages/${messageId}/react`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ emoji }),
+    })
+  }, [serverUrl])
+
   useWhyDidYouRender('ChatArea', {
     channelId,
     serverUrl,
@@ -92,6 +100,7 @@ export const ChatArea = ({
           hasMoreHistory={hasMoreHistory}
           currentRole={currentRole}
           onDeleteMessage={handleDeleteMessage}
+          onReactMessage={handleReactMessage}
         />
       </Profiler>
 

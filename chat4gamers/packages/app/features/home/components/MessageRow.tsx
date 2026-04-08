@@ -5,34 +5,26 @@ import { MentionText } from 'app/features/home/text/MentionText'
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Identity } from 'app/features/home/identity/types'
 import type { MemberRole } from 'app/features/home/components/DropdownMenu'
+import { ReactionEmojiPicker } from 'app/features/home/components/ReactionEmojiPicker'
+import { ReactionChips } from 'app/features/home/components/ReactionChips'
 
 interface Props {
   message: Message
   serverUrl: string
   identity: Identity
-  /** When false (grouped message), skip avatar/username/useUser — much cheaper */
   showHeader: boolean
-  /** True only for the very first message in the rendered list — suppresses top margin */
   isFirst: boolean
   currentRole: MemberRole | null
   onDelete: (messageId: number) => void
+  onReact: (messageId: number, emoji: string) => void
   onLayout?: (event: unknown) => void
 }
 
 const AVATAR_INDENT = 58
 
 const TrashIcon = () => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="16"
-    height="16"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
+  <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24"
+    fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <polyline points="3 6 5 6 21 6" />
     <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
     <path d="M10 11v6M14 11v6" />
@@ -40,8 +32,18 @@ const TrashIcon = () => (
   </svg>
 )
 
+const SmileIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24"
+    fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10" />
+    <path d="M8 13s1.5 2 4 2 4-2 4-2" />
+    <line x1="9" y1="9" x2="9.01" y2="9" />
+    <line x1="15" y1="9" x2="15.01" y2="9" />
+  </svg>
+)
+
 export const MessageRow = memo(
-  ({ message, serverUrl, identity, showHeader, isFirst, currentRole, onDelete, onLayout }: Props) => {
+  ({ message, serverUrl, identity, showHeader, isFirst, currentRole, onDelete, onReact, onLayout }: Props) => {
     const user = useUser(
       showHeader ? serverUrl : null,
       message.senderId,
@@ -50,6 +52,8 @@ export const MessageRow = memo(
     const [hovered, setHovered] = useState(false)
     const shiftRef = useRef(false)
     const [shiftHeld, setShiftHeld] = useState(false)
+    const [pickerAnchor, setPickerAnchor] = useState<DOMRect | null>(null)
+    const emojiButtonRef = useRef<HTMLButtonElement>(null)
 
     const canDelete = currentRole === 'admin' || currentRole === 'owner'
 
@@ -76,6 +80,12 @@ export const MessageRow = memo(
       setShiftHeld(false)
     }, [])
 
+    const openPicker = useCallback(() => {
+      if (emojiButtonRef.current) {
+        setPickerAnchor(emojiButtonRef.current.getBoundingClientRect())
+      }
+    }, [])
+
     const timeString = useMemo(
       () =>
         new Date(message.timestamp).toLocaleTimeString([], {
@@ -86,34 +96,67 @@ export const MessageRow = memo(
     )
 
     const isDeleted = !!message.deletedAt
-    const showTrash = hovered && shiftHeld && canDelete && !isDeleted
+    const showShiftTrash = hovered && shiftHeld && canDelete && !isDeleted
+    const showEmojiBtn = hovered && !shiftHeld && !isDeleted
 
-    const rowStyle = {
+    const actionButton = showShiftTrash ? (
+      <button
+        onClick={() => onDelete(message.id)}
+        title="Delete message"
+        style={{
+          background: 'none',
+          border: 'none',
+          cursor: 'pointer',
+          color: '#f87171',
+          padding: '2px 4px',
+          display: 'flex',
+          alignItems: 'center',
+        }}
+      >
+        <TrashIcon />
+      </button>
+    ) : showEmojiBtn ? (
+      <button
+        ref={emojiButtonRef}
+        onClick={openPicker}
+        title="Add reaction"
+        style={{
+          background: 'none',
+          border: 'none',
+          cursor: 'pointer',
+          color: '#9ca3af',
+          padding: '2px 4px',
+          display: 'flex',
+          alignItems: 'center',
+        }}
+      >
+        <SmileIcon />
+      </button>
+    ) : null
+
+    const rowStyle: React.CSSProperties = {
       backgroundColor: hovered ? 'rgba(255,255,255,0.04)' : 'transparent',
       borderRadius: 4,
       transition: 'background-color 0.1s ease',
-      position: 'relative' as const,
+      position: 'relative',
     }
+
+    const reactions = message.reactions ?? []
+
+    const chips = (
+      <ReactionChips
+        reactions={reactions}
+        serverUrl={serverUrl}
+        identity={identity}
+        onReact={(emoji) => onReact(message.id, emoji)}
+      />
+    )
 
     const deletedContent = (
       <Text fontSize="$3" color="$gray9" fontStyle="italic" userSelect="none">
         This message was deleted.
       </Text>
     )
-
-    const trashButton = showTrash ? (
-      <XStack
-        position="absolute"
-        right={8}
-        top="50%"
-        // @ts-expect-error web-only style
-        style={{ transform: 'translateY(-50%)', cursor: 'pointer', color: '#f87171' }}
-        onPress={() => onDelete(message.id)}
-        title="Delete message"
-      >
-        <TrashIcon />
-      </XStack>
-    ) : null
 
     if (!showHeader) {
       return (
@@ -128,16 +171,22 @@ export const MessageRow = memo(
           onMouseLeave={handleMouseLeave}
           style={rowStyle}
         >
-          <XStack flex={1}>
+          <YStack flex={1}>
             {isDeleted ? deletedContent : (
-              <MentionText
-                content={message.content}
-                serverUrl={serverUrl}
-                identity={identity}
-              />
+              <MentionText content={message.content} serverUrl={serverUrl} identity={identity} />
             )}
+            {chips}
+          </YStack>
+          <XStack alignItems="center" height={22}>
+            {actionButton}
           </XStack>
-          {trashButton}
+          {pickerAnchor && (
+            <ReactionEmojiPicker
+              anchorRect={pickerAnchor}
+              onSelect={(emoji) => onReact(message.id, emoji)}
+              onClose={() => setPickerAnchor(null)}
+            />
+          )}
         </XStack>
       )
     }
@@ -172,14 +221,20 @@ export const MessageRow = memo(
             </Text>
           </XStack>
           {isDeleted ? deletedContent : (
-            <MentionText
-              content={message.content}
-              serverUrl={serverUrl}
-              identity={identity}
-            />
+            <MentionText content={message.content} serverUrl={serverUrl} identity={identity} />
           )}
+          {chips}
         </YStack>
-        {trashButton}
+        <XStack alignItems="center" paddingTop="$1">
+          {actionButton}
+        </XStack>
+        {pickerAnchor && (
+          <ReactionEmojiPicker
+            anchorRect={pickerAnchor}
+            onSelect={(emoji) => onReact(message.id, emoji)}
+            onClose={() => setPickerAnchor(null)}
+          />
+        )}
       </XStack>
     )
   }

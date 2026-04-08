@@ -89,6 +89,25 @@ export const messages = sqliteTable(
   })
 )
 
+export const reactions = sqliteTable(
+  'reactions',
+  {
+    messageId: integer('message_id')
+      .notNull()
+      .references(() => messages.id, { onDelete: 'cascade' }),
+    userPublicKey: text('user_public_key')
+      .notNull()
+      .references(() => users.publicKey, { onDelete: 'cascade' }),
+    emoji: text('emoji').notNull(),
+    createdAt: integer('created_at', { mode: 'timestamp' })
+      .notNull()
+      .default(sql`(unixepoch())`),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.messageId, table.userPublicKey, table.emoji] }),
+  })
+)
+
 export const relaySubscriptions = sqliteTable('relay_subscriptions', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   relayId: text('relay_id').notNull(), // The URL of the relay node

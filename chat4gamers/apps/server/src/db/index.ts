@@ -73,6 +73,14 @@ sqlite.exec(`
     created_at INTEGER NOT NULL DEFAULT (unixepoch())
   );
 
+  CREATE TABLE IF NOT EXISTS reactions (
+    message_id      INTEGER NOT NULL REFERENCES messages(id) ON DELETE CASCADE,
+    user_public_key TEXT    NOT NULL REFERENCES users(public_key) ON DELETE CASCADE,
+    emoji           TEXT    NOT NULL,
+    created_at      INTEGER NOT NULL DEFAULT (unixepoch()),
+    PRIMARY KEY (message_id, user_public_key, emoji)
+  );
+
   CREATE TABLE IF NOT EXISTS relay_subscriptions (
     id               INTEGER PRIMARY KEY AUTOINCREMENT,
     relay_id         TEXT    NOT NULL,

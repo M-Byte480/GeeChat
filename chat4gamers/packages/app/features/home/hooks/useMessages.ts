@@ -130,6 +130,15 @@ export function useMessages({
             .appendMessage(channelId, msg as unknown as Message)
         }
       }
+      if (msg.type === 'REACTION_UPDATED' && msg.channelId === channelId) {
+        useAppStore.getState().updateMessageReaction(
+          channelId,
+          msg.messageId as number,
+          msg.emoji as string,
+          msg.userPublicKey as string,
+          msg.action as 'add' | 'remove'
+        )
+      }
       if (msg.type === 'MESSAGE_DELETED' && msg.channelId === channelId) {
         useAppStore
           .getState()

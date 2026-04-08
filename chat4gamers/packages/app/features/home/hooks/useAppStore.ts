@@ -34,6 +34,7 @@ interface AppState {
   appendMessage: (channelId: string, message: Message) => void
   updateMessage: (channelId: string, tempId: number, confirmed: Message) => void
   patchMessage: (channelId: string, id: number, patch: Partial<Message>) => void
+  updateMessageReaction: (channelId: string, messageId: number, emoji: string, userPublicKey: string, action: 'add' | 'remove') => void
   setMembers: (serverUrl: string, members: User[]) => void
 }
 
@@ -125,6 +126,42 @@ export const useAppStore = create<AppState>((set) => ({
           [channelId]: {
             ...state.messageCache[channelId],
             messages: existing.map((m) => (m.id === id ? { ...m, ...patch } : m)),
+          },
+        },
+      }
+    }),
+
+  updateMessageReaction: (channelId, messageId, emoji, userPublicKey, action) =>
+    set((state) => {
+      const existing = state.messageCache[channelId]?.messages ?? []
+      return {
+        messageCache: {
+          ...state.messageCache,
+          [channelId]: {
+            ...state.messageCache[channelId],
+            messages: existing.map((m) => {
+              if (m.id !== messageId) return m
+              const current = m.reactions ?? []
+              if (action === 'add') {
+                const idx = current.findIndex((r) => r.emoji === emoji)
+                if (idx === -1) {
+                  return { ...m, reactions: [...current, { emoji, count: 1, users: [userPublicKey] }] }
+                }
+                const updated = current.map((r, i) =>
+                  i === idx ? { ...r, count: r.count + 1, users: [...r.users, userPublicKey] } : r
+                )
+                return { ...m, reactions: updated }
+              } else {
+                const updated = current
+                  .map((r) =>
+                    r.emoji === emoji
+                      ? { ...r, count: r.count - 1, users: r.users.filter((u) => u !== userPublicKey) }
+                      : r
+                  )
+                  .filter((r) => r.count > 0)
+                return { ...m, reactions: updated }
+              }
+            }),
           },
         },
       }
