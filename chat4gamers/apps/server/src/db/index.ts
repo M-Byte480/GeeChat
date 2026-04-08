@@ -53,7 +53,8 @@ sqlite.exec(`
     sender_id  TEXT    NOT NULL REFERENCES users(public_key),
     content    TEXT    NOT NULL,
     timestamp  INTEGER NOT NULL,
-    signature  TEXT    NOT NULL DEFAULT ''
+    signature  TEXT    NOT NULL DEFAULT '',
+    deleted_at INTEGER
   );
 
   CREATE TABLE IF NOT EXISTS direct_messages (

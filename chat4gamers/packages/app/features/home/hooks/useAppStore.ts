@@ -33,6 +33,7 @@ interface AppState {
   ) => void
   appendMessage: (channelId: string, message: Message) => void
   updateMessage: (channelId: string, tempId: number, confirmed: Message) => void
+  patchMessage: (channelId: string, id: number, patch: Partial<Message>) => void
   setMembers: (serverUrl: string, members: User[]) => void
 }
 
@@ -114,6 +115,21 @@ export const useAppStore = create<AppState>((set) => ({
         },
       }
     }),
+
+  patchMessage: (channelId: string, id: number, patch: Partial<Message>) =>
+    set((state) => {
+      const existing = state.messageCache[channelId]?.messages ?? []
+      return {
+        messageCache: {
+          ...state.messageCache,
+          [channelId]: {
+            ...state.messageCache[channelId],
+            messages: existing.map((m) => (m.id === id ? { ...m, ...patch } : m)),
+          },
+        },
+      }
+    }),
+
   setMembers: (serverUrl: string, members: User[]) =>
     set((state) => ({
       members: { ...state.members, [serverUrl]: members },

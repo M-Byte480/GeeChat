@@ -1,13 +1,14 @@
 import { Hono } from 'hono'
-import { and, asc, desc, eq, gt, lt } from 'drizzle-orm'
+import { and, asc, desc, eq, gt, isNull, lt } from 'drizzle-orm'
+import type { AppEnv } from '../lib/types.js'
 import { db } from '../db/index.js'
 import { messages } from '../db/schema.js'
 import { verifyEd25519 } from '../lib/crypto.js'
 import { sanitize } from '../lib/sanitize.js'
 import { broadcast } from '../ws.js'
-import { requireAuth, requireMember } from '../lib/middleware.js'
+import { requireAdmin, requireAuth, requireMember } from '../lib/middleware.js'
 
-const router = new Hono()
+const router = new Hono<AppEnv>()
 
 router.post('/messages', requireAuth, requireMember, async (c) => {
   const body = await c.req.json()
@@ -79,7 +80,8 @@ router.get('/chat-history', requireAuth, requireMember, async (c) => {
       .where(
         and(
           eq(messages.channelId, channelId),
-          gt(messages.timestamp, new Date(since))
+          gt(messages.timestamp, new Date(since)),
+          isNull(messages.deletedAt)
         )
       )
       .orderBy(asc(messages.timestamp))
@@ -95,7 +97,8 @@ router.get('/chat-history', requireAuth, requireMember, async (c) => {
       .where(
         and(
           eq(messages.channelId, channelId),
-          lt(messages.timestamp, new Date(before))
+          lt(messages.timestamp, new Date(before)),
+          isNull(messages.deletedAt)
         )
       )
       .orderBy(desc(messages.timestamp))
@@ -107,11 +110,33 @@ router.get('/chat-history', requireAuth, requireMember, async (c) => {
   const result = await db
     .select()
     .from(messages)
-    .where(eq(messages.channelId, channelId))
+    .where(and(eq(messages.channelId, channelId), isNull(messages.deletedAt)))
     .orderBy(desc(messages.timestamp))
     .limit(50)
 
   return c.json(result.reverse())
+})
+
+// ── DELETE /messages/:id ──────────────────────────────────────────────────────
+// Soft-delete: sets deleted_at timestamp, broadcasts MESSAGE_DELETED to all clients.
+// Admin/owner only.
+
+router.delete('/messages/:id', requireAuth, requireAdmin, async (c) => {
+  const id = parseInt(c.req.param('id'), 10)
+  if (isNaN(id)) return c.json({ error: 'Invalid message id' }, 400)
+
+  const msg = db.select().from(messages).where(eq(messages.id, id)).get()
+  if (!msg) return c.json({ error: 'Message not found' }, 404)
+  if (msg.deletedAt) return c.json({ error: 'Already deleted' }, 400)
+
+  db.update(messages)
+    .set({ deletedAt: new Date() })
+    .where(eq(messages.id, id))
+    .run()
+
+  broadcast(JSON.stringify({ type: 'MESSAGE_DELETED', id, channelId: msg.channelId }))
+
+  return c.json({ ok: true })
 })
 
 export default router

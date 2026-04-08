@@ -7,6 +7,7 @@ export type Message = {
   senderId: string
   senderName: string
   timestamp: string
+  deletedAt?: string | null
 }
 
 export type Channel = {

@@ -130,6 +130,11 @@ export function useMessages({
             .appendMessage(channelId, msg as unknown as Message)
         }
       }
+      if (msg.type === 'MESSAGE_DELETED' && msg.channelId === channelId) {
+        useAppStore
+          .getState()
+          .patchMessage(channelId, msg.id as number, { deletedAt: new Date().toISOString() })
+      }
       if (msg.type === 'TYPING' && msg.username !== identity.username) {
         setTypingUser(msg.username as string)
         setTimeout(() => setTypingUser(null), 2500)

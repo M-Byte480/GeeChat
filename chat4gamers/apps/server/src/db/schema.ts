@@ -79,6 +79,7 @@ export const messages = sqliteTable(
     content: text('content').notNull(),
     timestamp: integer('timestamp', { mode: 'timestamp' }).notNull(),
     signature: text('signature').notNull(),
+    deletedAt: integer('deleted_at', { mode: 'timestamp' }),
   },
   (table) => ({
     channelTimestampIdx: index('channel_timestamp_idx').on(
