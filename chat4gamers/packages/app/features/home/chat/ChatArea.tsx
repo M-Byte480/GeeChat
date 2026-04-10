@@ -107,6 +107,7 @@ export const ChatArea = ({
       <Profiler id={'Type a message...'} onRender={onRender}>
         <ChatInput
           channelId={channelId}
+          serverUrl={serverUrl}
           onSend={sendMessage}
           socketRef={socketRef}
           members={members}

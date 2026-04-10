@@ -27,11 +27,14 @@ export async function apiFetch(
     throw new Error(`No session token for ${baseUrl} — authenticate first`)
   }
 
+  const isFormData = init.body instanceof FormData
+
   const doRequest = (t: string) =>
     fetch(`${baseUrl}${path}`, {
       ...init,
       headers: {
-        'Content-Type': 'application/json',
+        // FormData sets its own Content-Type with the multipart boundary
+        ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
         ...init.headers,
         Authorization: `Bearer ${t}`,
       },
