@@ -2,19 +2,18 @@ import { Hono } from 'hono'
 import { db } from '../db/index.js'
 import { eq } from 'drizzle-orm'
 import { media, members, users } from '../db/schema.js'
-import { writeFile, mkdir } from 'fs/promises'
-import { existsSync, createReadStream } from 'fs'
+import { writeFile } from 'fs/promises'
+import { existsSync, createReadStream, mkdirSync } from 'fs'
 import { Readable } from 'stream'
 import { requireAuth, requireMember } from '../lib/middleware.js'
 import type { AppEnv } from '../lib/types.js'
 import sharp from 'sharp'
 
-const UPLOADS_DIR = './uploads/media'
+const isProd = process.env.NODE_ENV === 'production'
+// Must be inside the Docker volume (./data:/app/data) so uploads survive restarts
+const UPLOADS_DIR = isProd ? '/app/data/uploads' : './data/uploads'
 
-// Ensure uploads directory exists on startup
-if (!existsSync(UPLOADS_DIR)) {
-  await mkdir(UPLOADS_DIR, { recursive: true })
-}
+mkdirSync(UPLOADS_DIR, { recursive: true })
 
 const ALLOWED_TYPES: Record<string, string> = {
   'image/jpeg': 'jpg',

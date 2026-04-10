@@ -33,6 +33,7 @@ export const ChatInput = ({ channelId, serverUrl, onSend, socketRef, members }: 
 
   const [pendingAttachments, setPendingAttachments] = useState<Attachment[]>([])
   const [isUploading, setIsUploading] = useState(false)
+  const [uploadError, setUploadError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const inputTextRef = useRef(inputText)
@@ -102,15 +103,18 @@ export const ChatInput = ({ channelId, serverUrl, onSend, socketRef, members }: 
     }
 
     setIsUploading(true)
+    setUploadError(null)
     try {
       const uploadedUrls = await Promise.all(
         pendingAttachments.map(async (att) => {
           const fd = new FormData()
           fd.append('file', att.file)
           const res = await apiFetch(serverUrl, '/upload', { method: 'POST', body: fd })
-          if (!res.ok) throw new Error('Upload failed')
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }))
+            throw new Error(err.error ?? `Upload failed (${res.status})`)
+          }
           const data = await res.json() as { url: string; thumbUrl: string }
-          // Construct full URL so the message renderer can display it
           return `${serverUrl}${data.url}`
         })
       )
@@ -122,8 +126,9 @@ export const ChatInput = ({ channelId, serverUrl, onSend, socketRef, members }: 
       pendingAttachments.forEach((a) => URL.revokeObjectURL(a.localUrl))
       setPendingAttachments([])
       await onSend(combined)
-    } catch {
-      // Leave attachments in place so the user can retry
+    } catch (err) {
+      console.error('[ChatInput] upload error:', err)
+      setUploadError(err instanceof Error ? err.message : 'Upload failed')
     } finally {
       setIsUploading(false)
     }
@@ -214,6 +219,13 @@ export const ChatInput = ({ channelId, serverUrl, onSend, socketRef, members }: 
             </YStack>
           ))}
         </XStack>
+      )}
+
+      {/* Upload error */}
+      {uploadError && (
+        <Text fontSize="$2" color="$red10" px="$2">
+          {uploadError}
+        </Text>
       )}
 
       {/* Input row */}
