@@ -2,10 +2,25 @@ import { useChatInput } from 'app/features/home/hooks/useChatInput'
 import { useIdentity } from 'app/features/home/identity/IdentityContext'
 import { Button, Input, Text, XStack, YStack } from '@my/ui'
 import { EmojiPicker } from 'app/features/home/components/EmojiPicker'
-import { Send } from '@tamagui/lucide-icons'
-import { useCallback, useLayoutEffect, useRef } from 'react'
+import { Paperclip, Send, X } from '@tamagui/lucide-icons'
+import { apiFetch } from '@my/api-client'
+import { useCallback, useLayoutEffect, useRef, useState } from 'react'
 
-export const ChatInput = ({ channelId, onSend, socketRef, members }) => {
+interface Attachment {
+  id: string
+  file: File
+  localUrl: string
+}
+
+interface Props {
+  channelId: string
+  serverUrl: string
+  onSend: (text: string) => Promise<void>
+  socketRef: React.MutableRefObject<WebSocket | null>
+  members: Array<{ publicKey: string; username: string; nickname?: string }>
+}
+
+export const ChatInput = ({ channelId, serverUrl, onSend, socketRef, members }: Props) => {
   const { identity } = useIdentity()
   const {
     inputText,
@@ -13,26 +28,55 @@ export const ChatInput = ({ channelId, onSend, socketRef, members }) => {
     handleInputChange,
     handleSend,
     insertMention,
-  } = useChatInput({
-    channelId,
-    identity,
-    onSend,
-    socketRef,
-  })
+    reset,
+  } = useChatInput({ channelId, identity, onSend, socketRef })
+
+  const [pendingAttachments, setPendingAttachments] = useState<Attachment[]>([])
+  const [isUploading, setIsUploading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const inputTextRef = useRef(inputText)
-  useLayoutEffect(() => {
-    inputTextRef.current = inputText
-  })
+  useLayoutEffect(() => { inputTextRef.current = inputText })
   const selectionRef = useRef({ start: 0, end: 0 })
   const inputRef = useRef<{ focus: () => void } | null>(null)
+
+  const addAttachment = useCallback((file: File) => {
+    const localUrl = URL.createObjectURL(file)
+    setPendingAttachments((prev) => [...prev, { id: crypto.randomUUID(), file, localUrl }])
+  }, [])
+
+  const removeAttachment = useCallback((id: string) => {
+    setPendingAttachments((prev) => {
+      const att = prev.find((a) => a.id === id)
+      if (att) URL.revokeObjectURL(att.localUrl)
+      return prev.filter((a) => a.id !== id)
+    })
+  }, [])
+
+  // Intercept image pastes from clipboard
+  const handlePaste = useCallback((e: React.ClipboardEvent) => {
+    const items = Array.from(e.clipboardData?.items ?? [])
+    const imageItem = items.find((item) => item.type.startsWith('image/'))
+    if (imageItem) {
+      const file = imageItem.getAsFile()
+      if (file) {
+        e.preventDefault()
+        addAttachment(file)
+      }
+    }
+  }, [addAttachment])
+
+  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? [])
+    files.forEach(addAttachment)
+    // Reset input so the same file can be selected again
+    e.target.value = ''
+  }, [addAttachment])
 
   const filteredMembers =
     mentionQuery !== null
       ? members.filter((m) =>
-          (m.nickname ?? m.username)
-            .toLowerCase()
-            .includes(mentionQuery.toLowerCase())
+          (m.nickname ?? m.username).toLowerCase().includes(mentionQuery.toLowerCase())
         )
       : []
 
@@ -51,12 +95,49 @@ export const ChatInput = ({ channelId, onSend, socketRef, members }) => {
     [handleInputChange]
   )
 
+  const handleSendClick = useCallback(async () => {
+    if (pendingAttachments.length === 0) {
+      handleSend()
+      return
+    }
+
+    setIsUploading(true)
+    try {
+      const uploadedUrls = await Promise.all(
+        pendingAttachments.map(async (att) => {
+          const fd = new FormData()
+          fd.append('file', att.file)
+          const res = await apiFetch(serverUrl, '/upload', { method: 'POST', body: fd })
+          if (!res.ok) throw new Error('Upload failed')
+          const data = await res.json() as { url: string; thumbUrl: string }
+          // Construct full URL so the message renderer can display it
+          return `${serverUrl}${data.url}`
+        })
+      )
+
+      const combined = [inputTextRef.current.trim(), ...uploadedUrls].filter(Boolean).join('\n')
+      if (!combined) return
+
+      reset()
+      pendingAttachments.forEach((a) => URL.revokeObjectURL(a.localUrl))
+      setPendingAttachments([])
+      await onSend(combined)
+    } catch {
+      // Leave attachments in place so the user can retry
+    } finally {
+      setIsUploading(false)
+    }
+  }, [pendingAttachments, serverUrl, inputTextRef, reset, onSend, handleSend])
+
+  const canSend = (inputText.trim().length > 0 || pendingAttachments.length > 0) && !isUploading
+
   return (
-    <XStack gap="$2" alignItems="center" position="relative">
+    <YStack gap="$2" position="relative">
+      {/* Mention autocomplete */}
       {filteredMembers.length > 0 && (
         <YStack
           position="absolute"
-          bottom={60}
+          bottom={pendingAttachments.length > 0 ? 148 : 60}
           left={0}
           right={0}
           bg="$background"
@@ -79,26 +160,106 @@ export const ChatInput = ({ channelId, onSend, socketRef, members }) => {
           ))}
         </YStack>
       )}
-      <Input
-        ref={inputRef}
-        flex={1}
-        placeholder="Type a message..."
-        size="$4"
-        value={inputText}
-        onChangeText={handleInputChange}
-        onSelectionChange={(e) => {
-          selectionRef.current = e.nativeEvent.selection
-        }}
-        onSubmitEditing={handleSend}
-      />
-      <EmojiPicker onSelect={handleEmojiSelect} />
-      <Button
-        size="$4"
-        icon={Send}
-        onPress={handleSend}
-        disabled={!inputText.trim()}
-        theme="dark"
-      />
-    </XStack>
+
+      {/* Attachment preview strip */}
+      {pendingAttachments.length > 0 && (
+        <XStack
+          gap="$2"
+          px="$2"
+          py="$1"
+          flexWrap="nowrap"
+          // @ts-expect-error web-only
+          style={{ overflowX: 'auto' }}
+        >
+          {pendingAttachments.map((att) => (
+            <YStack
+              key={att.id}
+              width={80}
+              height={80}
+              borderRadius="$3"
+              overflow="hidden"
+              position="relative"
+              flexShrink={0}
+              bg="$color4"
+            >
+              {att.file.type.startsWith('image/') ? (
+                // eslint-disable-next-line jsx-a11y/alt-text
+                <img
+                  src={att.localUrl}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                />
+              ) : (
+                <YStack flex={1} alignItems="center" justifyContent="center">
+                  <Text fontSize="$2" color="$gray10" textAlign="center" px="$1" numberOfLines={2}>
+                    {att.file.name}
+                  </Text>
+                </YStack>
+              )}
+              {/* Remove button */}
+              <XStack
+                position="absolute"
+                top={2}
+                right={2}
+                width={18}
+                height={18}
+                borderRadius={9}
+                bg="rgba(0,0,0,0.7)"
+                alignItems="center"
+                justifyContent="center"
+                cursor="pointer"
+                onPress={() => removeAttachment(att.id)}
+              >
+                <X size={11} color="white" />
+              </XStack>
+            </YStack>
+          ))}
+        </XStack>
+      )}
+
+      {/* Input row */}
+      <XStack gap="$2" alignItems="center">
+        {/* Hidden file input */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*,video/mp4,video/webm"
+          multiple
+          style={{ display: 'none' }}
+          onChange={handleFileChange}
+        />
+
+        {/* Paperclip button */}
+        <Button
+          size="$4"
+          icon={Paperclip}
+          onPress={() => fileInputRef.current?.click()}
+          theme="dark"
+          chromeless
+          disabled={isUploading}
+        />
+
+        <Input
+          ref={inputRef}
+          flex={1}
+          placeholder="Type a message..."
+          size="$4"
+          value={inputText}
+          onChangeText={handleInputChange}
+          onSelectionChange={(e) => { selectionRef.current = e.nativeEvent.selection }}
+          onSubmitEditing={handleSendClick}
+          // @ts-expect-error web-only
+          onPaste={handlePaste}
+          disabled={isUploading}
+        />
+        <EmojiPicker onSelect={handleEmojiSelect} />
+        <Button
+          size="$4"
+          icon={Send}
+          onPress={handleSendClick}
+          disabled={!canSend}
+          theme="dark"
+        />
+      </XStack>
+    </YStack>
   )
 }

@@ -49,11 +49,17 @@ export function useChatInput({ channelId, identity, onSend, socketRef }) {
     setMentionQuery(null)
   }, [])
 
+  const reset = useCallback(() => {
+    setInputText('')
+    setMentionQuery(null)
+  }, [])
+
   return {
     inputText,
     mentionQuery,
     handleInputChange,
     handleSend,
     insertMention,
+    reset,
   }
 }
