@@ -114,7 +114,7 @@ app.post('/upload', requireAuth, requireMember, async (c) => {
 // (128-bit entropy). Cache aggressively since content never changes.
 
 app.get('/uploads/media/:filename', requireAuth, requireMember, async (c) => {
-  const filename = c.req.param('filename')
+  const filename = c.req.param('filename') ?? ''
 
   // Strict allowlist: uuid[_thumb].ext — prevents any path traversal
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(_thumb)?\.[a-z0-9]+$/.test(filename)) {

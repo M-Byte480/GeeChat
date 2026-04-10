@@ -167,7 +167,7 @@ router.get('/chat-history', requireAuth, requireMember, async (c) => {
 
 router.post('/messages/:id/react', requireAuth, requireMember, async (c) => {
   const user = c.get('user')
-  const messageId = parseInt(c.req.param('id'), 10)
+  const messageId = parseInt(c.req.param('id') ?? '', 10)
   if (isNaN(messageId)) return c.json({ error: 'Invalid message id' }, 400)
 
   const { emoji } = await c.req.json() as { emoji: string }
@@ -228,7 +228,7 @@ router.post('/messages/:id/react', requireAuth, requireMember, async (c) => {
 // Admin/owner only.
 
 router.delete('/messages/:id', requireAuth, requireAdmin, async (c) => {
-  const id = parseInt(c.req.param('id'), 10)
+  const id = parseInt(c.req.param('id') ?? '', 10)
   if (isNaN(id)) return c.json({ error: 'Invalid message id' }, 400)
 
   const msg = db.select().from(messages).where(eq(messages.id, id)).get()
