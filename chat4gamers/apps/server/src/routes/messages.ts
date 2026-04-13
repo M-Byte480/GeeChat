@@ -81,14 +81,24 @@ router.post('/messages', requireAuth, requireMember, async (c) => {
       return c.json({ error: 'Invalid signature' }, 401)
     }
 
+    const isGif = body.type === 'gif'
+
     const [newMessage] = await db
       .insert(messages)
       .values({
         channelId: roomId,
         senderId: userId,
         content,
+        type: isGif ? 'gif' : 'text',
         timestamp: new Date(),
         signature,
+        ...(isGif && {
+          gifUrl: body.gifUrl ?? null,
+          gifFullUrl: body.gifFullUrl ?? null,
+          gifWidth: body.gifWidth ?? null,
+          gifHeight: body.gifHeight ?? null,
+          gifAltText: body.gifAltText ?? null,
+        }),
       })
       .returning()
 
@@ -99,7 +109,8 @@ router.post('/messages', requireAuth, requireMember, async (c) => {
       reactions: [],
       tempId,
     }
-    broadcast(JSON.stringify({ type: 'NEW_MESSAGE', ...result }))
+    // Spread result first so its `type` ('text'/'gif') doesn't override the WS event type.
+    broadcast(JSON.stringify({ ...result, type: 'NEW_MESSAGE', messageType: newMessage.type }))
     return c.json(result)
   } catch (err) {
     console.error('POST /messages error:', err)

@@ -111,6 +111,8 @@ export function useMessages({
             serverUrl,
           })
         }
+        // Restore message type from messageType field (avoids WS event type collision)
+        const incoming = { ...msg, type: (msg.messageType ?? 'text') } as unknown as Message
         const existing =
           useAppStore.getState().messageCache[channelId]?.messages ?? []
         const optimisticIndex = existing.findIndex(
@@ -119,15 +121,11 @@ export function useMessages({
         if (optimisticIndex !== -1) {
           useAppStore
             .getState()
-            .updateMessage(
-              channelId,
-              msg.tempId as number,
-              msg as unknown as Message
-            )
+            .updateMessage(channelId, msg.tempId as number, incoming)
         } else {
           useAppStore
             .getState()
-            .appendMessage(channelId, msg as unknown as Message)
+            .appendMessage(channelId, incoming)
         }
       }
       if (msg.type === 'REACTION_UPDATED' && msg.channelId === channelId) {
@@ -199,6 +197,73 @@ export function useMessages({
     [channelId, identity, apiBase, showError]
   )
 
+  const sendGif = useCallback(
+    async (gif: {
+      id: string
+      altText: string
+      gifUrl: string
+      gifFullUrl: string
+      gifWidth: number
+      gifHeight: number
+    }) => {
+      const timestamp = new Date().toISOString()
+      const tempId = Date.now()
+      const content = gif.altText || 'GIF'
+
+      useAppStore.getState().appendMessage(channelId, {
+        id: tempId,
+        content,
+        type: 'gif',
+        gifUrl: gif.gifUrl,
+        gifFullUrl: gif.gifFullUrl,
+        gifWidth: gif.gifWidth,
+        gifHeight: gif.gifHeight,
+        gifAltText: gif.altText,
+        roomId: channelId,
+        senderId: identity.publicKey,
+        senderName: identity.username,
+        timestamp,
+      })
+
+      try {
+        const signature = await signMessage(
+          identity.privateKeyBytes,
+          content,
+          channelId,
+          timestamp
+        )
+        await apiFetch(apiBase, `/messages`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            roomId: channelId,
+            content,
+            type: 'gif',
+            gifUrl: gif.gifUrl,
+            gifFullUrl: gif.gifFullUrl,
+            gifWidth: gif.gifWidth,
+            gifHeight: gif.gifHeight,
+            gifAltText: gif.altText,
+            userId: identity.publicKey,
+            senderName: identity.username,
+            signature,
+            timestamp,
+            tempId,
+          }),
+        })
+      } catch {
+        showError('Failed to send GIF. Check your connection.')
+        const current =
+          useAppStore.getState().messageCache[channelId]?.messages ?? []
+        useAppStore.getState().setChannelMessages(
+          channelId,
+          current.filter((m: Message) => m.id !== tempId)
+        )
+      }
+    },
+    [channelId, identity, apiBase, showError]
+  )
+
   const fetchOlderMessages = useCallback(async () => {
     if (isFetchingOlderRef.current || !hasMoreHistory) return
     const cached =
@@ -238,6 +303,7 @@ export function useMessages({
     errorBanner,
     setErrorBanner,
     sendMessage,
+    sendGif,
     fetchOlderMessages,
     hasMoreHistory,
   }

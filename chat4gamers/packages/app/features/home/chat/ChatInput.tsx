@@ -2,6 +2,7 @@ import { useChatInput } from 'app/features/home/hooks/useChatInput'
 import { useIdentity } from 'app/features/home/identity/IdentityContext'
 import { Button, Input, Text, XStack, YStack } from '@my/ui'
 import { EmojiPicker } from 'app/features/home/components/EmojiPicker'
+import { GifPicker, type GifResult } from 'app/features/home/components/GifPicker'
 import { Paperclip, Send, X } from '@tamagui/lucide-icons'
 import { apiFetch } from '@my/api-client'
 import { useCallback, useLayoutEffect, useRef, useState } from 'react'
@@ -16,11 +17,13 @@ interface Props {
   channelId: string
   serverUrl: string
   onSend: (text: string) => Promise<void>
+  onSendGif?: (gif: GifResult) => Promise<void>
+  gifEnabled?: boolean
   socketRef: React.MutableRefObject<WebSocket | null>
   members: Array<{ publicKey: string; username: string; nickname?: string }>
 }
 
-export const ChatInput = ({ channelId, serverUrl, onSend, socketRef, members }: Props) => {
+export const ChatInput = ({ channelId, serverUrl, onSend, onSendGif, gifEnabled, socketRef, members }: Props) => {
   const { identity } = useIdentity()
   const {
     inputText,
@@ -35,6 +38,8 @@ export const ChatInput = ({ channelId, serverUrl, onSend, socketRef, members }: 
   const [isUploading, setIsUploading] = useState(false)
   const [uploadError, setUploadError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [gifAnchorRect, setGifAnchorRect] = useState<DOMRect | null>(null)
+  const gifButtonRef = useRef<HTMLButtonElement>(null)
 
   const inputTextRef = useRef(inputText)
   useLayoutEffect(() => { inputTextRef.current = inputText })
@@ -133,6 +138,13 @@ export const ChatInput = ({ channelId, serverUrl, onSend, socketRef, members }: 
       setIsUploading(false)
     }
   }, [pendingAttachments, serverUrl, inputTextRef, reset, onSend, handleSend])
+
+  const handleGifSelect = useCallback(
+    async (gif: GifResult) => {
+      if (onSendGif) await onSendGif(gif)
+    },
+    [onSendGif]
+  )
 
   const canSend = (inputText.trim().length > 0 || pendingAttachments.length > 0) && !isUploading
 
@@ -264,6 +276,35 @@ export const ChatInput = ({ channelId, serverUrl, onSend, socketRef, members }: 
           disabled={isUploading}
         />
         <EmojiPicker onSelect={handleEmojiSelect} />
+        {gifEnabled && (
+          <button
+            ref={gifButtonRef}
+            onClick={() => {
+              if (gifAnchorRect) {
+                setGifAnchorRect(null)
+              } else if (gifButtonRef.current) {
+                setGifAnchorRect(gifButtonRef.current.getBoundingClientRect())
+              }
+            }}
+            title="Send a GIF"
+            style={{
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              color: gifAnchorRect ? '#5865f2' : '#9ca3af',
+              padding: '6px 8px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: 6,
+              fontSize: 13,
+              fontWeight: 700,
+              letterSpacing: 0.5,
+            }}
+          >
+            GIF
+          </button>
+        )}
         <Button
           size="$4"
           icon={Send}
@@ -272,6 +313,14 @@ export const ChatInput = ({ channelId, serverUrl, onSend, socketRef, members }: 
           theme="dark"
         />
       </XStack>
+      {gifAnchorRect && gifEnabled && (
+        <GifPicker
+          serverUrl={serverUrl}
+          anchorRect={gifAnchorRect}
+          onSelect={handleGifSelect}
+          onClose={() => setGifAnchorRect(null)}
+        />
+      )}
     </YStack>
   )
 }

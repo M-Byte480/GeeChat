@@ -48,13 +48,19 @@ sqlite.exec(`
   );
 
   CREATE TABLE IF NOT EXISTS messages (
-    id         INTEGER PRIMARY KEY AUTOINCREMENT,
-    channel_id TEXT    NOT NULL REFERENCES channels(id) ON DELETE CASCADE,
-    sender_id  TEXT    NOT NULL REFERENCES users(public_key),
-    content    TEXT    NOT NULL,
-    timestamp  INTEGER NOT NULL,
-    signature  TEXT    NOT NULL DEFAULT '',
-    deleted_at INTEGER
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    channel_id   TEXT    NOT NULL REFERENCES channels(id) ON DELETE CASCADE,
+    sender_id    TEXT    NOT NULL REFERENCES users(public_key),
+    content      TEXT    NOT NULL,
+    type         TEXT    NOT NULL DEFAULT 'text',
+    timestamp    INTEGER NOT NULL,
+    signature    TEXT    NOT NULL DEFAULT '',
+    deleted_at   INTEGER,
+    gif_url      TEXT,
+    gif_full_url TEXT,
+    gif_width    INTEGER,
+    gif_height   INTEGER,
+    gif_alt_text TEXT
   );
 
   CREATE TABLE IF NOT EXISTS direct_messages (

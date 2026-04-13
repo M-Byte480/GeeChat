@@ -7,6 +7,7 @@ import type { Channel } from 'app/features/home/types/types'
 
 export function useChannelsController(serverUrl: string | null) {
   const setChannels = useAppStore((s) => s.setChannels)
+  const setGifEnabled = useAppStore((s) => s.setGifEnabled)
   const setActiveServerUrl = useAppStore((s) => s.setActiveServerUrl)
   const { deleteServer } = useIdentity()
 
@@ -19,7 +20,15 @@ export function useChannelsController(serverUrl: string | null) {
         if (Array.isArray(data)) setChannels(serverUrl, data)
       })
       .catch(() => {})
-  }, [serverUrl, setChannels])
+
+    // Fetch server status to get gifEnabled flag (no auth needed)
+    fetch(`${serverUrl}/`)
+      .then((r) => r.json())
+      .then((data: { gifEnabled?: boolean }) => {
+        setGifEnabled(serverUrl, !!data.gifEnabled)
+      })
+      .catch(() => {})
+  }, [serverUrl, setChannels, setGifEnabled])
 
   useServerSocket(serverUrl, (msg) => {
     if (msg.type === 'CHANNEL_CREATED' && msg.channel && serverUrl) {

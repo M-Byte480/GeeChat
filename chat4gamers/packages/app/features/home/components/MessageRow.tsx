@@ -158,6 +158,25 @@ export const MessageRow = memo(
       </Text>
     )
 
+    const gifContent = message.type === 'gif' && message.gifFullUrl ? (
+      <img
+        src={message.gifFullUrl}
+        alt={message.gifAltText ?? 'GIF'}
+        style={{
+          maxWidth: '100%',
+          maxHeight: 240,
+          borderRadius: 8,
+          marginTop: 4,
+          display: 'block',
+          objectFit: 'contain',
+        }}
+      />
+    ) : null
+
+    const messageContent = isDeleted ? deletedContent : gifContent ?? (
+      <MentionText content={message.content} serverUrl={serverUrl} identity={identity} />
+    )
+
     if (!showHeader) {
       return (
         <XStack
@@ -172,9 +191,7 @@ export const MessageRow = memo(
           style={rowStyle}
         >
           <YStack flex={1}>
-            {isDeleted ? deletedContent : (
-              <MentionText content={message.content} serverUrl={serverUrl} identity={identity} />
-            )}
+            {messageContent}
             {chips}
           </YStack>
           <XStack alignItems="center" height={22}>
@@ -220,9 +237,7 @@ export const MessageRow = memo(
               {timeString}
             </Text>
           </XStack>
-          {isDeleted ? deletedContent : (
-            <MentionText content={message.content} serverUrl={serverUrl} identity={identity} />
-          )}
+          {messageContent}
           {chips}
         </YStack>
         <XStack alignItems="center" paddingTop="$1">

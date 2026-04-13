@@ -15,6 +15,12 @@ export type Message = {
   timestamp: string
   deletedAt?: string | null
   reactions?: Reaction[]
+  type?: 'text' | 'gif'
+  gifUrl?: string | null
+  gifFullUrl?: string | null
+  gifWidth?: number | null
+  gifHeight?: number | null
+  gifAltText?: string | null
 }
 
 export type Channel = {

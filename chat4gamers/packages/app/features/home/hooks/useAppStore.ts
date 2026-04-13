@@ -7,6 +7,7 @@ interface ServerCache {
   [url: string]: {
     channels: Channel[]
     voiceParticipants: Record<string, string[]>
+    gifEnabled?: boolean
   }
 }
 
@@ -35,6 +36,7 @@ interface AppState {
   updateMessage: (channelId: string, tempId: number, confirmed: Message) => void
   patchMessage: (channelId: string, id: number, patch: Partial<Message>) => void
   updateMessageReaction: (channelId: string, messageId: number, emoji: string, userPublicKey: string, action: 'add' | 'remove') => void
+  setGifEnabled: (url: string, enabled: boolean) => void
   setMembers: (serverUrl: string, members: User[]) => void
 }
 
@@ -166,6 +168,14 @@ export const useAppStore = create<AppState>((set) => ({
         },
       }
     }),
+
+  setGifEnabled: (url: string, enabled: boolean) =>
+    set((state) => ({
+      cache: {
+        ...state.cache,
+        [url]: { ...state.cache[url], gifEnabled: enabled },
+      },
+    })),
 
   setMembers: (serverUrl: string, members: User[]) =>
     set((state) => ({

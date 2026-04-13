@@ -39,6 +39,8 @@ fi
 read -rp "Server public IP [$DETECTED_IP]: " INPUT_IP
 SERVER_IP="${INPUT_IP:-$DETECTED_IP}"
 
+read -rp "Klipy API key (leave blank to disable GIF support): " KLIPY_API_KEY
+
 # ── Write .env ────────────────────────────────────────────────────────────────
 cat > .env <<EOF
 LIVEKIT_API_KEY=${LIVEKIT_API_KEY}
@@ -46,6 +48,7 @@ LIVEKIT_API_SECRET=${LIVEKIT_API_SECRET}
 DB_KEY=${DB_KEY}
 SERVER_IP=${SERVER_IP}
 NODE_ENV=production
+KLIPY_API_KEY=${KLIPY_API_KEY}
 EOF
 echo "✅ .env written"
 

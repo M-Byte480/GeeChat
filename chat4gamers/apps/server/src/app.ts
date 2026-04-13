@@ -14,6 +14,7 @@ import relayRouter from './routes/relay.js'
 import media from './routes/media.js'
 import rolesRouter from './routes/roles.js'
 import adminRouter from './routes/admin.js'
+import gifsRouter from './routes/gifs.js'
 
 /**
  * Creates and configures the Hono application without starting a server.
@@ -36,6 +37,7 @@ export function createApp() {
       status: 'online',
       message: 'Private Server Instance Ready',
       version: '1.0.0',
+      gifEnabled: !!process.env.KLIPY_API_KEY,
     })
   )
 
@@ -50,6 +52,7 @@ export function createApp() {
   app.route('/', media)
   app.route('/', rolesRouter)
   app.route('/', adminRouter)
+  app.route('/', gifsRouter)
 
   return app
 }

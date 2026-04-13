@@ -66,6 +66,9 @@ export const directMessages = sqliteTable('direct_messages', {
   signature: text('signature').notNull(),
 })
 
+export const MessageType = ['text', 'gif'] as const
+export type MessageTypeType = (typeof MessageType)[number]
+
 export const messages = sqliteTable(
   'messages',
   {
@@ -77,9 +80,15 @@ export const messages = sqliteTable(
       .notNull()
       .references(() => users.publicKey),
     content: text('content').notNull(),
+    type: text('type').$type<MessageTypeType>().notNull().default('text'),
     timestamp: integer('timestamp', { mode: 'timestamp' }).notNull(),
     signature: text('signature').notNull(),
     deletedAt: integer('deleted_at', { mode: 'timestamp' }),
+    gifUrl: text('gif_url'),
+    gifFullUrl: text('gif_full_url'),
+    gifWidth: integer('gif_width'),
+    gifHeight: integer('gif_height'),
+    gifAltText: text('gif_alt_text'),
   },
   (table) => ({
     channelTimestampIdx: index('channel_timestamp_idx').on(

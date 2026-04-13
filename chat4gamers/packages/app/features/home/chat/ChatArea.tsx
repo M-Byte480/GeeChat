@@ -10,6 +10,7 @@ import { ChatInput } from 'app/features/home/chat/ChatInput'
 import { MessageList } from 'app/features/home/chat/MessageList'
 import type { User } from 'app/features/home/types/User'
 import { useCurrentMemberRole } from 'app/features/home/hooks/useCurrentMemberRole'
+import { useAppStore } from 'app/features/home/hooks/useAppStore'
 import { apiFetch } from '@my/api-client'
 
 type Props = {
@@ -28,12 +29,14 @@ export const ChatArea = ({
   const { identity } = useIdentity()
   const socketRef = useRef<WebSocket | null>(null)
   const currentRole = useCurrentMemberRole(serverUrl)
+  const gifEnabled = useAppStore((s) => s.cache[serverUrl]?.gifEnabled ?? false)
 
   const {
     messages,
     isLoading,
     typingUser,
     sendMessage,
+    sendGif,
     fetchOlderMessages,
     hasMoreHistory,
   } = useMessages({
@@ -109,6 +112,8 @@ export const ChatArea = ({
           channelId={channelId}
           serverUrl={serverUrl}
           onSend={sendMessage}
+          onSendGif={sendGif}
+          gifEnabled={gifEnabled}
           socketRef={socketRef}
           members={members}
         />

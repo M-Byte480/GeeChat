@@ -4,6 +4,7 @@ import type { Identity } from '../identity'
 import ReactMarkdown from 'react-markdown'
 import { ExternalLinkDialog } from 'app/features/home/components/ExternalLinkDialog'
 import { AuthImage } from 'app/features/home/components/AuthImage'
+import { AuthVideo } from 'app/features/home/components/AuthVideo'
 import { ImageLightbox } from 'app/features/home/components/ImageLightbox'
 import { memo, useMemo, useState } from 'react'
 import remarkGfm from 'remark-gfm'
@@ -150,7 +151,9 @@ export const MentionText = memo(function MentionText({
         }
 
         if (part.type === 'video') {
-          return (
+          return isLocalMedia(part.value) ? (
+            <AuthVideo key={i} src={part.value} serverUrl={serverUrl} />
+          ) : (
             <Vid
               key={i}
               src={part.value}
