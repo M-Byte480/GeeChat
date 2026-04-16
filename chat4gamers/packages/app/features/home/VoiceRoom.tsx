@@ -12,7 +12,8 @@ import {
   Wand2,
 } from 'lucide-react'
 import { apiFetch } from '@my/api-client'
-import { KrispNoiseFilter, isKrispNoiseFilterSupported } from '@livekit/krisp-noise-filter'
+import type { KrispNoiseFilterProcessor } from '@livekit/krisp-noise-filter'
+import { useAppStore } from 'app/features/home/hooks/useAppStore'
 
 type Props = {
   channelId: string
@@ -61,60 +62,107 @@ type VoiceStats = {
  * Fallback: if the native addon is unavailable (web, or first-run before build),
  * audio passes through unprocessed — the browser's own echoCancellation still runs.
  */
-async function buildProcessedAudio(): Promise<ProcessedAudio> {
-  const rawStream = await navigator.mediaDevices.getUserMedia({
-    audio: {
-      echoCancellation: true,
-      noiseSuppression: false, // RNNoise handles this natively
-      autoGainControl: true,
-      sampleRate: 48000,
-      channelCount: 1,
-    },
-  })
+async function buildProcessedAudio(deviceId?: string | null): Promise<ProcessedAudio> {
+  const audioConstraints: MediaTrackConstraints = {
+    // Krisp handles noise suppression and works best on a clean signal.
+    // Disable browser's own NS and AEC so they don't pre-process the audio
+    // before Krisp sees it (AEC+Krisp fighting each other degrades quality).
+    echoCancellation: { ideal: false },
+    noiseSuppression: { ideal: false },
+    autoGainControl: { ideal: false }, // AGC pumps the noise floor which creates static artifacts with Krisp
+    channelCount: { ideal: 1 },
+    ...(deviceId ? { deviceId: { exact: deviceId } } : {}),
+  }
 
-  const ctx = new AudioContext({ sampleRate: 48000 })
+  let rawStream: MediaStream
+  try {
+    rawStream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints })
+  } catch (e) {
+    console.warn('[mic] constrained getUserMedia failed, retrying with minimal constraints', e)
+    rawStream = await navigator.mediaDevices.getUserMedia({
+      audio: deviceId ? { deviceId: { exact: deviceId } } : true,
+    })
+  }
 
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  const rawTrack = rawStream.getAudioTracks()[0]!
   const processAudioFrame: ((input: Float32Array) => number[]) | null =
     window.electronAPI?.processAudioFrame ?? null
 
+  // AudioContext at the mic's native sample rate so Krisp's applyConstraints
+  // (sampleRate: ctx.sampleRate) always matches what the device already reports.
+  const micSampleRate = rawTrack.getSettings().sampleRate ?? 48000
+  const ctx = new AudioContext({ sampleRate: micSampleRate })
+  const source = ctx.createMediaStreamSource(rawStream)
+
+  // Monitor (Test Mic): taps rawStream directly — low latency, no processing pipeline
+  const monitorGain = ctx.createGain()
+  monitorGain.gain.value = 0.8
+  monitorGain.connect(ctx.destination)
+  const rawMonitorSource = ctx.createMediaStreamSource(rawStream)
+  const enableMonitor = () => rawMonitorSource.connect(monitorGain)
+  const disableMonitor = () => {
+    try { rawMonitorSource.disconnect(monitorGain) } catch { /* already disconnected */ }
+  }
+
+  // AnalyserNode for mic-level meter in the stats overlay
+  const analyser = ctx.createAnalyser()
+  analyser.fftSize = 256
+  source.connect(analyser)
+  const _analyserBuf = new Float32Array(analyser.fftSize)
+  const getMicLevel = (): number => {
+    analyser.getFloatTimeDomainData(_analyserBuf)
+    let sum = 0
+    for (let i = 0; i < _analyserBuf.length; i++) sum += _analyserBuf[i] * _analyserBuf[i]
+    return Math.sqrt(sum / _analyserBuf.length)
+  }
+
+  if (!processAudioFrame) {
+    // ── Non-native path (Tauri / web) ──────────────────────────────────────────
+    // Return the real mic track directly. Krisp receives it and calls
+    // applyConstraints on it — which works because it's a real capture track,
+    // not a MediaStreamDestination track. No ScriptProcessor overhead.
+    const setDenoise = (enabled: boolean) => {
+      // Fallback toggle via browser-native NS (used only if Krisp isn't applied)
+      rawTrack.applyConstraints({ noiseSuppression: enabled }).catch(() => {})
+    }
+    const cleanup = () => {
+      disableMonitor()
+      rawMonitorSource.disconnect()
+      source.disconnect()
+      rawStream.getTracks().forEach((t) => t.stop())
+      ctx.close()
+    }
+    return { track: rawTrack, cleanup, enableMonitor, disableMonitor, setDenoise, getMicLevel, nativeAvailable: false }
+  }
+
+  // ── Native RNNoise path (Electron only) ────────────────────────────────────
+  // ScriptProcessorNode synchronously calls the native .node addon per-frame.
   const BLOCK = 512 // ScriptProcessorNode buffer size (power-of-2 closest to 480)
   const FRAME = 480 // RNNoise frame size
-  const inRing = new Float32Array(BLOCK + FRAME) // 992 samples — fits max inFill
-  const outRing = new Float32Array(BLOCK + FRAME) // 992 samples — fits max outLen
+  const inRing = new Float32Array(BLOCK + FRAME)
+  const outRing = new Float32Array(BLOCK + FRAME)
   let inFill = 0
   let outLen = FRAME // pre-buffer 1 silent frame so queue never drains cold
-  let denoiseEnabled = !!processAudioFrame // mutable flag — toggled at runtime
+  let denoiseEnabled = true
 
   const scriptNode = ctx.createScriptProcessor(BLOCK, 1, 1)
-
   scriptNode.onaudioprocess = (e: AudioProcessingEvent) => {
     const inp = e.inputBuffer.getChannelData(0)
     const out = e.outputBuffer.getChannelData(0)
-
-    // Accumulate BLOCK new input samples
     inRing.set(inp, inFill)
-    inFill += inp.length // always BLOCK
-
-    if (processAudioFrame && denoiseEnabled) {
-      // Native RNNoise path — synchronous, zero IPC
-      while (inFill >= FRAME) {
+    inFill += inp.length
+    while (inFill >= FRAME) {
+      if (denoiseEnabled) {
         const processed = processAudioFrame(inRing.subarray(0, FRAME))
         for (let i = 0; i < FRAME; i++) outRing[outLen + i] = processed[i] ?? 0
-        outLen += FRAME
-        inRing.copyWithin(0, FRAME, inFill)
-        inFill -= FRAME
-      }
-    } else {
-      // Raw / fallback: bypass — copy input straight to output ring
-      while (inFill >= FRAME) {
+      } else {
         outRing.set(inRing.subarray(0, FRAME), outLen)
-        outLen += FRAME
-        inRing.copyWithin(0, FRAME, inFill)
-        inFill -= FRAME
       }
+      outLen += FRAME
+      inRing.copyWithin(0, FRAME, inFill)
+      inFill -= FRAME
     }
-
-    // Drain output ring → Web Audio output
     const toCopy = Math.min(outLen, out.length)
     out.set(outRing.subarray(0, toCopy))
     if (outLen > toCopy) outRing.copyWithin(0, toCopy, outLen)
@@ -122,44 +170,15 @@ async function buildProcessedAudio(): Promise<ProcessedAudio> {
     for (let i = toCopy; i < out.length; i++) out[i] = 0
   }
 
-  const source = ctx.createMediaStreamSource(rawStream)
   const dest = ctx.createMediaStreamDestination()
-
   source.connect(scriptNode)
   scriptNode.connect(dest)
-
-  // Monitor (Test Mic): tap rawStream directly — bypasses the ScriptProcessorNode
-  // pipeline so you hear yourself with minimal latency. Undenoised, but that's fine
-  // since the only purpose of Test Mic is to confirm the mic is capturing.
-  const monitorGain = ctx.createGain()
-  monitorGain.gain.value = 0.8
-  monitorGain.connect(ctx.destination)
-  const rawMonitorSource = ctx.createMediaStreamSource(rawStream)
-
-  const enableMonitor = () => rawMonitorSource.connect(monitorGain)
-  const disableMonitor = () => {
-    try {
-      rawMonitorSource.disconnect(monitorGain)
-    } catch {
-      /* already disconnected */
-    }
-  }
-
-  // AnalyserNode for mic-level meter in the stats overlay
-  const analyser = ctx.createAnalyser()
-  analyser.fftSize = 256
   scriptNode.connect(analyser)
-  const _analyserBuf = new Float32Array(analyser.fftSize)
-  const getMicLevel = (): number => {
-    analyser.getFloatTimeDomainData(_analyserBuf)
-    let sum = 0
-    for (let i = 0; i < _analyserBuf.length; i++) sum += _analyserBuf[i] * _analyserBuf[i]
-    return Math.sqrt(sum / _analyserBuf.length) // RMS 0–1
-  }
 
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const processedTrack = dest.stream.getAudioTracks()[0]!
 
+  const setDenoise = (enabled: boolean) => { denoiseEnabled = enabled }
   const cleanup = () => {
     disableMonitor()
     rawMonitorSource.disconnect()
@@ -168,20 +187,7 @@ async function buildProcessedAudio(): Promise<ProcessedAudio> {
     rawStream.getTracks().forEach((t) => t.stop())
     ctx.close()
   }
-
-  const setDenoise = (enabled: boolean) => {
-    denoiseEnabled = enabled
-  }
-
-  return {
-    track: processedTrack,
-    cleanup,
-    enableMonitor,
-    disableMonitor,
-    setDenoise,
-    getMicLevel,
-    nativeAvailable: !!processAudioFrame,
-  }
+  return { track: processedTrack, cleanup, enableMonitor, disableMonitor, setDenoise, getMicLevel, nativeAvailable: true }
 }
 
 export const VoiceRoom = ({
@@ -192,6 +198,7 @@ export const VoiceRoom = ({
   onDisconnect,
 }: Props) => {
   console.warn('Rendered VoiceRoom for channelId:', channelId)
+  const micDeviceId = useAppStore((s) => s.micDeviceId)
   const [room, setRoom] = useState<Room | null>(null)
   const [isJoined, setIsJoined] = useState(false)
   const [isMicEnabled, setIsMicEnabled] = useState(true)
@@ -203,8 +210,11 @@ export const VoiceRoom = ({
   const lkTrackRef = useRef<LocalAudioTrack | null>(null)
   const remoteAudioEls = useRef<HTMLAudioElement[]>([])
 
+  const [denoiseAvailable, setDenoiseAvailable] = useState(false)
   const [showStats, setShowStats] = useState(false)
   const [voiceStats, setVoiceStats] = useState<VoiceStats | null>(null)
+  const krispRef = useRef<KrispNoiseFilterProcessor | null>(null)
+  const isDeafenedRef = useRef(false)
 
   const broadcastToServer = (ch: string, participants: string[]) => {
     apiFetch(`${serverUrl}`, `/voice-state`, {
@@ -230,7 +240,7 @@ export const VoiceRoom = ({
     room.on(RoomEvent.TrackSubscribed, (track) => {
       if (track.kind === Track.Kind.Audio) {
         const el = track.attach() as HTMLAudioElement
-        el.muted = isDeafened
+        el.muted = isDeafenedRef.current
         remoteAudioEls.current.push(el)
         document.body.appendChild(el)
         el.play().catch((err) => console.warn('Autoplay blocked:', err))
@@ -257,6 +267,9 @@ export const VoiceRoom = ({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [channelId])
+
+  // Keep ref in sync so TrackSubscribed (which captures a stale closure) reads current value
+  useEffect(() => { isDeafenedRef.current = isDeafened }, [isDeafened])
 
   // Track connection quality via LiveKit event (fires for local + remote participants)
   useEffect(() => {
@@ -345,22 +358,18 @@ export const VoiceRoom = ({
 
       const { token, livekitUrl } = await resp.json()
 
-      const audio = await buildProcessedAudio()
+      console.log('[join] buildProcessedAudio...')
+      const audio = await buildProcessedAudio(micDeviceId)
+      console.log('[join] buildProcessedAudio done, nativeAvailable:', audio.nativeAvailable)
       audioRef.current = audio
       setNativeAvailable(audio.nativeAvailable)
       setDenoiseOn(audio.nativeAvailable)
 
-      // Todo: figure out on room that doesn't exists why it permanently oscillating between calling and getting 404
-      /**
-       * <-- GET /rtc/validate?access_token=eyJhbGciOiJIUzI1NiJ9.eyJ2aWRlbyI6eyJyb29tSm9pbiI6dHJ1ZSwicm9vbSI6ImhpZGVvdXQiLCJjYW5QdWJsaXNoIjp0cnVlLCJjYW5TdWJzY3JpYmUiOnRydWUsInJvb21BZG1pbiI6dHJ1ZX0sImlzcyI6ImRldmtleSIsImV4cCI6MTc3MzgxMDEyMCwibmJmIjowLCJzdWIiOiJUaGVNZWxvbm5NYW5uIn0.7P_pLP8ZS-Ku_TxC6bd5aHVxq2DwDKwYyYvsmg6BzI4&auto_subscribe=1&sdk=js&version=2.17.1&protocol=16&adaptive_stream=1
-       * --> GET /rtc/validate?access_token=eyJhbGciOiJIUzI1NiJ9.eyJ2aWRlbyI6eyJyb29tSm9pbiI6dHJ1ZSwicm9vbSI6ImhpZGVvdXQiLCJjYW5QdWJsaXNoIjp0cnVlLCJjYW5TdWJzY3JpYmUiOnRydWUsInJvb21BZG1pbiI6dHJ1ZX0sImlzcyI6ImRldmtleSIsImV4cCI6MTc3MzgxMDEyMCwibmJmIjowLCJzdWIiOiJUaGVNZWxvbm5NYW5uIn0.7P_pLP8ZS-Ku_TxC6bd5aHVxq2DwDKwYyYvsmg6BzI4&auto_subscribe=1&sdk=js&version=2.17.1&protocol=16&adaptive_stream=1 404 0ms
-       */
       const newRoom = new Room({
         adaptiveStream: true,
         reconnectPolicy: {
           nextRetryDelayInMs: (context) => {
-            // Stop retrying after 2 attempts
-            if (context.retryCount >= 2) return null // null = stop retrying
+            if (context.retryCount >= 2) return null
             return 1000 * context.retryCount
           },
         },
@@ -374,26 +383,51 @@ export const VoiceRoom = ({
         setIsJoined(false)
       })
 
+      console.log('[join] connecting to', livekitUrl)
       await newRoom.connect(livekitUrl, token, { autoSubscribe: true })
+      console.log('[join] connected')
 
+      console.log('[join] publishing track...')
       const lkTrack = new LocalAudioTrack(audio.track)
       lkTrackRef.current = lkTrack
       await newRoom.localParticipant.publishTrack(lkTrack, {
         name: 'microphone',
-        // Stage 2: 64 kbps + DTX (silence suppression) for better quality & bandwidth
         audioPreset: { maxBitrate: 64000 },
         dtx: true,
       })
+      console.log('[join] track published')
 
+      // Track already-present participants so deafen/undeafen works on them too
       newRoom.remoteParticipants.forEach((participant) => {
         participant.trackPublications.forEach((pub) => {
           if (pub.track && pub.kind === Track.Kind.Audio) {
-            const el = pub.track.attach()
+            const el = pub.track.attach() as HTMLAudioElement
+            remoteAudioEls.current.push(el)
             document.body.appendChild(el)
             el.play().catch(() => {})
           }
         })
       })
+
+      // Krisp noise suppression — WASM-based, works in Tauri WebView2.
+      // Dynamically imported so its browser-API side effects don't run during SSR
+      // (a static import breaks Tamagui's theme CSS injection via hydration mismatch).
+      const { KrispNoiseFilter, isKrispNoiseFilterSupported } = await import('@livekit/krisp-noise-filter')
+
+      console.log('[join] krisp supported:', isKrispNoiseFilterSupported(), 'nativeAvailable:', audio.nativeAvailable)
+      if (!audio.nativeAvailable && isKrispNoiseFilterSupported()) {
+        console.log('[join] applying Krisp processor...')
+        const krisp = KrispNoiseFilter({ quality: 'high', useBVC: true, bufferDropMs: 200 })
+        krispRef.current = krisp
+
+        await lkTrack.setProcessor(krisp)
+        console.log('[join] Krisp applied')
+
+        setDenoiseOn(true)
+        setDenoiseAvailable(true)
+      } else if (audio.nativeAvailable) {
+        setDenoiseAvailable(true)
+      }
 
       setRoom(newRoom)
       setIsJoined(true)
@@ -419,9 +453,15 @@ export const VoiceRoom = ({
     setIsMicEnabled(next)
   }
 
-  const toggleDeafen = () => {
+  const toggleDeafen = async () => {
     const next = !isDeafened
     remoteAudioEls.current.forEach((el) => { el.muted = next })
+    // Discord behavior: deafening silences your mic too
+    if (next && isMicEnabled && lkTrackRef.current) {
+      await lkTrackRef.current.mute()
+      setIsMicEnabled(false)
+    }
+    isDeafenedRef.current = next
     setIsDeafened(next)
   }
 
@@ -441,7 +481,9 @@ export const VoiceRoom = ({
     audioRef.current?.cleanup()
     audioRef.current = null
     lkTrackRef.current = null
+    krispRef.current = null
     remoteAudioEls.current = []
+    isDeafenedRef.current = false
     setRoom(null)
     setIsJoined(false)
     setIsMicEnabled(true)
@@ -449,6 +491,7 @@ export const VoiceRoom = ({
     setTestMic(false)
     setDenoiseOn(true)
     setNativeAvailable(false)
+    setDenoiseAvailable(false)
     setShowStats(false)
     setVoiceStats(null)
     onParticipantsChange(channelId, [])
@@ -456,10 +499,16 @@ export const VoiceRoom = ({
     onDisconnect?.()
   }
 
-  const toggleDenoise = () => {
+  const toggleDenoise = async () => {
     const next = !denoiseOn
     setDenoiseOn(next)
-    audioRef.current?.setDenoise(next)
+    if (nativeAvailable) {
+      // RNNoise path — synchronous toggle in the ScriptProcessor
+      audioRef.current?.setDenoise(next)
+    } else if (krispRef.current) {
+      // Krisp path — toggle via setEnabled (processor stays attached, no re-init)
+      await krispRef.current.setEnabled(next)
+    }
   }
 
   return (
@@ -477,6 +526,8 @@ export const VoiceRoom = ({
       >
         {isJoined ? `● Connected · #${channelId}` : `# ${channelId}`}
       </Text>
+
+      <MicSelector />
 
       <XStack gap="$2" flexWrap="wrap" alignItems="center">
         {!isJoined ? (
@@ -508,14 +559,14 @@ export const VoiceRoom = ({
             >
               {testMic ? 'Hearing Self' : 'Test Mic'}
             </Button>
-            {nativeAvailable && (
+            {denoiseAvailable && (
               <Button
                 size="$3"
                 theme={denoiseOn ? 'green' : 'gray'}
                 onPress={toggleDenoise}
                 icon={Wand2}
               >
-                {denoiseOn ? 'RNNoise On' : 'RNNoise Off'}
+                {denoiseOn ? 'Denoise On' : 'Denoise Off'}
               </Button>
             )}
             <Button
@@ -554,6 +605,50 @@ export const VoiceRoom = ({
         </YStack>
       )}
     </YStack>
+  )
+}
+
+// ── Mic device selector ───────────────────────────────────────────────────────
+
+function MicSelector() {
+  const micDeviceId = useAppStore((s) => s.micDeviceId)
+  const setMicDeviceId = useAppStore((s) => s.setMicDeviceId)
+  const [devices, setDevices] = useState<MediaDeviceInfo[]>([])
+
+  useEffect(() => {
+    navigator.mediaDevices.enumerateDevices().then((all) => {
+      setDevices(all.filter((d) => d.kind === 'audioinput'))
+    })
+  }, [])
+
+  if (devices.length === 0) return null
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+      <span style={{ fontSize: 11, color: '#9ca3af', flexShrink: 0 }}>Mic</span>
+      <select
+        value={micDeviceId ?? 'default'}
+        onChange={(e) => setMicDeviceId(e.target.value === 'default' ? null : e.target.value)}
+        style={{
+          flex: 1,
+          fontSize: 11,
+          background: 'rgba(255,255,255,0.07)',
+          color: '#e5e7eb',
+          border: '1px solid rgba(255,255,255,0.15)',
+          borderRadius: 4,
+          padding: '2px 4px',
+          outline: 'none',
+          cursor: 'pointer',
+        }}
+      >
+        <option value="default" style={{ background: '#1f2937' }}>Default</option>
+        {devices.map((d) => (
+          <option key={d.deviceId} value={d.deviceId} style={{ background: '#1f2937' }}>
+            {d.label || d.deviceId.slice(0, 12)}
+          </option>
+        ))}
+      </select>
+    </div>
   )
 }
 

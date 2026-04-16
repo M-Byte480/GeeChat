@@ -23,6 +23,8 @@ interface AppState {
   cache: ServerCache
   messageCache: MessageCache
   members: Record<string, User[]>
+  micDeviceId: string | null
+  setMicDeviceId: (id: string | null) => void
   setChannelMessages: (channelId: string, messages: Message[]) => void
   setActiveServerUrl: (url: string | null) => void
   setActiveServer: (server: Server) => void
@@ -45,6 +47,8 @@ export const useAppStore = create<AppState>((set) => ({
   cache: {},
   messageCache: {} as MessageCache,
   members: {} as Record<string, User[]>,
+  micDeviceId: null,
+  setMicDeviceId: (id) => set({ micDeviceId: id }),
 
   setChannelMessages: (channelId, messages) => {
     set((state) => ({
