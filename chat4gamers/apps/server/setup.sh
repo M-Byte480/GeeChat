@@ -45,6 +45,7 @@ read -rp "Klipy API key (leave blank to disable GIF support): " KLIPY_API_KEY
 cat > .env <<EOF
 LIVEKIT_API_KEY=${LIVEKIT_API_KEY}
 LIVEKIT_API_SECRET=${LIVEKIT_API_SECRET}
+LIVEKIT_URL=ws://${SERVER_IP}:7880
 DB_KEY=${DB_KEY}
 SERVER_IP=${SERVER_IP}
 NODE_ENV=production

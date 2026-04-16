@@ -11,6 +11,10 @@ router.get('/get-voice-token', requireAuth, requireMember, async (c) => {
     c.req.query('identity') || 'user-' + Math.floor(Math.random() * 1000)
   const apiKey = process.env.LIVEKIT_API_KEY || 'devkey'
   const apiSecret = process.env.LIVEKIT_API_SECRET || 'secret'
+  // LIVEKIT_URL is the WebSocket URL the client connects to directly.
+  // In production this is ws(s)://<server-ip>:7880.
+  // In dev it defaults to ws://localhost:7880 (run LiveKit with --dev flag).
+  const livekitUrl = process.env.LIVEKIT_URL || 'ws://localhost:7880'
 
   const at = new AccessToken(apiKey, apiSecret, { identity: participantName })
   at.addGrant({
@@ -21,8 +25,8 @@ router.get('/get-voice-token', requireAuth, requireMember, async (c) => {
   })
 
   const token = await at.toJwt()
-  console.log(`Generated token for room: ${roomName} with key: ${apiKey}`)
-  return c.json({ token })
+  console.log(`Generated token for room: ${roomName} with key: ${apiKey}, livekit: ${livekitUrl}`)
+  return c.json({ token, livekitUrl })
 })
 
 router.post('/voice-state', requireAuth, requireMember, async (c) => {

@@ -30,10 +30,15 @@ export function useChannelsController(serverUrl: string | null) {
       .catch(() => {})
   }, [serverUrl, setChannels, setGifEnabled])
 
+  const setVoiceParticipants = useAppStore((s) => s.setVoiceParticipants)
+
   useServerSocket(serverUrl, (msg) => {
     if (msg.type === 'CHANNEL_CREATED' && msg.channel && serverUrl) {
       const current = useAppStore.getState().cache[serverUrl]?.channels ?? []
       setChannels(serverUrl, [...current, msg.channel as Channel])
+    } else if (msg.type === 'VOICE_STATE' && serverUrl) {
+      // Sync voice participant list broadcast by a peer when they join/leave
+      setVoiceParticipants(serverUrl, msg.channelId as string, msg.participants as string[])
     } else if (msg.type === 'PROFILE_UPDATED' && msg.publicKey) {
       invalidateUser(msg.publicKey as string)
     } else if ((msg.type === 'KICKED' || msg.type === 'BANNED') && serverUrl) {

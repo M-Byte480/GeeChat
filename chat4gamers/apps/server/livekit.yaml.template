@@ -7,5 +7,10 @@ rtc:
   port_range_end: 60000
   use_external_ip: true
   node_ip: "${SERVER_IP}"
+  # Stage 2: enable Forward Error Correction and comfort noise for Opus
+  # FEC lets receivers reconstruct lost packets from redundancy in subsequent ones.
+  # NACK is the fallback retransmission path when FEC can't cover a gap.
+  enable_nack: true
+  enable_fec: true
 keys:
   ${LIVEKIT_API_KEY}: ${LIVEKIT_API_SECRET}
