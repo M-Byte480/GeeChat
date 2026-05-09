@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { apiFetch } from '@my/api-client'
+import { Button, Input } from '@my/ui'
 
 export interface GifResult {
   id: string
@@ -203,7 +204,7 @@ export function GifPicker({ serverUrl, anchorRect, onSelect, onClose }: Props) {
     >
       {/* Header: search + tabs */}
       <div style={{ padding: '8px 8px 0' }}>
-        <input
+        <Input
           autoFocus
           type="text"
           placeholder="Search KLIPY"
@@ -223,7 +224,7 @@ export function GifPicker({ serverUrl, anchorRect, onSelect, onClose }: Props) {
         />
         <div style={{ display: 'flex', gap: 4, marginTop: 6 }}>
           {(['trending', 'search'] as Tab[]).map((t) => (
-            <button
+            <Button
               key={t}
               onClick={() => handleTabChange(t)}
               style={{
@@ -240,7 +241,7 @@ export function GifPicker({ serverUrl, anchorRect, onSelect, onClose }: Props) {
               }}
             >
               {t === 'trending' ? 'Trending' : 'Search'}
-            </button>
+            </Button>
           ))}
         </div>
       </div>

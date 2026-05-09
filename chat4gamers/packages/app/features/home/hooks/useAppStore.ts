@@ -25,6 +25,8 @@ interface AppState {
   members: Record<string, User[]>
   micDeviceId: string | null
   setMicDeviceId: (id: string | null) => void
+  appFont: string
+  setAppFont: (font: string) => void
   setChannelMessages: (channelId: string, messages: Message[]) => void
   setActiveServerUrl: (url: string | null) => void
   setActiveServer: (server: Server) => void
@@ -49,6 +51,11 @@ export const useAppStore = create<AppState>((set) => ({
   members: {} as Record<string, User[]>,
   micDeviceId: null,
   setMicDeviceId: (id) => set({ micDeviceId: id }),
+  appFont: (typeof window !== 'undefined' ? localStorage.getItem('app-font') : null) ?? 'inter',
+  setAppFont: (font) => {
+    if (typeof window !== 'undefined') localStorage.setItem('app-font', font)
+    set({ appFont: font })
+  },
 
   setChannelMessages: (channelId, messages) => {
     set((state) => ({

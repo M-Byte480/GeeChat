@@ -3,6 +3,7 @@ import type { UserProfile } from '../hooks/useUser'
 import type { ReactNode } from 'react'
 import { StatusChip } from 'app/features/home/components/StatusChip'
 import type { MemberRole } from 'app/features/home/components/DropdownMenu'
+import { Button, Text } from '@my/ui'
 
 interface Props {
   user: UserProfile
@@ -46,13 +47,14 @@ export function ViewUserPopover({ user, trigger, currentUserRole, onKick, onBan 
 
         {/* Name */}
         <div style={{ marginTop: 8, marginBottom: 12 }}>
-          <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--color)' }}>
+          <Text style={{ fontWeight: 800, fontSize: 16, color: 'var(--color)' }}>
             {user.nickname ?? user.username}
-          </div>
+          </Text>
+          <br/>
           {user.nickname && (
-            <div style={{ fontSize: 12, color: 'var(--color9)', marginTop: 2 }}>
+            <Text style={{ fontSize: 12, color: 'var(--color9)', marginTop: 2 }}>
               {user.username}
-            </div>
+            </Text>
           )}
         </div>
 
@@ -66,7 +68,7 @@ export function ViewUserPopover({ user, trigger, currentUserRole, onKick, onBan 
 
         {/* Roles */}
         <div style={{ marginBottom: 12 }}>
-          <div
+          <Text
             style={{
               fontSize: 11,
               fontWeight: 700,
@@ -77,10 +79,10 @@ export function ViewUserPopover({ user, trigger, currentUserRole, onKick, onBan 
             }}
           >
             Roles
-          </div>
+          </Text>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
             {/* Built-in role chip */}
-            <div
+            <Text
               style={{
                 background: 'var(--color4)',
                 borderRadius: 4,
@@ -91,10 +93,10 @@ export function ViewUserPopover({ user, trigger, currentUserRole, onKick, onBan 
               }}
             >
               {user.role}
-            </div>
+            </Text>
             {/* Custom role chips */}
             {user.customRoles?.map((r) => (
-              <div
+              <Text
                 key={r.id}
                 style={{
                   background: r.color ? `${r.color}33` : 'var(--blue4)',
@@ -107,7 +109,7 @@ export function ViewUserPopover({ user, trigger, currentUserRole, onKick, onBan 
                 }}
               >
                 {r.name}
-              </div>
+              </Text>
             ))}
           </div>
         </div>
@@ -125,7 +127,7 @@ export function ViewUserPopover({ user, trigger, currentUserRole, onKick, onBan 
           <>
             <hr style={{ border: 'none', borderTop: '1px solid var(--borderColor)', margin: '0 0 12px' }} />
             <div style={{ marginBottom: 12, display: 'flex', gap: 8 }}>
-              <button
+              <Button
                 onClick={onKick}
                 style={{
                   flex: 1, background: 'var(--color4)', border: '1px solid var(--borderColor)',
@@ -134,8 +136,8 @@ export function ViewUserPopover({ user, trigger, currentUserRole, onKick, onBan 
                 }}
               >
                 Kick
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={onBan}
                 style={{
                   flex: 1, background: 'var(--red4)', border: '1px solid var(--red6)',
@@ -144,14 +146,14 @@ export function ViewUserPopover({ user, trigger, currentUserRole, onKick, onBan 
                 }}
               >
                 Ban
-              </button>
+              </Button>
             </div>
           </>
         )}
 
         {/* Member since */}
         <div style={{ marginBottom: 16 }}>
-          <div
+          <Text
             style={{
               fontSize: 11,
               fontWeight: 700,
@@ -162,8 +164,9 @@ export function ViewUserPopover({ user, trigger, currentUserRole, onKick, onBan 
             }}
           >
             Member Since
-          </div>
-          <div style={{ fontSize: 13, color: 'var(--color)' }}>
+          </Text>
+          <br/>
+          <Text style={{ fontSize: 13, color: 'var(--color)' }}>
             {user.joinedAt
               ? new Date(user.joinedAt).toLocaleDateString([], {
                   year: 'numeric',
@@ -171,7 +174,7 @@ export function ViewUserPopover({ user, trigger, currentUserRole, onKick, onBan 
                   day: 'numeric',
                 })
               : 'Unknown'}
-          </div>
+          </Text>
         </div>
       </div>
     </PopoverMenu>

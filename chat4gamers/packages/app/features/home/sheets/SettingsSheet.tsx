@@ -1,4 +1,6 @@
 import { Paragraph, Sheet, Text, XStack, YStack } from '@my/ui'
+import { useAppStore } from 'app/features/home/hooks/useAppStore'
+import { FONT_OPTIONS } from 'app/provider/NextTamaguiProvider'
 
 export function SettingsSheet({
   showSettings,
@@ -6,13 +8,16 @@ export function SettingsSheet({
   identity,
   appVersion,
 }) {
+  const appFont = useAppStore((s) => s.appFont)
+  const setAppFont = useAppStore((s) => s.setAppFont)
+
   return (
     <Sheet
       open={showSettings}
       onOpenChange={setShowSettings}
       modal
       dismissOnSnapToBottom
-      snapPoints={[35]}
+      snapPoints={[45]}
     >
       <Sheet.Frame p="$5" gap="$4">
         <Text fontWeight="700" fontSize="$6">
@@ -32,6 +37,27 @@ export function SettingsSheet({
             <Text fontWeight="600" fontSize="$2" color="$color10">
               {identity.publicKey.slice(0, 16)}…
             </Text>
+          </XStack>
+
+          {/* Font picker */}
+          <XStack jc="space-between" ai="center">
+            <Paragraph color="$color10">Font</Paragraph>
+            <XStack gap="$2" flexWrap="wrap" jc="flex-end">
+              {FONT_OPTIONS.map((f) => (
+                <Text
+                  key={f.key}
+                  onPress={() => setAppFont(f.key)}
+                  fontSize="$3"
+                  fontWeight={appFont === f.key ? '700' : '400'}
+                  color={appFont === f.key ? '$color' : '$color10'}
+                  textDecorationLine={appFont === f.key ? 'underline' : 'none'}
+                  cursor="pointer"
+                  style={{ fontFamily: f.stack } as any}
+                >
+                  {f.label}
+                </Text>
+              ))}
+            </XStack>
           </XStack>
         </YStack>
       </Sheet.Frame>

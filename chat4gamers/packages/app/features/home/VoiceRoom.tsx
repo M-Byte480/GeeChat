@@ -446,6 +446,9 @@ export const VoiceRoom = ({
     if (!lkTrackRef.current) return
     const next = !isMicEnabled
     if (next) {
+      if(isDeafened){
+        await toggleDeafen()
+      }
       await lkTrackRef.current.unmute()
     } else {
       await lkTrackRef.current.mute()

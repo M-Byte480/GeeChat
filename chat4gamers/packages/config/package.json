@@ -17,6 +17,10 @@
     "watch": "tamagui-build --skip-types --watch"
   },
   "dependencies": {
+    "@fontsource/inter": "^5.2.8",
+    "@fontsource/outfit": "^5.2.8",
+    "@fontsource/poppins": "^5.2.7",
+    "@fontsource/quicksand": "^5.2.10",
     "@tamagui/animations-react-native": "^2.0.0-rc.0",
     "@tamagui/font-inter": "^2.0.0-rc.0",
     "@tamagui/shorthands": "^2.0.0-rc.0",

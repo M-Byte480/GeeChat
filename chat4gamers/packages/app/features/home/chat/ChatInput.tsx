@@ -185,7 +185,6 @@ export const ChatInput = ({ channelId, serverUrl, onSend, onSendGif, gifEnabled,
           px="$2"
           py="$1"
           flexWrap="nowrap"
-          // @ts-expect-error web-only
           style={{ overflowX: 'auto' }}
         >
           {pendingAttachments.map((att) => (
@@ -200,7 +199,6 @@ export const ChatInput = ({ channelId, serverUrl, onSend, onSendGif, gifEnabled,
               bg="$color4"
             >
               {att.file.type.startsWith('image/') ? (
-                // eslint-disable-next-line jsx-a11y/alt-text
                 <img
                   src={att.localUrl}
                   style={{ width: '100%', height: '100%', objectFit: 'cover' }}
