@@ -12,9 +12,10 @@ interface Props {
   currentUserRole?: MemberRole | null
   onKick?: () => void
   onBan?: () => void
+  presenceStatus: string
 }
 
-export function ViewUserPopover({ user, trigger, currentUserRole, onKick, onBan }: Props) {
+export function ViewUserPopover({ user, trigger, currentUserRole, onKick, onBan, presenceStatus }: Props) {
   const canModerate =
     (currentUserRole === 'admin' || currentUserRole === 'owner') &&
     user.role !== 'owner' &&
@@ -41,7 +42,7 @@ export function ViewUserPopover({ user, trigger, currentUserRole, onKick, onBan 
           <div
             style={{ position: 'absolute', bottom: 0, right: 0, zIndex: 10 }}
           >
-            <StatusChip status={user.status} />
+            <StatusChip status={presenceStatus} />
           </div>
         </div>
 

@@ -91,6 +91,7 @@ export function OverlayManager({
         setShowSettings={setShowSettings}
         identity={identity}
         appVersion={appVersion}
+        activeServerUrl={serverUrl}
       />
     </>
   )

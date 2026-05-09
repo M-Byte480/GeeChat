@@ -5,6 +5,9 @@ import { requireAuth, requireMember } from '../lib/middleware.js'
 
 const router = new Hono()
 
+// Ephemeral in-memory voice state — resets on server restart (clients re-broadcast on reconnect)
+const voiceStateMap = new Map<string, string[]>()
+
 router.get('/get-voice-token', requireAuth, requireMember, async (c) => {
   const roomName = c.req.query('room') || 'hideout'
   const participantName =
@@ -43,8 +46,17 @@ router.post('/voice-state', requireAuth, requireMember, async (c) => {
     return c.json({ error: 'Invalid participants' }, 400)
   }
 
+  if (participants.length === 0) {
+    voiceStateMap.delete(channelId)
+  } else {
+    voiceStateMap.set(channelId, participants)
+  }
   broadcast(JSON.stringify({ type: 'VOICE_STATE', channelId, participants }))
   return c.json({ ok: true })
+})
+
+router.get('/voice-state', requireAuth, requireMember, (c) => {
+  return c.json(Object.fromEntries(voiceStateMap))
 })
 
 export default router

@@ -2,6 +2,7 @@ import { Avatar, Separator, Text, XStack, YStack } from '@my/ui'
 import { VoiceRoom } from 'app/features/home/VoiceRoom'
 import { Identity } from 'app/features/home/identity'
 import { StatusChip } from 'app/features/home/components/StatusChip'
+import { useAppStore } from 'app/features/home/hooks/useAppStore'
 
 export function ThisUserProperties({
   connectedVoiceChannelId,
@@ -18,6 +19,9 @@ export function ThisUserProperties({
   onVoiceDisconnect: () => void
   passedIdentity: Identity | null
 }) {
+  const presences = useAppStore((s) => s.presences)
+  const myStatus = presences[passedIdentity?.publicKey ?? ''] ?? 'online'
+
   return (
     <YStack
       width={295}
@@ -76,7 +80,7 @@ export function ThisUserProperties({
               <Avatar.Fallback bc="$color8" />
             </Avatar>
             <XStack position="absolute" bottom={-5} right={-5} zIndex={10}>
-              <StatusChip status="online" />
+              <StatusChip status={myStatus} />
             </XStack>
           </YStack>
           <YStack jc="center">

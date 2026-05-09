@@ -215,6 +215,8 @@ export const VoiceRoom = ({
   const [voiceStats, setVoiceStats] = useState<VoiceStats | null>(null)
   const krispRef = useRef<KrispNoiseFilterProcessor | null>(null)
   const isDeafenedRef = useRef(false)
+  // Always points to the current Room so cleanup closures avoid stale captures
+  const roomRef = useRef<Room | null>(null)
 
   const broadcastToServer = (ch: string, participants: string[]) => {
     apiFetch(`${serverUrl}`, `/voice-state`, {
@@ -222,6 +224,27 @@ export const VoiceRoom = ({
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ channelId: ch, participants }),
     }).catch(() => {})
+  }
+
+  const cleanUp = (r: Room) => {
+    r.disconnect()
+    audioRef.current?.cleanup()
+    audioRef.current = null
+    lkTrackRef.current = null
+    krispRef.current = null
+    remoteAudioEls.current = []
+    isDeafenedRef.current = false
+    roomRef.current = null
+    setRoom(null)
+    setIsJoined(false)
+    setIsMicEnabled(true)
+    setIsDeafened(false)
+    setTestMic(false)
+    setDenoiseOn(true)
+    setNativeAvailable(false)
+    setDenoiseAvailable(false)
+    setShowStats(false)
+    setVoiceStats(null)
   }
 
   useEffect(() => {
@@ -259,11 +282,22 @@ export const VoiceRoom = ({
   }, [room, channelId, nickname, onParticipantsChange])
 
   useEffect(() => {
+    // Capture channelId at effect-creation time (the "old" channel being left).
+    // roomRef is used instead of the `room` state to avoid the stale-closure
+    // problem: the state was null when channelId first changed (user hadn't
+    // pressed Join yet), so a closure on `room` would always see null.
+    const leavingChannelId = channelId
+    const leavingServerUrl = serverUrl
     return () => {
-      if (room) {
-        room.disconnect()
-        onParticipantsChange(channelId, [])
-      }
+      const r = roomRef.current
+      if (!r) return
+      cleanUp(r)
+      onParticipantsChange(leavingChannelId, [])
+      apiFetch(leavingServerUrl, `/voice-state`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ channelId: leavingChannelId, participants: [] }),
+      }).catch(() => {})
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [channelId])
@@ -379,6 +413,7 @@ export const VoiceRoom = ({
         console.warn('[VoiceRoom] disconnected, reason:', reason)
         audioRef.current?.cleanup()
         audioRef.current = null
+        roomRef.current = null
         setRoom(null)
         setIsJoined(false)
       })
@@ -429,6 +464,7 @@ export const VoiceRoom = ({
         setDenoiseAvailable(true)
       }
 
+      roomRef.current = newRoom
       setRoom(newRoom)
       setIsJoined(true)
 
@@ -487,6 +523,7 @@ export const VoiceRoom = ({
     krispRef.current = null
     remoteAudioEls.current = []
     isDeafenedRef.current = false
+    roomRef.current = null
     setRoom(null)
     setIsJoined(false)
     setIsMicEnabled(true)

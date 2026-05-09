@@ -7,14 +7,17 @@ const EMPTY_CHANNEL: Channel = {} as Channel
 
 export function useChannels(serverUrl: string | null) {
   const setVoiceParticipants = useAppStore((s) => s.setVoiceParticipants)
+  const voiceConnection = useAppStore((s) => s.voiceConnection)
+  const setVoiceConnection = useAppStore((s) => s.setVoiceConnection)
   const channels = useAppStore(
     (s) => s.cache[serverUrl ?? '']?.channels ?? EMPTY_CHANNELS
   )
 
   const [activeChannelId, setActiveChannelId] = useState<string | null>(null)
-  const [connectedVoiceChannelId, setConnectedVoiceChannelId] = useState<
-    string | null
-  >(null)
+
+  // Highlighted in the sidebar only when in a call on this specific server
+  const connectedVoiceChannelId =
+    voiceConnection?.serverUrl === serverUrl ? voiceConnection.channelId : null
 
   // Auto-select first channel when channels load and none is selected
   useEffect(() => {
@@ -39,12 +42,12 @@ export function useChannels(serverUrl: string | null) {
 
   const handleVoiceJoin = useCallback((channel: Channel) => {
     setActiveChannelId(channel.id)
-    setConnectedVoiceChannelId(channel.id)
-  }, [])
+    if (serverUrl) setVoiceConnection({ serverUrl, channelId: channel.id })
+  }, [serverUrl, setVoiceConnection])
 
   const handleVoiceDisconnect = useCallback(() => {
-    setConnectedVoiceChannelId(null)
-  }, [])
+    setVoiceConnection(null)
+  }, [setVoiceConnection])
 
   const handleParticipantsChange = useCallback(
     (channelId: string, participants: string[]) => {

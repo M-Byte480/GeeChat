@@ -66,11 +66,8 @@ const HomeScreenInner = memo(function HomeScreenInner() {
 
   const {
     activeChannel,
-    connectedVoiceChannelId,
     handleChannelSelect,
     handleVoiceJoin,
-    handleVoiceDisconnect,
-    handleParticipantsChange,
   } = useChannels(activeServerUrl)
 
   const [usernameInput, setUsernameInput] = useState('')
@@ -189,11 +186,7 @@ const HomeScreenInner = memo(function HomeScreenInner() {
         />
 
         <UserPromptDialog
-          connectedVoiceChannelId={connectedVoiceChannelId}
           passedIdentity={identity}
-          activeServer={activeServer}
-          handleParticipantsChange={handleParticipantsChange}
-          handleVoiceDisconnect={handleVoiceDisconnect}
         />
 
         {/* Desktop sidebar */}

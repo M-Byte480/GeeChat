@@ -15,6 +15,8 @@ import media from './routes/media.js'
 import rolesRouter from './routes/roles.js'
 import adminRouter from './routes/admin.js'
 import gifsRouter from './routes/gifs.js'
+import { presenceMap } from './ws.js'
+import { requireAuth, requireMember } from './lib/middleware.js'
 
 /**
  * Creates and configures the Hono application without starting a server.
@@ -40,6 +42,16 @@ export function createApp() {
       gifEnabled: !!process.env.KLIPY_API_KEY,
     })
   )
+
+  // Returns the current presence status for every connected user.
+  // Used by clients on initial load to seed their local presence map.
+  app.get('/presence', requireAuth, requireMember, (c) => {
+    const result: Record<string, string> = {}
+    for (const [publicKey, entry] of presenceMap) {
+      result[publicKey] = entry.status
+    }
+    return c.json(result)
+  })
 
   app.route('/', messagesRouter)
   app.route('/', channelsRouter)

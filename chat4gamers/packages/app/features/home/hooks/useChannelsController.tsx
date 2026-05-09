@@ -9,6 +9,9 @@ export function useChannelsController(serverUrl: string | null) {
   const setChannels = useAppStore((s) => s.setChannels)
   const setGifEnabled = useAppStore((s) => s.setGifEnabled)
   const setActiveServerUrl = useAppStore((s) => s.setActiveServerUrl)
+  const setPresence = useAppStore((s) => s.setPresence)
+  const setPresences = useAppStore((s) => s.setPresences)
+  const setVoiceParticipants = useAppStore((s) => s.setVoiceParticipants)
   const { deleteServer } = useIdentity()
 
   useEffect(() => {
@@ -28,9 +31,23 @@ export function useChannelsController(serverUrl: string | null) {
         setGifEnabled(serverUrl, !!data.gifEnabled)
       })
       .catch(() => {})
-  }, [serverUrl, setChannels, setGifEnabled])
 
-  const setVoiceParticipants = useAppStore((s) => s.setVoiceParticipants)
+    // Seed the presence map with everyone currently online
+    apiFetch(`${serverUrl}`, `/presence`)
+      .then((r) => r.json())
+      .then((data: Record<string, string>) => setPresences(data))
+      .catch(() => {})
+
+    // Seed voice participants — catches any changes that happened while away
+    apiFetch(`${serverUrl}`, `/voice-state`)
+      .then((r) => r.json())
+      .then((data: Record<string, string[]>) => {
+        Object.entries(data).forEach(([channelId, participants]) => {
+          setVoiceParticipants(serverUrl, channelId, participants)
+        })
+      })
+      .catch(() => {})
+  }, [serverUrl, setChannels, setGifEnabled, setPresences, setVoiceParticipants])
 
   useServerSocket(serverUrl, (msg) => {
     if (msg.type === 'CHANNEL_CREATED' && msg.channel && serverUrl) {
@@ -45,6 +62,8 @@ export function useChannelsController(serverUrl: string | null) {
       // Remove this server from the identity and navigate away
       setActiveServerUrl(null)
       deleteServer(serverUrl)
+    } else if (msg.type === 'STATUS_CHANGED' && msg.publicKey) {
+      setPresence(msg.publicKey as string, msg.status as string)
     }
   })
 }

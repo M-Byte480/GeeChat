@@ -1,15 +1,31 @@
 import { Paragraph, Sheet, Text, XStack, YStack } from '@my/ui'
 import { useAppStore } from 'app/features/home/hooks/useAppStore'
 import { FONT_OPTIONS } from 'app/provider/NextTamaguiProvider'
+import { sendWsMessage } from 'app/features/home/hooks/useServerSocket'
 
 export function SettingsSheet({
   showSettings,
   setShowSettings,
   identity,
   appVersion,
+  activeServerUrl,
+}: {
+  showSettings: boolean
+  setShowSettings: (v: boolean) => void
+  identity: { username: string; publicKey: string }
+  appVersion?: string
+  activeServerUrl: string | null
 }) {
   const appFont = useAppStore((s) => s.appFont)
   const setAppFont = useAppStore((s) => s.setAppFont)
+  const presences = useAppStore((s) => s.presences)
+  const isDnd = presences[identity.publicKey] === 'do_not_disturb'
+
+  const toggleDnd = () => {
+    if (!activeServerUrl) return
+    const next = isDnd ? 'online' : 'do_not_disturb'
+    sendWsMessage(activeServerUrl, { type: 'SET_STATUS', status: next })
+  }
 
   return (
     <Sheet
@@ -36,6 +52,25 @@ export function SettingsSheet({
             <Paragraph color="$color10">Public Key</Paragraph>
             <Text fontWeight="600" fontSize="$2" color="$color10">
               {identity.publicKey.slice(0, 16)}…
+            </Text>
+          </XStack>
+
+          {/* Status */}
+          <XStack jc="space-between" ai="center">
+            <Paragraph color="$color10">Do Not Disturb</Paragraph>
+            <Text
+              onPress={toggleDnd}
+              fontSize="$3"
+              fontWeight="600"
+              color={isDnd ? '$red10' : '$color10'}
+              cursor="pointer"
+              px="$2"
+              py="$1"
+              borderRadius="$2"
+              borderWidth={1}
+              borderColor={isDnd ? '$red8' : '$borderColor'}
+            >
+              {isDnd ? '● DND' : '○ Off'}
             </Text>
           </XStack>
 

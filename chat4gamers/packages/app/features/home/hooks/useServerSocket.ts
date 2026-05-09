@@ -19,6 +19,17 @@ function getOrOpen(serverUrl: string): WebSocket {
   const ws = new WebSocket(deriveWsBase(serverUrl) + `/ws?token=${token}`)
   sockets.set(serverUrl, ws)
 
+  ws.onopen = () => {
+    // Send a heartbeat immediately on connect, then every 60 s.
+    // The server uses this to track activity and promote away → online.
+    const send = () => {
+      if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'HEARTBEAT' }))
+    }
+    send()
+    const interval = setInterval(send, 60_000)
+    ws.addEventListener('close', () => clearInterval(interval), { once: true })
+  }
+
   ws.onmessage = (event) => {
     try {
       const msg = JSON.parse(event.data as string)
@@ -30,6 +41,12 @@ function getOrOpen(serverUrl: string): WebSocket {
   ws.onclose = () => sockets.delete(serverUrl)
 
   return ws
+}
+
+/** Send a message over the shared socket for a server. No-op if not connected. */
+export function sendWsMessage(serverUrl: string, msg: Record<string, unknown>) {
+  const ws = sockets.get(serverUrl)
+  if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(msg))
 }
 
 /**

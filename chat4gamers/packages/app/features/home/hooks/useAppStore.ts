@@ -18,11 +18,21 @@ interface MessageCache {
   }
 }
 
+interface VoiceConnection {
+  serverUrl: string
+  channelId: string
+}
+
 interface AppState {
   activeServerUrl: string | null
   cache: ServerCache
   messageCache: MessageCache
   members: Record<string, User[]>
+  presences: Record<string, string>
+  setPresence: (publicKey: string, status: string) => void
+  setPresences: (presences: Record<string, string>) => void
+  voiceConnection: VoiceConnection | null
+  setVoiceConnection: (conn: VoiceConnection | null) => void
   micDeviceId: string | null
   setMicDeviceId: (id: string | null) => void
   appFont: string
@@ -49,6 +59,12 @@ export const useAppStore = create<AppState>((set) => ({
   cache: {},
   messageCache: {} as MessageCache,
   members: {} as Record<string, User[]>,
+  presences: {} as Record<string, string>,
+  setPresence: (publicKey, status) =>
+    set((s) => ({ presences: { ...s.presences, [publicKey]: status } })),
+  setPresences: (presences) => set({ presences }),
+  voiceConnection: null,
+  setVoiceConnection: (conn) => set({ voiceConnection: conn }),
   micDeviceId: null,
   setMicDeviceId: (id) => set({ micDeviceId: id }),
   appFont: (typeof window !== 'undefined' ? localStorage.getItem('app-font') : null) ?? 'inter',

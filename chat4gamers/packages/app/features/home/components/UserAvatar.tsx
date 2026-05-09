@@ -7,6 +7,7 @@ import { ViewUserPopover } from 'app/features/home/user/ViewUserDialog'
 import { KickDialog } from 'app/features/home/user/KickDialog'
 import { BanDialog } from 'app/features/home/user/BanDialog'
 import { useCurrentMemberRole } from 'app/features/home/hooks/useCurrentMemberRole'
+import { useAppStore } from 'app/features/home/hooks/useAppStore'
 import { useState } from 'react'
 
 interface Props {
@@ -18,6 +19,7 @@ interface Props {
 export function UserAvatar({ serverUrl, publicKey, identity }: Props) {
   const user = useUser(serverUrl, publicKey, identity)
   const currentRole = useCurrentMemberRole(serverUrl)
+  const presenceStatus = useAppStore((s) => s.presences[publicKey] ?? 'offline')
   const [showKick, setShowKick] = useState(false)
   const [showBan, setShowBan] = useState(false)
 
@@ -56,6 +58,7 @@ export function UserAvatar({ serverUrl, publicKey, identity }: Props) {
           currentUserRole={currentRole}
           onKick={canModerate ? () => setShowKick(true) : undefined}
           onBan={canModerate ? () => setShowBan(true) : undefined}
+          presenceStatus={presenceStatus}
           trigger={(open) => (
             <XStack
               alignItems="center"
@@ -75,7 +78,7 @@ export function UserAvatar({ serverUrl, publicKey, identity }: Props) {
                   <Avatar.Fallback bc="$color8" />
                 </Avatar>
                 <XStack position="absolute" bottom={-5} right={-5} zIndex={10}>
-                  <StatusChip status={user.status} />
+                  <StatusChip status={presenceStatus} />
                 </XStack>
               </YStack>
               <YStack jc="center">
